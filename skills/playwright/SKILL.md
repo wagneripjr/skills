@@ -7,61 +7,21 @@ description: Use when writing end-to-end tests, generating test plans, fixing fa
 
 Headless end-to-end testing and browser automation using Microsoft Playwright's AI-optimized CLI, Test Agents (Planner, Generator, Healer), and standard test runner.
 
-## Relationship to Other Browser Tools
-
-| Need | Tool | Why |
-|------|------|-----|
-| Interactive browsing (visible browser) | **Claude-in-Chrome** | User sees browser, real-time interaction |
-| Quick ad-hoc automation / scraping | **agent-browser** | Token-efficient Rust CLI, fast for simple tasks |
-| Scrape URLs without a browser | **Gemini URL Context** | No browser needed, up to 20 URLs |
-| Headless E2E test suites | **Playwright Test Runner** | Full framework: assertions, parallel, reports |
-| AI-generated test suites | **Playwright Agents** | Planner/Generator/Healer pipeline |
-| Token-efficient headless automation | **Playwright CLI** | AI-optimized, minimal output (~10-50 tokens/action) |
-| Record interactions as test code | **Playwright Codegen** | Native recording engine, resilient locators |
-
-**Key distinction**: `agent-browser` (Vercel Labs, Rust) uses `@e1` refs. `playwright-cli` (Microsoft) uses `e1` refs. Both solve similar problems. Prefer `agent-browser` for ad-hoc tasks if installed. Use Playwright for structured testing workflows and the Agents pipeline.
-
-## Before Using This Skill
-
-### Step 1: Check Node.js
+## Prerequisites
 
 ```bash
-node --version  # Requires 20.x, 22.x, or 24.x
-```
+node --version                    # Requires 20.x, 22.x, or 24.x
+npx playwright --version          # Requires 1.56+ for Agents
 
-### Step 2: Check Playwright Test Framework
+# If not installed:
+npm init playwright@latest && npx playwright install chromium
 
-```bash
-npx playwright --version  # Requires 1.56+ for Agents
-```
-
-If not installed:
-```bash
-npm init playwright@latest
-npx playwright install chromium  # Download browser binary
-```
-
-### Step 3: Check Playwright CLI (optional, for AI-optimized commands)
-
-```bash
-command -v playwright-cli &>/dev/null && echo "CLI available" || echo "Not installed"
-```
-
-The AI-optimized `playwright-cli` binary ships with the `@playwright/mcp` package:
-```bash
+# Optional: AI-optimized CLI (ships with @playwright/mcp, not the deprecated playwright-cli package)
 npm install -g @playwright/mcp@latest
-playwright-cli --help
-```
 
-> **Package naming note**: The OLD `playwright-cli` npm package (2020) is **deprecated**. The NEW AI-optimized CLI ships inside `@playwright/mcp@latest`. Don't confuse the two.
-
-### Step 4: Initialize Playwright Agents (optional, for test generation)
-
-```bash
+# Optional: Agents pipeline for Claude Code
 npx playwright init-agents --loop=claude
 ```
-
-This creates `.chatmode.md` files, a seed test, and configures the Agents pipeline for Claude Code.
 
 ## Decision Matrix
 
@@ -252,19 +212,15 @@ playwright-cli install-browser         # Install browser binaries
 
 ## Ref Lifecycle
 
-Refs (`e1`, `e2`, etc.) are invalidated when the page changes. Always re-snapshot after:
-
-- Clicking links or buttons that navigate
-- Form submissions
-- Dynamic content loading (modals, SPAs)
+Re-snapshot after any page change (navigation, form submission, dynamic content). Stale refs cause `Element not found` errors.
 
 ```bash
 playwright-cli click e5              # Navigates to new page
-playwright-cli snapshot              # MUST re-snapshot
+playwright-cli snapshot              # MUST re-snapshot — old refs are gone
 playwright-cli click e1              # Use new refs
 ```
 
-**Notation difference**: `playwright-cli` uses `e1` (no prefix). `agent-browser` uses `@e1` (with `@` prefix).
+**Notation**: `playwright-cli` uses `e1`. `agent-browser` uses `@e1`. Don't mix them.
 
 ## Project Directory Structure
 
@@ -297,6 +253,7 @@ project/
 | `Timeout` | Element not visible/ready | Check selector, verify page loaded |
 | `init-agents failed` | Playwright < 1.56 | `npm install -D @playwright/test@latest` |
 | `No seed test found` | Planner can't bootstrap | Create `tests/seed.spec.ts` (see templates) |
+| Wrong `playwright-cli` installed | Deprecated 2020 npm package | Uninstall old: `npm rm -g playwright-cli`, install new: `npm i -g @playwright/mcp@latest` |
 
 ## Complete Workflow Example
 
@@ -333,12 +290,10 @@ npx playwright show-report    # View results
 
 ## Tips
 
-1. **Ref notation**: `playwright-cli` uses `e1`. `agent-browser` uses `@e1`. Don't mix them.
-2. **Prefer agent-browser for quick tasks**: If installed, use it for ad-hoc automation. Use Playwright for structured testing.
-3. **Seed tests matter**: Planner quality depends on a good seed test. Include app-specific setup and fixtures.
-4. **Regenerate on update**: Run `npx playwright init-agents --loop=claude` after updating Playwright.
-5. **Use --headed for debugging**: When tests fail and you need to see the browser.
-6. **Codegen for baselines**: Use `npx playwright codegen` to record a quick baseline, then refine by hand or with Agents.
+1. **Seed tests matter**: Planner quality depends on a good seed test. Include app-specific setup and fixtures.
+2. **Regenerate on update**: Run `npx playwright init-agents --loop=claude` after updating Playwright.
+3. **Use --headed for debugging**: When tests fail and you need to see the browser.
+4. **Codegen for baselines**: Use `npx playwright codegen` to record a quick baseline, then refine by hand or with Agents.
 
 ## Deep-Dive Documentation
 
