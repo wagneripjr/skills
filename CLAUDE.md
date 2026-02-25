@@ -24,6 +24,9 @@ skills/                  # One folder per skill
     SKILL.md             # Main skill file
     gemini-web.sh        # Wrapper script (search, research, scrape modes)
     test-gemini-web.sh   # Unit + integration test suite
+  airflow-dags/          # Apache Airflow 3 DAG authoring with 12 reference docs
+    SKILL.md             # Main skill file
+    reference/           # Deep-dive docs (authoring, scheduling, testing, etc.)
 ```
 
 ## Plugin Convention
