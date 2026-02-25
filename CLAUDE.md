@@ -47,6 +47,20 @@ Follow `skill-creator:skill-creator` methodology:
 3. Evaluate qualitatively with `generate_review.py`
 4. Draft assertions and iterate
 
+## Quality Gate
+
+**MANDATORY**: After writing or modifying any skill, run tessl review before committing:
+
+```bash
+# Local review (reads from disk, no push needed)
+npx tessl skill review ./skills/<skill-name> --json
+
+# Remote review (after push, verifies published version)
+npx tessl skill review github:wagneripjr/skills --skill <skill-name> --json
+```
+
+Fix any criterion scoring below 3/3 unless it's an intentional design tradeoff (document why).
+
 ## Installation
 
 Local development:
