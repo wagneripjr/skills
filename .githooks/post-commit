@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Post-commit hook: amends the commit to include version bump changes
+# staged by the commit-msg hook — but only if needed.
+#
+# On git 2.35+, files staged during commit-msg are already in the commit
+# tree, so no amend is needed. On older git, the tree is computed before
+# hooks run and the amend is required.
+set -euo pipefail
+
+GIT_DIR=$(git rev-parse --git-dir)
+FLAG_FILE="$GIT_DIR/_version_bump_pending"
+
+if [ ! -f "$FLAG_FILE" ]; then
+    exit 0
+fi
+
+# Remove flag first to prevent infinite loop
+rm "$FLAG_FILE"
+
+# Check if the version bump is already in the commit (git 2.35+ behavior)
+REPO_ROOT=$(git rev-parse --show-toplevel)
+COMMITTED_VERSION=$(git show HEAD:.claude-plugin/plugin.json 2>/dev/null | jq -r '.version' 2>/dev/null || echo "")
+DISK_VERSION=$(jq -r '.version' "$REPO_ROOT/.claude-plugin/plugin.json" 2>/dev/null || echo "")
+
+if [ "$COMMITTED_VERSION" = "$DISK_VERSION" ] && [ -n "$COMMITTED_VERSION" ]; then
+    # Version already in commit, no amend needed (git 2.35+)
+    exit 0
+fi
+
+# Older git: amend to include the staged version files
+SKIP_VERSION_BUMP=1 git commit --amend --no-edit --no-verify

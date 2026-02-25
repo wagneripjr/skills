@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# Semver auto-bump hook for Claude Code plugin.
+# Parses conventional commit prefix to determine version bump type,
+# then updates .claude-plugin/plugin.json and marketplace.json.
+#
+# Skip with: SKIP_VERSION_BUMP=1 git commit -m "message"
+# Manual override: chore(version): prefix skips this hook entirely
+set -euo pipefail
+
+# Guard: allow bypassing
+if [ "${SKIP_VERSION_BUMP:-0}" = "1" ]; then exit 0; fi
+
+COMMIT_MSG_FILE="$1"
+FIRST_LINE=$(head -1 "$COMMIT_MSG_FILE")
+
+# Skip merge commits and manual version overrides
+if [[ "$FIRST_LINE" =~ ^Merge ]] || [[ "$FIRST_LINE" =~ ^chore\(version\): ]]; then
+    exit 0
+fi
+
+# Determine bump type from conventional commit prefix
+BUMP=""
+# Note: zsh escapes ! to \! in double-quoted commit messages, so match optional backslash
+if [[ "$FIRST_LINE" =~ ^(feat|fix)(\(.+\))?(\\)?!: ]] || grep -q "BREAKING CHANGE:" "$COMMIT_MSG_FILE" 2>/dev/null; then
+    BUMP="major"
+elif [[ "$FIRST_LINE" =~ ^feat(\(.+\))?: ]]; then
+    BUMP="minor"
+elif [[ "$FIRST_LINE" =~ ^fix(\(.+\))?: ]]; then
+    BUMP="patch"
+elif [[ "$FIRST_LINE" =~ ^(docs|chore|ci|test|refactor|style|perf|build)(\(.+\))?: ]]; then
+    BUMP="none"
+fi
+
+# No recognized prefix or non-bumping prefix: skip gracefully
+if [ -z "$BUMP" ] || [ "$BUMP" = "none" ]; then exit 0; fi
+
+# Require jq for JSON manipulation
+if ! command -v jq &>/dev/null; then
+    echo "Error: jq is required for version bumping but was not found on PATH" >&2
+    exit 1
+fi
+
+# Locate version files relative to repo root
+REPO_ROOT=$(git rev-parse --show-toplevel)
+PLUGIN_JSON="$REPO_ROOT/.claude-plugin/plugin.json"
+MARKETPLACE_JSON="$REPO_ROOT/.claude-plugin/marketplace.json"
+
+if [ ! -f "$PLUGIN_JSON" ]; then
+    echo "Warning: plugin.json not found, skipping version bump"
+    exit 0
+fi
+
+# Read current version from plugin.json (single source of truth)
+CURRENT_VERSION=$(jq -r '.version' "$PLUGIN_JSON")
+if [ -z "$CURRENT_VERSION" ] || [ "$CURRENT_VERSION" = "null" ]; then
+    echo "Warning: Could not read version from plugin.json, skipping"
+    exit 0
+fi
+
+# Parse semver components
+IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+case "$BUMP" in
+    major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+    minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+    patch) PATCH=$((PATCH + 1)) ;;
+esac
+NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+
+# Update version strings using sed to preserve JSON formatting
+# (jq reformats inline arrays and changes whitespace)
+sed -i '' "s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"/g" "$PLUGIN_JSON"
+
+if [ -f "$MARKETPLACE_JSON" ]; then
+    sed -i '' "s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"/g" "$MARKETPLACE_JSON"
+fi
+
+# Stage updated files
+git add "$PLUGIN_JSON"
+[ -f "$MARKETPLACE_JSON" ] && git add "$MARKETPLACE_JSON"
+
+# Signal post-commit hook to amend (git computes the tree BEFORE
+# running commit-msg, so staged files don't make it into the commit)
+GIT_DIR=$(git rev-parse --git-dir)
+touch "$GIT_DIR/_version_bump_pending"
+
+echo "Version bumped: $CURRENT_VERSION -> $NEW_VERSION ($BUMP)"

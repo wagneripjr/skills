@@ -6,6 +6,9 @@ Claude Code plugin containing personal skills for self-improvement, knowledge ca
 
 ```
 .claude-plugin/          # Plugin manifest and marketplace config
+.githooks/               # Git hooks for semver auto-bump (setup: git config core.hooksPath .githooks/)
+  commit-msg             # Parses conventional prefix, bumps version
+  post-commit            # Amends commit to include version changes
 hooks/                   # Plugin hooks (auto-loaded by convention)
 skills/                  # One folder per skill
   self-improving-agent/  # Learning capture and promotion
@@ -32,7 +35,7 @@ skills/                  # One folder per skill
 1. Create `skills/<skill-name>/SKILL.md` with YAML frontmatter (`name`, `description`)
 2. Add supporting files in `scripts/`, `assets/`, `references/` as needed
 3. If the skill needs hooks, append them to `hooks/hooks.json`
-4. Update version in `.claude-plugin/plugin.json`
+4. Version is auto-bumped by git hooks based on commit prefix (see Semantic Versioning)
 5. Commit and push — marketplace users run `claude plugin marketplace update` to sync
 
 ## SKILL.md Writing Rules
@@ -64,6 +67,58 @@ npx tessl skill review github:wagneripjr/skills --skill <skill-name> --json
 ```
 
 Fix any criterion scoring below 3/3 unless it's an intentional design tradeoff (document why).
+
+## Semantic Versioning
+
+This repository auto-bumps version on every commit via git hooks in `.githooks/`.
+
+### Setup (required once per clone)
+
+```bash
+git config core.hooksPath .githooks/
+```
+
+### Commit → Version Bump Mapping
+
+| Commit prefix | Version bump | Example |
+|---------------|-------------|---------|
+| `fix:` | Patch (0.1.0 → 0.1.1) | Bug fixes in skills |
+| `feat:` | Minor (0.1.0 → 0.2.0) | New skills, new features |
+| `feat!:` or `BREAKING CHANGE:` | Major (0.1.0 → 1.0.0) | Breaking changes |
+| `docs:`, `chore:`, `ci:`, `test:` | No bump | Non-functional changes |
+
+### Version Files
+
+Three fields are kept in sync automatically:
+- `.claude-plugin/plugin.json` → `.version`
+- `.claude-plugin/marketplace.json` → `.metadata.version`
+- `.claude-plugin/marketplace.json` → `.plugins[0].version`
+
+**Do NOT edit version fields manually** unless using the `chore(version):` prefix to skip the hook.
+
+### How It Works
+
+1. `commit-msg` hook parses the conventional commit prefix
+2. Reads current version from `plugin.json`, computes the new version
+3. Updates all three version fields via `jq`, stages the files
+4. Writes a flag to `.git/_version_bump_pending`
+5. `post-commit` hook detects the flag, amends the commit to include version changes
+
+### Manual Version Override
+
+To set version manually (e.g., for a 1.0.0 release):
+```bash
+# Edit plugin.json and marketplace.json manually, then:
+git commit -m "chore(version): set 1.0.0"
+```
+
+### Gotchas
+
+- **Rebase/cherry-pick**: Each replayed commit triggers the hook. Use `SKIP_VERSION_BUMP=1 git rebase ...` to prevent cascading bumps.
+- **Amend**: Use `SKIP_VERSION_BUMP=1 git commit --amend` to avoid double-bumping.
+- **New clone**: Must run `git config core.hooksPath .githooks/` after cloning — hooks are not active by default.
+- **zsh and `!`**: zsh escapes `!` to `\!` in double-quoted strings. Use single quotes for breaking change commits: `git commit -m 'feat!: breaking change'`.
+- **Dependency**: `jq` must be on PATH (`brew install jq`).
 
 ## Installation
 
