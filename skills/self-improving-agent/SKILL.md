@@ -1,6 +1,6 @@
 ---
 name: self-improving-agent
-description: "This skill should be used whenever: a command or operation fails unexpectedly, user corrects Claude or says 'that's wrong' or 'actually...', user requests a capability that doesn't exist, an external API or tool fails, knowledge is discovered to be outdated or incorrect, a better approach is found for a recurring task, or before starting major tasks (to review past learnings). Captures learnings, errors, and corrections to structured .learnings/ logs for continuous improvement. Even when the situation seems minor, always consider logging — small learnings compound into significant improvements over time."
+description: "This skill should be used whenever: a command or operation fails unexpectedly, user corrects Claude or says 'that's wrong' or 'actually...', user requests a capability that doesn't exist, an external API or tool fails, knowledge is discovered to be outdated or incorrect, a better approach is found for a recurring task, or before starting major tasks (to review past learnings). Creates structured log entries in .learnings/, categorizes errors and corrections by type and priority, tracks recurring patterns with cross-references, queries past learnings for relevant context, and promotes proven insights to CLAUDE.md or auto memory for persistent cross-session knowledge. This is not an error-handling skill — it builds institutional memory that compounds across sessions."
 ---
 
 # Self-Improving Agent
@@ -9,17 +9,17 @@ Log learnings, errors, and feature requests to structured markdown files in `.le
 
 ## Quick Reference
 
-| Situation | Action |
-|-----------|--------|
-| Command/operation fails | Log to `.learnings/ERRORS.md` |
-| User corrects you | Log to `.learnings/LEARNINGS.md` with category `correction` |
-| User wants missing feature | Log to `.learnings/FEATURE_REQUESTS.md` |
-| API/external tool fails | Log to `.learnings/ERRORS.md` with integration details |
-| Knowledge was outdated | Log to `.learnings/LEARNINGS.md` with category `knowledge_gap` |
-| Found better approach | Log to `.learnings/LEARNINGS.md` with category `best_practice` |
-| Similar to existing entry | Link with `**See Also**`, consider priority bump |
-| Broadly applicable learning | Promote — see Promotion Decision Tree below |
-| Before starting major task | Review `.learnings/` for relevant past entries |
+| Situation | Trigger Phrases | Action |
+|-----------|----------------|--------|
+| Command/operation fails | Non-zero exit, stack trace, timeout | Log to `.learnings/ERRORS.md` |
+| User corrects you | "that's wrong", "actually...", "no, it should be..." | Log to `.learnings/LEARNINGS.md` with category `correction` |
+| User wants missing feature | "can you also...", "I wish you could...", "is there a way to..." | Log to `.learnings/FEATURE_REQUESTS.md` |
+| API/external tool fails | Connection refused, timeout, unexpected response | Log to `.learnings/ERRORS.md` with integration details |
+| Knowledge was outdated | User provides info you didn't know, docs are stale | Log to `.learnings/LEARNINGS.md` with category `knowledge_gap` |
+| Found better approach | Discovered during investigation or review | Log to `.learnings/LEARNINGS.md` with category `best_practice` |
+| Similar to existing entry | `grep -r "keyword" .learnings/` finds match | Link with `**See Also**`, consider priority bump |
+| Broadly applicable learning | Recurring 3+ times, useful cross-project | Promote — see Promotion Decision Tree below |
+| Before starting major task | New feature, unfamiliar area | Review `.learnings/` for relevant past entries |
 
 ## Initialization
 
@@ -197,7 +197,7 @@ Is the learning project-specific?
    - **Auto memory**: Write to `~/.claude/projects/<project-path>/memory/<topic>.md`. Use semantic topic files (e.g., `patterns.md`, `debugging.md`).
 3. **Update** the original entry: set `**Status**: promoted` and add `**Promoted**: <target>`
 
-### Promotion Examples
+### Promotion Example
 
 **Learning** (verbose in `.learnings/`):
 > Project uses pnpm workspaces. Attempted `npm install` but failed. Lock file is `pnpm-lock.yaml`. Must use `pnpm install`.
@@ -208,43 +208,11 @@ Is the learning project-specific?
 - Package manager: pnpm (not npm) — use `pnpm install`
 ```
 
-**Learning** (verbose):
-> When modifying API endpoints, must regenerate TypeScript client. Forgetting causes type mismatches at runtime.
-
-**Promoted to auto memory** `patterns.md` (actionable):
-```markdown
-## API Client Regeneration
-After changing API endpoints, always run client regeneration. Type mismatches from stale clients only appear at runtime.
-```
+For auto memory promotion, follow the same distill-then-write pattern, targeting `~/.claude/projects/<path>/memory/<topic>.md`.
 
 ## Detection Triggers
 
-Automatically log when any of these signals appear — do not wait for the user to ask. Proactive logging is the entire point of this skill.
-
-**Corrections** (log as learning with `correction` category):
-- "No, that's not right..."
-- "Actually, it should be..."
-- "You're wrong about..."
-- "That's outdated..."
-- User provides different information than what you assumed
-
-**Feature Requests** (log as feature request):
-- "Can you also..."
-- "I wish you could..."
-- "Is there a way to..."
-- "Why can't you..."
-
-**Knowledge Gaps** (log as learning with `knowledge_gap` category):
-- User provides information you didn't know
-- Documentation you referenced is outdated
-- API behavior differs from your understanding
-- Configuration or convention you assumed incorrectly
-
-**Errors** (log as error entry):
-- Command returns non-zero exit code
-- Exception or stack trace in output
-- Unexpected output or behavior
-- Timeout or connection failure
+Log proactively when the signals in the Quick Reference table appear — do not wait for the user to ask. The trigger phrases listed are examples; any correction, error, knowledge gap, or feature request qualifies. Proactive logging is the core purpose of this skill — if in doubt, log it.
 
 ## Recurring Pattern Detection
 
