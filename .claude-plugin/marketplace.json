@@ -1,0 +1,19 @@
+{
+  "name": "wagner-skills-marketplace",
+  "owner": {
+    "name": "Wagner Ignacio Pinto Junior",
+    "email": "wagneripjr@adustio.com"
+  },
+  "metadata": {
+    "description": "Personal Claude Code skills: self-improvement, knowledge capture, and development workflows",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "wagner-skills",
+      "source": "./",
+      "description": "Personal skills collection: self-improvement, knowledge capture, and development workflows",
+      "version": "0.1.0"
+    }
+  ]
+}

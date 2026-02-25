@@ -1,0 +1,13 @@
+{
+  "name": "wagner-skills",
+  "description": "Personal skills collection: self-improvement, knowledge capture, and development workflows",
+  "version": "0.1.0",
+  "author": {
+    "name": "Wagner Ignacio Pinto Junior",
+    "email": "wagneripjr@adustio.com"
+  },
+  "repository": "https://github.com/wagneripjr/skills",
+  "homepage": "https://github.com/wagneripjr/skills",
+  "license": "MIT",
+  "keywords": ["self-improvement", "learnings", "knowledge-capture", "error-logging"]
+}

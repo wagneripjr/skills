@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [{
+      "matcher": "",
+      "hooks": [{
+        "type": "command",
+        "command": "'${CLAUDE_PLUGIN_ROOT}/skills/self-improving-agent/scripts/activator.sh'"
+      }]
+    }],
+    "PostToolUse": [{
+      "matcher": "Bash",
+      "hooks": [{
+        "type": "command",
+        "command": "'${CLAUDE_PLUGIN_ROOT}/skills/self-improving-agent/scripts/error-detector.sh'"
+      }]
+    }]
+  }
+}
