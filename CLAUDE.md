@@ -8,11 +8,15 @@ Claude Code plugin containing personal skills for self-improvement, knowledge ca
 .claude-plugin/          # Plugin manifest and marketplace config
 hooks/                   # Plugin hooks (auto-loaded by convention)
 skills/                  # One folder per skill
-  self-improving-agent/  # First skill: learning capture and promotion
+  self-improving-agent/  # Learning capture and promotion
     SKILL.md             # Main skill file
     scripts/             # Hook scripts and utilities
     assets/              # Templates copied to projects on first use
     references/          # Detailed examples and documentation
+  playwright/            # Headless E2E testing and AI-driven test generation
+    SKILL.md             # Main skill file
+    references/          # CLI commands, agents workflow docs
+    templates/           # Project setup scripts, seed test
 ```
 
 ## Plugin Convention
