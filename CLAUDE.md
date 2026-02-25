@@ -20,6 +20,10 @@ skills/                  # One folder per skill
     SKILL.md             # Main skill file
     references/          # CLI commands, agents workflow docs
     templates/           # Project setup scripts, seed test
+  gemini-web/            # Web search, research, URL scraping via Gemini API
+    SKILL.md             # Main skill file
+    gemini-web.sh        # Wrapper script (search, research, scrape modes)
+    test-gemini-web.sh   # Unit + integration test suite
 ```
 
 ## Plugin Convention
