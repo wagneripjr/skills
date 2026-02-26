@@ -13,14 +13,14 @@ Run via the Bash tool. The script handles JSON construction, API calls, response
 
 ```bash
 # Quick search with Google Search grounding (~9s)
-~/.claude/skills/gemini-web/gemini-web.sh search "your query here"
+"${CLAUDE_PLUGIN_ROOT}/skills/gemini-web/gemini-web.sh" search "your query here"
 
 # Deep research with pro model (~45-60s)
-~/.claude/skills/gemini-web/gemini-web.sh research "your research question"
+"${CLAUDE_PLUGIN_ROOT}/skills/gemini-web/gemini-web.sh" research "your research question"
 
 # URL content extraction (~5-30s, up to 20 URLs)
-~/.claude/skills/gemini-web/gemini-web.sh scrape "what to extract" https://example.com
-~/.claude/skills/gemini-web/gemini-web.sh scrape "compare pricing" https://a.com https://b.com
+"${CLAUDE_PLUGIN_ROOT}/skills/gemini-web/gemini-web.sh" scrape "what to extract" https://example.com
+"${CLAUDE_PLUGIN_ROOT}/skills/gemini-web/gemini-web.sh" scrape "compare pricing" https://a.com https://b.com
 ```
 
 ## Mode Selection

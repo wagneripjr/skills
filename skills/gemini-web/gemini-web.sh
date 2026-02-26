@@ -1,6 +1,6 @@
 #!/bin/bash
 # gemini-web.sh — Gemini API wrapper for web search, research, and URL scraping
-# Co-located with SKILL.md, auto-deployed via skill symlinks
+# Co-located with SKILL.md, runs via ${CLAUDE_PLUGIN_ROOT}
 #
 # Usage:
 #   gemini-web.sh search "query"                    # Quick search (~9s)
