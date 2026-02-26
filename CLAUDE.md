@@ -27,6 +27,9 @@ skills/                  # One folder per skill
   airflow-dags/          # Apache Airflow 3 DAG authoring with 12 reference docs
     SKILL.md             # Main skill file
     reference/           # Deep-dive docs (authoring, scheduling, testing, etc.)
+  exploratory-qa/        # Exploratory QA testing (Claude acts as QA engineer)
+    SKILL.md             # Main skill file
+    references/          # Interface checklists, common edge cases
 ```
 
 ## Plugin Convention
