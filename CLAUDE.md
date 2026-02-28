@@ -30,6 +30,9 @@ skills/                  # One folder per skill
   exploratory-qa/        # Exploratory QA testing (Claude acts as QA engineer)
     SKILL.md             # Main skill file
     references/          # Interface checklists, common edge cases
+  atdd/                  # ATDD with protocol drivers (Dave Farley's methodology)
+    SKILL.md             # Main skill file
+    reference/           # Per-language examples (TS, Python, C#, Go, Rust, PHP)
 ```
 
 ## Plugin Convention

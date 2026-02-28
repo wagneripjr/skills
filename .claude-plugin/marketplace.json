@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Personal Claude Code skills: self-improvement, knowledge capture, and development workflows",
-    "version": "1.3.0"
+    "version": "1.4.0"
   },
   "plugins": [
     {
       "name": "wagner-skills",
       "source": "./",
       "description": "Personal skills collection: self-improvement, knowledge capture, and development workflows",
-      "version": "1.3.0"
+      "version": "1.4.0"
     }
   ]
 }
