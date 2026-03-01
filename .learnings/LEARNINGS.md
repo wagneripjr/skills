@@ -80,3 +80,45 @@ Add to anti-patterns memory: "When piping CLI output to grep, use `2>&1 |` not `
 
 ---
 
+## [LRN-20260301-002] best_practice
+
+**Logged**: 2026-03-01T15:00:00Z
+**Priority**: medium
+**Status**: resolved
+**Area**: tests
+
+### Summary
+`source <(sed -n '/^func_name()/,/^}/p' script.sh)` fails silently in subshells — use `bash -c` with inline `$(sed ...)` instead when testing individual functions from monolithic shell scripts.
+
+### Details
+When testing shell functions extracted from a larger script, `source <(sed ...)` inside a `(...)` subshell silently fails to define the function, causing "command not found" errors. The process substitution `<(...)` interacts poorly with the subshell context. The fix is to use `bash -c` which creates a clean execution context:
+
+```bash
+# FAILS in subshells:
+source <(sed -n '/^add_screen_id()/,/^}/p' "$STITCH")
+add_screen_id "abc"  # command not found
+
+# WORKS reliably:
+bash -c "
+    STITCH_CONFIG='.stitch.json'
+    $(sed -n '/^add_screen_id()/,/^}/p' "$STITCH")
+    add_screen_id abc
+"
+```
+
+The `$(sed ...)` runs in the outer shell (where `$STITCH` is defined), expands the function definition inline, and `bash -c` executes it in a fresh context.
+
+### Suggested Action
+Use the `bash -c` + `$(sed ...)` pattern when writing unit tests for individual functions from monolithic shell scripts. Create a `run_stitch_fn` helper to DRY up repeated extractions.
+
+### Resolution
+- **Resolved**: 2026-03-01
+- **Notes**: Applied in `test-stitch.sh` — all 17 tests pass including 6 new screen ID tracking tests.
+
+### Metadata
+- Source: error
+- Related Files: skills/stitch/test-stitch.sh
+- Tags: bash, testing, subshell, process-substitution, source, sed
+
+---
+

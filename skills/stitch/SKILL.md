@@ -87,8 +87,10 @@ Verify Gemini CLI is installed, Stitch extension is present, and authentication 
 ### link / unlink
 
 Link a Stitch project to the current working directory. Creates:
-- `.stitch.json` — config for the script (`{"projectId": "...", "title": "..."}`)
+- `.stitch.json` — config for the script (`{"projectId": "...", "title": "...", "screens": []}`)
 - Appends a `## Stitch Design System` section to `GEMINI.md`
+
+The `screens` array is populated automatically by `generate` and used as a fallback by `export`.
 
 Most commands read the project ID from `.stitch.json` automatically. Pass `--pid <id>` to override.
 
@@ -100,7 +102,7 @@ Create a new Stitch project. If no `.stitch.json` exists, the new project is aut
 
 ### generate
 
-Generate a new screen from a text prompt.
+Generate a new screen from a text prompt. **Screen IDs are automatically tracked** in `.stitch.json` — this is critical because Stitch's `list_screens` API can be unreliable (see export).
 
 Options:
 - `--device mobile|desktop|tablet` — target device (default: desktop)
@@ -112,7 +114,7 @@ Edit an existing screen by ID with a text prompt describing changes.
 
 ### export
 
-Export all screens from the linked project to local files.
+Export all screens from the linked project to local files. Uses `list_screens` first, but **falls back to stored screen IDs** from `.stitch.json` when the list returns empty (known Stitch API limitation). Always generate screens through `stitch.sh generate` to ensure IDs are tracked.
 
 Options:
 - `--format html|react` — output format (default: html)
@@ -155,3 +157,4 @@ Effective Stitch prompts are specific about:
 - **Experimental**: Stitch is a Google Labs product — features and API may change
 - **Auth dependency**: requires valid Stitch API key or GCP ADC
 - **Gemini CLI required**: delegates to Gemini CLI, not direct Stitch MCP calls
+- **`list_screens` unreliable**: may return empty for projects with screens. `export` falls back to stored screen IDs from `.stitch.json`. Always use `stitch.sh generate` (not raw Gemini CLI) to ensure IDs are tracked

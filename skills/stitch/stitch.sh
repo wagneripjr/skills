@@ -88,8 +88,30 @@ write_stitch_json() {
     local pid="$1"
     local title="${2:-}"
     jq -n --arg pid "$pid" --arg title "$title" \
-        '{projectId: $pid, title: $title}' > "$STITCH_CONFIG"
+        '{projectId: $pid, title: $title, screens: []}' > "$STITCH_CONFIG"
     echo "Linked project $pid to $STITCH_CONFIG"
+}
+
+add_screen_id() {
+    local screen_id="$1"
+    if [ -z "$screen_id" ] || [ ! -f "$STITCH_CONFIG" ]; then
+        return 1
+    fi
+    # Append if not already present (deduplicate)
+    local tmp
+    tmp=$(jq --arg sid "$screen_id" \
+        'if .screens then
+            if (.screens | index($sid)) then . else .screens += [$sid] end
+         else
+            .screens = [$sid]
+         end' "$STITCH_CONFIG")
+    echo "$tmp" > "$STITCH_CONFIG"
+}
+
+read_screen_ids() {
+    if [ -f "$STITCH_CONFIG" ]; then
+        jq -r '.screens // [] | .[]' "$STITCH_CONFIG" 2>/dev/null
+    fi
 }
 
 append_gemini_md() {
@@ -212,11 +234,21 @@ cmd_generate() {
     pid=$(require_project_id "$PID_FLAG")
     check_gemini
 
-    run_gemini "Use Stitch to generate a new screen in project $pid. Device type: $DEVICE.
+    local result
+    result=$(run_gemini "Use Stitch to generate a new screen in project $pid. Device type: $DEVICE.
 
 Screen description: $prompt
 
-After generating, show the screen ID and a brief summary of what was created."
+After generating, show the screen ID and a brief summary of what was created.")
+    echo "$result"
+
+    # Capture screen ID (hex string, typically 7+ chars) and store in .stitch.json
+    local screen_id
+    screen_id=$(echo "$result" | grep -oE '[0-9a-f]{7,}' | head -1)
+    if [ -n "$screen_id" ]; then
+        add_screen_id "$screen_id"
+        echo "Tracked screen $screen_id in $STITCH_CONFIG"
+    fi
 }
 
 cmd_edit() {
@@ -250,14 +282,43 @@ cmd_export() {
         *)      format_instruction="Export as $FORMAT." ;;
     esac
 
-    run_gemini "Use Stitch to get all screens in project $pid. For each screen:
+    local ext
+    case "$FORMAT" in
+        html)   ext="html" ;;
+        react)  ext="tsx" ;;
+        *)      ext="$FORMAT" ;;
+    esac
+
+    # Try listing all screens first
+    local result
+    result=$(run_gemini "Use Stitch to get all screens in project $pid. For each screen:
 1. Get the screen code ($FORMAT format)
 2. Save each screen as a separate file in the directory: $OUTPUT_DIR/
 3. Use the screen name or a descriptive filename
 
 $format_instruction
 
-Create the output directory if it doesn't exist. After exporting, list all files created with their paths."
+Create the output directory if it doesn't exist. After exporting, list all files created with their paths.")
+    echo "$result"
+
+    # Fallback: if list_screens returned no screens, use stored screen IDs
+    if echo "$result" | grep -qiE "(no screens|does not contain|0 screens|empty|not found)"; then
+        local stored_ids
+        stored_ids=$(read_screen_ids)
+        if [ -n "$stored_ids" ]; then
+            echo ""
+            echo "list_screens returned empty. Falling back to stored screen IDs..."
+            mkdir -p "$OUTPUT_DIR"
+            while IFS= read -r sid; do
+                echo "Fetching screen $sid..."
+                run_gemini "Use Stitch to get screen $sid from project $pid. $format_instruction Save the code to $OUTPUT_DIR/${sid}.$ext"
+            done <<< "$stored_ids"
+            echo "Fallback export complete. Check $OUTPUT_DIR/ for files."
+        else
+            echo ""
+            echo "No stored screen IDs in $STITCH_CONFIG. Generate screens first with 'stitch.sh generate'." >&2
+        fi
+    fi
 }
 
 # --- Main ---
