@@ -33,6 +33,11 @@ skills/                  # One folder per skill
   atdd/                  # ATDD with protocol drivers (Dave Farley's methodology)
     SKILL.md             # Main skill file
     reference/           # Per-language examples (TS, Python, C#, Go, Rust, PHP)
+  stitch/                # Web design via Gemini CLI + Stitch extension
+    SKILL.md             # Main skill file
+    stitch.sh            # Wrapper script (check, create, generate, export, etc.)
+    test-stitch.sh       # Unit + integration test suite
+    references/          # Installation guide, GEMINI.md template
 ```
 
 ## Plugin Convention
