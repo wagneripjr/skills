@@ -7,7 +7,9 @@ description: "Use when analyzing a problem domain, designing domain models, defi
 
 Analyze a problem domain autonomously and produce comprehensive DDD design artifacts. Read requirements, product definitions, and existing code. Research the domain via `gemini-web`. Write all outputs to `docs/ddd/` and significant decisions as ADRs to `docs/adr/`.
 
-Operate autonomously — do not ask clarifying questions unless the user explicitly requests interactive mode. When information is ambiguous, state the assumption made and proceed.
+**Default: autonomous mode** — state assumptions and proceed without questions. When information is ambiguous, document the assumption and move on.
+
+**Interactive mode** — activated when the user says "interview me", "ask questions", "interactive", "collaborative DDD", or "let's discuss the domain". See the Interactive Mode section below.
 
 ## Hard Gates
 
@@ -40,13 +42,13 @@ Gather raw domain knowledge from every available source.
 - Regulatory constraints and compliance requirements
 - Common domain patterns others have solved (e.g., double-entry bookkeeping in accounting, saga patterns in order fulfillment)
 
-Extract nouns (candidate entities/VOs), verbs (candidate commands/events), adjectives (candidate states/constraints), business rules (invariants), and terms with conflicting meanings (context boundaries). Output a raw concept list — do not classify yet.
+Extract domain concepts from all sources. Flag terms with conflicting meanings — these indicate context boundaries. Output a raw concept list — do not classify yet.
 
 ## Phase 2: Subdomain Classification
 
 Classify each discovered domain area into Core, Supporting, or Generic. See `reference/strategic-patterns.md` for the classification decision matrix.
 
-Write classification to `docs/ddd/subdomains.md` with rationale for each. Misclassifying Core as Generic wastes competitive advantage; misclassifying Generic as Core wastes engineering on solved problems.
+Write to `docs/ddd/subdomains.md` with rationale for each classification.
 
 ## Phase 3: Bounded Context Discovery
 
@@ -84,7 +86,7 @@ Draw an ASCII context map:
 
 Legend: OHS = Open Host Service, PL = Published Language, ACL = Anticorruption Layer, CS = Customer-Supplier, SK = Shared Kernel, CF = Conformist, P = Partnership, SW = Separate Ways
 
-Write to `docs/ddd/context-map.md`. Write an ADR for each non-trivial integration decision — especially when choosing ACL over Conformist or when introducing a Shared Kernel (both carry long-term architectural consequences).
+Write to `docs/ddd/context-map.md`. ADR for each non-trivial integration decision (ACL vs Conformist, Shared Kernel introduction).
 
 ## Phase 5: Ubiquitous Language
 
@@ -101,11 +103,9 @@ Each term entry:
 | **Not to be confused with** | Same word in other contexts, if applicable |
 | **Related terms** | Links to other glossary entries |
 
-**Ambiguity detection**: When the same word appears with different meanings across contexts, this CONFIRMS the context boundary is correct. Document both definitions explicitly — this is a feature, not a problem.
+Same word with different meanings across contexts confirms the context boundary — document both definitions. Flag requirement-glossary contradictions with `[UL CONFLICT]`.
 
-**Enforcement**: If a term in requirements contradicts the glossary, flag it with a `[UL CONFLICT]` marker and state which definition governs.
-
-Write to `docs/ddd/ubiquitous-language.md` with one section per bounded context. If the project has a `docs/DEFINITIONS.md`, merge terms into it.
+Write to `docs/ddd/ubiquitous-language.md` (one section per context). Merge into `docs/DEFINITIONS.md` if it exists.
 
 ## Phase 6: Tactical Design
 
@@ -115,7 +115,7 @@ For each Core and Supporting bounded context, design the internal model. Referen
 
 For each aggregate, apply Vernon's four rules and define: root entity, owned entities and value objects, invariants it protects, commands it handles, domain events it emits. Assign remaining building blocks (entities, value objects, domain events, domain services, repositories, factories) to the appropriate aggregate or context.
 
-Write to `docs/ddd/<context-name>/tactical-design.md` per context. Write ADRs for aggregate boundary decisions.
+Write to `docs/ddd/<context-name>/tactical-design.md` per context. ADRs for aggregate boundary decisions.
 
 ## Phase 7: Integration Design
 
@@ -125,7 +125,7 @@ Options: ACL (translator + facade + adapter), OHS (API contract in UL), Publishe
 
 Specify domain events that cross boundaries and their transformation rules — events change shape at ACL boundaries because each context owns its own model.
 
-Write to `docs/ddd/integration-design.md` with one section per context boundary. Write ADRs for technology choices.
+Write to `docs/ddd/integration-design.md` (one section per boundary). ADRs for technology choices.
 
 ## Phase 8: Finalize
 
@@ -134,6 +134,23 @@ All artifacts were written during Phases 2-7. In this phase:
 - Update `docs/TRACEABILITY.md` if it exists — link requirements to DDD artifacts
 - Update `docs/DEFINITIONS.md` if it exists — merge ubiquitous language terms
 - Verify all cross-references between artifacts are consistent (context names, term definitions, relationship patterns)
+
+## Interactive Mode
+
+When activated, each phase follows a three-step cycle: **Ask → Research → Confirm**.
+
+**Ask** (before the phase): Ask the user one focused question about the upcoming phase — what they know, what constraints exist, what they're unsure about. Run `gemini-web research` in parallel so user answers and research feed the phase together.
+
+**Confirm** (after the phase): Present the phase output and ask "Does this match your understanding? Anything to correct or add?" Iterate until approved.
+
+### Iterating on Specific Areas
+
+The user can request a deep dive into any specific domain, subdomain, or bounded context at any point:
+- "Let's dig deeper into the Payment context" → re-run Phases 5-6 for that context only
+- "I think we split Ordering wrong" → re-run Phase 3 with new boundary hypothesis, cascade changes through Phases 4-7
+- "The Inventory subdomain should be Core, not Supporting" → update classification, re-evaluate tactical design investment
+
+When iterating, only re-run affected phases and update the corresponding artifacts. Do not rewrite unaffected contexts.
 
 ## Downstream Handoff
 
@@ -144,7 +161,7 @@ After completing DDD analysis:
 
 ## Rules
 
-1. **Autonomous by default** — state assumptions and proceed; only ask questions if the user requests interactive mode
+1. **Autonomous by default** — interactive mode requires explicit activation (see Interactive Mode section)
 2. **Research the domain** — use `gemini-web research` to fill knowledge gaps about industry patterns and standards
 3. **ADRs for significant decisions** — aggregate boundaries, integration pattern choices, debatable subdomain classifications
 4. **EventStorming is optional input** — invoke `eventstorming:es-explore` only if the user requests collaborative discovery
