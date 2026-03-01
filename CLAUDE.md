@@ -38,6 +38,9 @@ skills/                  # One folder per skill
     stitch.sh            # Wrapper script (check, create, generate, export, etc.)
     test-stitch.sh       # Unit + integration test suite
     references/          # Installation guide, GEMINI.md template
+  ddd/                   # Domain-Driven Design analysis and strategic/tactical design
+    SKILL.md             # Main skill file
+    reference/           # Strategic patterns, tactical patterns, integration patterns, aggregate rules, supple design, UL guide
 ```
 
 ## Plugin Convention
