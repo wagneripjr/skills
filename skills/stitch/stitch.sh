@@ -4,16 +4,12 @@
 #
 # Usage:
 #   stitch.sh check                              # Verify prerequisites
-#   stitch.sh link <project-id>                  # Link project to current dir
+#   stitch.sh link <project-id> [title]          # Link project to current dir
 #   stitch.sh unlink                             # Unlink project
 #   stitch.sh create "Title"                     # Create new Stitch project
-#   stitch.sh list                               # List all projects
-#   stitch.sh screens [--pid X]                  # List screens in a project
 #   stitch.sh generate "prompt" [options]         # Generate a screen
 #   stitch.sh edit <screen-id> "prompt" [options] # Edit a screen
-#   stitch.sh variants <screen-id> "prompt" [opts] # Generate variants
 #   stitch.sh export [options]                    # Export code to files
-#   stitch.sh design-system [options]             # Generate DESIGN.md
 #
 # Exit codes: 0=success, 1=error, 2=prerequisite-missing
 
@@ -21,7 +17,6 @@ set -euo pipefail
 
 STITCH_CONFIG=".stitch.json"
 GEMINI_MD="GEMINI.md"
-GEMINI_TIMEOUT="${STITCH_TIMEOUT:-180}"
 
 # --- Prerequisite checks ---
 
@@ -44,7 +39,7 @@ INSTALL
 }
 
 check_stitch_extension() {
-    if ! gemini extensions list 2>/dev/null | grep -qi stitch; then
+    if ! gemini extensions list 2>&1 | grep -qi stitch; then
         cat >&2 <<'INSTALL'
 ERROR: Stitch extension not found in Gemini CLI.
 
@@ -122,7 +117,7 @@ EOF
 
 run_gemini() {
     local prompt="$1"
-    timeout "$GEMINI_TIMEOUT" gemini -p "$prompt" --yolo 2>&1
+    gemini -p "$prompt" --yolo 2>&1
     return $?
 }
 
@@ -131,23 +126,15 @@ run_gemini() {
 parse_opts() {
     PID_FLAG=""
     DEVICE="DESKTOP"
-    MODEL=""
-    COUNT="3"
-    RANGE="EXPLORE"
     FORMAT="html"
     OUTPUT_DIR="./stitch-export"
-    OUTPUT_FILE="DESIGN.md"
 
     while [ $# -gt 0 ]; do
         case "$1" in
             --pid)      PID_FLAG="$2"; shift 2 ;;
             --device)   DEVICE="$(echo "$2" | tr '[:lower:]' '[:upper:]')"; shift 2 ;;
-            --model)    MODEL="$2"; shift 2 ;;
-            --count)    COUNT="$2"; shift 2 ;;
-            --range)    RANGE="$(echo "$2" | tr '[:lower:]' '[:upper:]')"; shift 2 ;;
             --format)   FORMAT="$2"; shift 2 ;;
             --dir)      OUTPUT_DIR="$2"; shift 2 ;;
-            --output)   OUTPUT_FILE="$2"; shift 2 ;;
             *)          echo "Unknown option: $1" >&2; exit 1 ;;
         esac
     done
@@ -213,23 +200,10 @@ cmd_create() {
     fi
 }
 
-cmd_list() {
-    check_gemini
-    run_gemini "Use Stitch to list all my projects. For each project, show: project name, numeric project ID, and number of screens. Format as a table."
-}
-
-cmd_screens() {
-    parse_opts "$@"
-    local pid
-    pid=$(require_project_id "$PID_FLAG")
-    check_gemini
-    run_gemini "Use Stitch to list all screens in project $pid. For each screen, show: screen name or title, screen ID, and device type. Format as a table."
-}
-
 cmd_generate() {
     local prompt="${1:-}"
     if [ -z "$prompt" ]; then
-        echo "Usage: stitch.sh generate \"prompt\" [--device X] [--model X] [--pid X]" >&2
+        echo "Usage: stitch.sh generate \"prompt\" [--device X] [--pid X]" >&2
         exit 1
     fi
     shift
@@ -238,12 +212,7 @@ cmd_generate() {
     pid=$(require_project_id "$PID_FLAG")
     check_gemini
 
-    local model_instruction=""
-    if [ -n "$MODEL" ]; then
-        model_instruction="Use the $MODEL model."
-    fi
-
-    run_gemini "Use Stitch to generate a new screen in project $pid. Device type: $DEVICE. $model_instruction
+    run_gemini "Use Stitch to generate a new screen in project $pid. Device type: $DEVICE.
 
 Screen description: $prompt
 
@@ -266,26 +235,6 @@ cmd_edit() {
     run_gemini "Use Stitch to edit screen $screen_id in project $pid. Apply these changes: $prompt
 
 After editing, confirm what was changed."
-}
-
-cmd_variants() {
-    local screen_id="${1:-}"
-    local prompt="${2:-}"
-    if [ -z "$screen_id" ] || [ -z "$prompt" ]; then
-        echo "Usage: stitch.sh variants <screen-id> \"prompt\" [--count N] [--range X] [--pid X]" >&2
-        exit 1
-    fi
-    shift 2
-    parse_opts "$@"
-    local pid
-    pid=$(require_project_id "$PID_FLAG")
-    check_gemini
-
-    run_gemini "Use Stitch to generate $COUNT variants of screen $screen_id in project $pid.
-Variation range: $RANGE (REFINE=subtle, EXPLORE=moderate, REIMAGINE=dramatic).
-Focus on: $prompt
-
-After generating, list each variant's ID and describe the key differences."
 }
 
 cmd_export() {
@@ -311,23 +260,6 @@ $format_instruction
 Create the output directory if it doesn't exist. After exporting, list all files created with their paths."
 }
 
-cmd_design_system() {
-    parse_opts "$@"
-    local pid
-    pid=$(require_project_id "$PID_FLAG")
-    check_gemini
-
-    run_gemini "Use Stitch to analyze project $pid. Extract the complete design system:
-- Color palette (primary, secondary, accent, neutrals — with hex codes)
-- Typography (font families, sizes, weights, line heights)
-- Spacing scale
-- Border radius values
-- Shadow definitions
-- Component patterns (buttons, cards, inputs, navigation, etc.)
-
-Write a comprehensive $OUTPUT_FILE file documenting the design system. Use markdown format with code examples showing CSS/Tailwind usage for each token."
-}
-
 # --- Main ---
 
 if [ $# -lt 1 ]; then
@@ -339,20 +271,11 @@ Commands:
   link <project-id> [title]              Link Stitch project to current dir
   unlink                                 Unlink Stitch project
   create "Title"                         Create new Stitch project
-  list                                   List all Stitch projects
-  screens [--pid X]                      List screens in linked project
-  generate "prompt" [--device X] [--model X] [--pid X]
+  generate "prompt" [--device X] [--pid X]
                                          Generate a screen from text
   edit <screen-id> "prompt" [--pid X]    Edit an existing screen
-  variants <screen-id> "prompt" [--count N] [--range X] [--pid X]
-                                         Generate design variants
   export [--format html|react] [--dir ./out] [--pid X]
                                          Export screens to local files
-  design-system [--output DESIGN.md] [--pid X]
-                                         Generate design system documentation
-
-Environment:
-  STITCH_TIMEOUT   Gemini command timeout in seconds (default: 180)
 USAGE
     exit 1
 fi
@@ -365,13 +288,9 @@ case "$COMMAND" in
     link)           cmd_link "$@" ;;
     unlink)         cmd_unlink ;;
     create)         cmd_create "$@" ;;
-    list)           cmd_list ;;
-    screens)        cmd_screens "$@" ;;
     generate)       cmd_generate "$@" ;;
     edit)           cmd_edit "$@" ;;
-    variants)       cmd_variants "$@" ;;
     export)         cmd_export "$@" ;;
-    design-system)  cmd_design_system "$@" ;;
     *)
         echo "ERROR: Unknown command '$COMMAND'. Run 'stitch.sh' for usage." >&2
         exit 1

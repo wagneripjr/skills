@@ -71,10 +71,7 @@ assert_output_contains "Edit without args shows usage" "Usage:" bash "$STITCH" e
 # Test 5: Generate without prompt
 assert_output_contains "Generate without prompt shows usage" "Usage:" bash "$STITCH" generate
 
-# Test 6: Variants without args
-assert_output_contains "Variants without args shows usage" "Usage:" bash "$STITCH" variants
-
-# Test 7: Link without project ID
+# Test 6: Link without project ID
 assert_output_contains "Link without pid shows usage" "Usage:" bash "$STITCH" link
 
 # Test 8: Unlink when no config exists
