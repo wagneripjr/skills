@@ -1,0 +1,99 @@
+{
+  "skill_name": "prototype-spike",
+  "evals": [
+    {
+      "id": 0,
+      "name": "fr025-two-entry-paths",
+      "prompt": "in ~/dev/acme/orchard-console I need a clickable prototype of FR-025 to show the client. the spray-window advisory screen already exists in the app but nothing navigates to it, and we have to decide between two paths: the advisory showing up as soon as the scout opens a block, or a row inside My Account. make it a single html file that runs on the dev server and that you can actually click through",
+      "expected_output": "A single self-contained HTML prototype anchored on FR-025, rebuilding My Blocks / Spray Window / Supplies / My Account from the real source (real tab list, real copy, cited tokens), with a control panel whose toggles map to CA-03/CA-07/CA-08 plus an annotation layer, real fetch through the dev-server proxy with the 202 + retryAfterSeconds contract, and a spike report at the end.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "ui-tabs-real",
+          "text": "The block-roster tab strip reproduces the app's real static tab array from BlockRoster.tsx (All, Bearing, Dormant, Spraying, Quarantined, Retired) — no invented tab such as 'Irrigation', and no real tab silently dropped."
+        },
+        {
+          "id": "copy-traceable",
+          "text": "Every user-visible in-frame string is either findable in the app source under frontend/src/ or is marked as part of the requirement's delta (annotated). No plausible-but-absent label sits unmarked beside harvested ones."
+        },
+        {
+          "id": "tokens-cited",
+          "text": "Each app design token in :root carries a source citation of the form path:line, and any prototype-only color is separated into its own justified group."
+        },
+        {
+          "id": "real-flag-name",
+          "text": "The feature-flag control is labelled with the app's actual identifier SHOW_SPRAY_WINDOW, and its description reflects that the flag gates more than one site (entry routing AND the My Account row)."
+        },
+        {
+          "id": "real-contract",
+          "text": "The polling implementation mirrors production useSprayWindow.ts: 3s floor, 20s default, 90-second ceiling, interval taken from the response body, chained setTimeout rather than setInterval, and no automatic retry after a failure."
+        },
+        {
+          "id": "no-fabricated-payload",
+          "text": "The prototype does not contain an invented advisory payload presented as real. It either fetches live, inlines a genuinely captured response with its capture command, or shows a visibly-labeled stub."
+        },
+        {
+          "id": "self-contained",
+          "text": "Single HTML file with zero external subresources — no <img> src to a remote host, no <link> stylesheet, no @import, no CDN script. Inline SVG only."
+        },
+        {
+          "id": "annotation-layer",
+          "text": "An annotation toggle exists that highlights everything the requirement adds or changes relative to today's app, using a color that does not exist in the app's token set."
+        },
+        {
+          "id": "controls-map-to-cas",
+          "text": "Control-panel toggles trace to FR-025 acceptance criteria — at minimum a failure simulation (CA-03) and the feature flag (CA-08) — and invisible criteria such as CA-05 (leaving cancels the wait) are narrated in a caption rather than silently omitted."
+        },
+        {
+          "id": "spike-report",
+          "text": "A spike report is produced naming what the run settled and where each answer belongs, and it does not itself write a ## Playback block, an ADR, or edits to docs/requirements/."
+        },
+        {
+          "id": "repo-untouched",
+          "text": "No file inside ~/dev/acme/orchard-console was created, modified, or deleted."
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "tierC-new-screen",
+      "prompt": "same repo (~/dev/acme/orchard-console): I want to prototype a new 'My Loans' screen inside My Account — a list of the scout's equipment loans with status, due date, and a copy-collection-code action. the service that returns the loans DOES NOT EXIST YET, nobody has even written the contract. build me the clickable prototype anyway so I can take it to the client",
+      "expected_output": "A prototype that rebuilds the My Account shell at high fidelity from source, adds the new screen as an annotated delta, and uses a visibly-labeled Tier C stub for the loans data — explicitly NOT inventing a plausible payload or a fake contract, and reporting the route shape it proposes as a proposal.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "tierC-declared",
+          "text": "The prototype explicitly declares that its loans data is a stub because the service does not exist — visible to the reviewer in the UI (caption or on-screen label), not merely in a code comment."
+        },
+        {
+          "id": "no-invented-contract",
+          "text": "No fabricated API response shape is presented as if it were the real contract. Any proposed request/response shape is explicitly labelled a proposal awaiting confirmation."
+        },
+        {
+          "id": "shell-high-fidelity",
+          "text": "The surrounding My Account shell (profile block, balance, tiles, section headers, existing rows, bottom nav, block bar) is rebuilt from the real source rather than approximated, with real copy strings."
+        },
+        {
+          "id": "delta-annotated",
+          "text": "The new My Loans entry point and screen are marked as the requirement's delta via the annotation layer, distinguishing them from the existing app surface."
+        },
+        {
+          "id": "tokens-cited",
+          "text": "Each app design token in :root carries a path:line citation; prototype-only colors are separated and justified."
+        },
+        {
+          "id": "self-contained",
+          "text": "Single HTML file with zero external subresources — inline SVG only, no CDN, no remote images or fonts."
+        },
+        {
+          "id": "tierC-not-failure",
+          "text": "The absence of a backend is handled as a legitimate fidelity tier rather than as a blocker — the run produces a usable clickable prototype instead of refusing or stalling."
+        },
+        {
+          "id": "repo-untouched",
+          "text": "No file inside ~/dev/acme/orchard-console was created, modified, or deleted."
+        }
+      ]
+    }
+  ]
+}

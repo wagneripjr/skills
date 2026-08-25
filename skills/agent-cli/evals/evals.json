@@ -1,0 +1,23 @@
+{
+  "skill_name": "agent-cli",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm building a CLI tool called `taskctl` in Go with Cobra for managing tasks in our internal system. It needs commands for listing, creating, and deleting tasks. Make it work well for both humans and AI agents.",
+      "expected_output": "Go CLI with Cobra scaffold, JSON envelope on all commands, --json/--fields/--dry-run/--quiet flags, semantic exit codes, TTY-aware output, --help with examples, CONTEXT.md",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I have a Python Click CLI called `deployer` that outputs plain text tables and uses interactive prompts for confirmation. I need to make it agent-friendly so our CI/CD pipeline and Claude Code can use it reliably. The main commands are `deployer deploy --env staging`, `deployer status`, and `deployer rollback`. Currently deploy asks 'Are you sure?' with no bypass flag.",
+      "expected_output": "Retrofitted Click CLI with --json flag, --yes bypass for confirmation, structured error output, TTY detection, --dry-run on deploy and rollback, --fields on status, semantic exit codes",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Score the `gh` CLI for agent-friendliness. I want to know where it's strong and where it falls short for AI agent consumption.",
+      "expected_output": "7-axis scoring rubric applied to gh CLI with per-axis scores (0-3), total score, rationale for each score, and prioritized improvement recommendations",
+      "files": []
+    }
+  ]
+}

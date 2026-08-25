@@ -1,0 +1,9 @@
+.blender-toolkit/
+node_modules/
+__pycache__/
+.DS_Store
+.agentic-sdlc/
+.claude/
+.learnings/
+.sdlc/
+*-workspace/

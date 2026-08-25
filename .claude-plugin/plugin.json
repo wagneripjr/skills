@@ -1,0 +1,13 @@
+{
+  "name": "wagner-skills",
+  "description": "Engineering skills: CLI design for agents and humans, Airflow 3 DAGs, Kubernetes SRE, requirements elicitation, requirement prototypes, incident postmortems, and Open Knowledge Format documentation maintenance",
+  "version": "6.3.0",
+  "author": {
+    "name": "Wagner Ignacio Pinto Junior",
+    "email": "wagneripjr@adustio.com.br"
+  },
+  "repository": "https://github.com/wagneripjr/skills",
+  "homepage": "https://github.com/wagneripjr/skills",
+  "license": "MIT",
+  "keywords": ["cli-design", "airflow", "kubernetes", "sre", "requirements", "prototyping", "postmortem", "okf", "documentation"]
+}

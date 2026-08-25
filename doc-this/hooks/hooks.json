@@ -1,0 +1,64 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "LSP",
+        "hooks": [{
+          "type": "command",
+          "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/doc-this-lsp-timing.mjs\"",
+          "timeout": 3
+        }]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/doc-this-dispatch-gate.mjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/doc-this-phase-gate.mjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/doc-this-checkpoint-gate.mjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/doc-this-coverage-gate.mjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/doc-this-artifact-completeness-gate.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/doc-this-promote-warning.mjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/doc-this-describe-only-gate.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "LSP",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/doc-this-lsp-budget.mjs\"",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

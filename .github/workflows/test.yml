@@ -1,0 +1,36 @@
+name: tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: suites (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # Both legs are blocking. The tree is shell-free, so macOS no longer proves bash 3.2
+    # compatibility — it proves Node parity across platforms, which is what the scripts now
+    # actually depend on.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Check prerequisites
+        run: node --version
+
+      - name: Test suites
+        run: node tests/run-all.mjs
+
+      - name: Publication safety scan
+        run: node tests/test-publication-safety.mjs
