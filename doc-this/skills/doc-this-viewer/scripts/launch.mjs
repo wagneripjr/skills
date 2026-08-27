@@ -16,7 +16,7 @@
 
 import { existsSync, mkdirSync, cpSync, readFileSync, rmSync, openSync, closeSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
 import { statSync } from 'node:fs';
 
@@ -52,11 +52,16 @@ function parseArgs(argv) {
   return { noOpen, doStop, root };
 }
 
+export function browserOpenCommand(platform, url) {
+  if (platform === 'darwin') return { command: 'open', args: [url] };
+  if (platform === 'win32') return { command: 'rundll32.exe', args: ['url.dll,FileProtocolHandler', url] };
+  return { command: 'xdg-open', args: [url] };
+}
+
 function openBrowser(url) {
-  const opener = process.platform === 'darwin' ? 'open'
-    : process.platform === 'win32' ? 'start' : 'xdg-open';
+  const { command, args } = browserOpenCommand(process.platform, url);
   try {
-    spawnSync(opener, [url], { stdio: 'ignore', shell: process.platform === 'win32' });
+    spawnSync(command, args, { stdio: 'ignore' });
   } catch { /* best effort */ }
 }
 
@@ -158,7 +163,9 @@ async function main() {
   return 0;
 }
 
-main().then((code) => process.exit(code)).catch((err) => {
-  process.stderr.write(`error: ${err?.message ?? err}\n`);
-  process.exit(1);
-});
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  main().then((code) => process.exit(code)).catch((err) => {
+    process.stderr.write(`error: ${err?.message ?? err}\n`);
+    process.exit(1);
+  });
+}

@@ -115,6 +115,7 @@ suites still run standalone:
 node tests/test-fr-bundle-3.mjs          # tree/closure matrix
 node tests/test-fr-proto-1.mjs           # prototype-spike acceptance matrix
 node tests/test-okf-maintain.mjs         # okf-maintain acceptance matrix (okf.mjs index + check)
+node tests/test-no-shell-invocation.mjs  # no .mjs in the tree reaches a shell
 node doc-this/hooks/run-all.mjs          # the doc-this gate harnesses
 node tests/test-publication-safety.mjs  # repo-wide scan for credential-shaped material
 ```

@@ -71,6 +71,8 @@ tests/                   # Repo-level harnesses owned by neither plugin
   test-publication-safety.mjs  # repo-wide credential scan; structural rules + canaries both ways
   test-fr-bundle-3.mjs    # tree/closure AC matrix — the expected skill dirs of each plugin
   test-fr-proto-1.mjs     # prototype-spike AC matrix (AC-7 is the secret-shaped-token scan)
+  test-no-shell-invocation.mjs  # the viewer launcher opens a URL on darwin/linux/win32 without
+                         #   a shell, plus a repo-wide scan: no .mjs reaches one
   test-tessl-quality-gate.mjs
 .github/                 # CI (test.yml: ubuntu + macOS, both blocking) + templates
 CONTRIBUTING.md          # Contributor entry point: prereqs, version-bump rules, skill conventions
