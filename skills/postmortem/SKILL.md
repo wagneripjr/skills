@@ -101,9 +101,7 @@ precision is not.
 symptom; *why* nothing bounded them is the cause. Chain the 5 whys inside this section when
 the mechanism has depth (trigger → amplifier → missing limit → why the limit was missing).
 Record **discarded hypotheses** with the evidence that killed each one — discarded hypotheses
-are half the investigation's value and stop the next responder from re-walking dead ends. If
-production contradicted a requirement's `## Bet`, name the `FR-NNN` here — it is the hook a
-reconciliation step uses for the backward-trace.
+are half the investigation's value and stop the next responder from re-walking dead ends.
 
 **5. Empirical proof.** The specific metrics/queries that support the causal claim, each with
 its source (monitoring account, dashboard, query window). A causal claim without a cited

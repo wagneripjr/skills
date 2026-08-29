@@ -132,7 +132,7 @@ Optional independent agents (run anytime in the pipeline): Tracer, Visor, Data M
 - All orchestration prompts in English; spec output language follows `doc_language` (English and pt-BR are the exercised paths)
 - Output staged in `.doc-this-sdd/` (hidden + auto-gitignored on first run, beside the `.doc-this/` state dir) so a normal coding session never mistakes unpromoted specs for real docs — agents are non-destructive
 - `doc-this-promote` is the ONLY skill that writes to `docs/` — one bridge into the SDLC tree, so Discovery output can never be confused with hand-authored requirements
-- **Promoted output is born OKF-conformant** (FR-DOC-OKF-1) — promote stamps frontmatter (`id`/`type`/`status: Documented`/`description` + `adrs`/`specs` relation keys; `Done` is reserved for observed-GREEN acceptance runs — reverse-engineered specs describe behavior, they do not verify it), silently bootstraps `docs/okf.yaml` in legacy repos (never with `traceability: generated`), regenerates per-folder/root `index.md` by dispatching `wagner-skills:okf-maintain` — the skill that owns the OKF index grammar and ships the generator — appends curated TRACEABILITY rows, and suggests `docs(FR-NNN)` commits (promoted FRs carry no `## Bet`)
+- **Promoted output is born OKF-conformant** (FR-DOC-OKF-1) — promote stamps frontmatter (`id`/`type`/`status: Documented`/`description` + `adrs`/`specs` relation keys; `Done` is reserved for observed-GREEN acceptance runs — reverse-engineered specs describe behavior, they do not verify it), silently bootstraps `docs/okf.yaml` in legacy repos (never with `traceability: generated`), regenerates per-folder/root `index.md` by dispatching `wagner-skills:okf-maintain` — the skill that owns the OKF index grammar and ships the generator — appends curated TRACEABILITY rows, and suggests `docs(FR-NNN)` commits
 - Public/private API classification (Detective) — only public APIs get `@api` ATDD scenarios; private APIs covered transitively via `@browser`/`@cli`
 - Database ownership branching (Data Master) — `owned` / `external` / `mixed` / `none` flows through every downstream agent; `external`/`mixed` produces `@database` scenarios with `IDatabaseContractDriver` interfaces
 - Schema-versioning gate (Reviewer) — refuses coverage completion when schema is unversioned and no baseline DDL exists
@@ -323,10 +323,10 @@ Four fields, all edited by hand, all of which must agree:
 
 | File | Field | Current |
 |---|---|---|
-| `.claude-plugin/plugin.json` | `.version` | 6.3.0 |
-| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.3.0 |
-| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.3.0 / 1.1.1 |
-| `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.1 |
+| `.claude-plugin/plugin.json` | `.version` | 6.3.1 |
+| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.3.1 |
+| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.3.1 / 1.1.3 |
+| `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.3 |
 
 **Never let `marketplace.json` fall behind `plugin.json`.** The marketplace entry is what the
 client compares against; if it advertises a lower version, `claude plugin update` is a permanent

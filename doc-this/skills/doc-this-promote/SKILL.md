@@ -211,7 +211,7 @@ docs(FR-001): promote orders unit from legacy reverse engineering
 docs(FR-002): promote payments unit from legacy reverse engineering
 ```
 
-`docs:` is the right prefix — promotion stages documentation, no behavior ships — while the FR IDs keep the backward git trace and resolve against the just-generated index. Never suggest `feat(FR-NNN)` here: promoted FRs carry no `## Bet` (describe-only pact), and any commit gate the project runs will expect one behind a `feat:`. Tell the user to review the staged diff before committing.
+`docs:` is the right prefix — promotion stages documentation, no behavior ships — while the FR IDs keep the backward git trace and resolve against the just-generated index. Never suggest `feat(FR-NNN)` here: nothing executable ships with a promotion. Tell the user to review the staged diff before committing.
 
 ## Halt conditions (do NOT auto-resolve)
 

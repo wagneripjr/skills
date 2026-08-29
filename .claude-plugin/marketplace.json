@@ -6,20 +6,20 @@
   },
   "metadata": {
     "description": "Two Claude Code plugins: general-purpose engineering skills, and a reverse-engineering pipeline that turns a legacy codebase into ATDD-ready specifications",
-    "version": "6.3.0"
+    "version": "6.3.1"
   },
   "plugins": [
     {
       "name": "wagner-skills",
       "source": "./",
       "description": "CLI design for agents and humans, Airflow 3 DAGs, Kubernetes SRE, requirements elicitation, requirement prototypes, incident postmortems, and Open Knowledge Format documentation maintenance",
-      "version": "6.3.0"
+      "version": "6.3.1"
     },
     {
       "name": "doc-this",
       "source": "./doc-this",
       "description": "Reverse-engineer a legacy codebase into ATDD-ready, traceable specifications",
-      "version": "1.1.2"
+      "version": "1.1.3"
     }
   ]
 }
