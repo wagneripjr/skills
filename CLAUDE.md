@@ -60,6 +60,13 @@ Owned by `skills/okf-maintain`. Four parts, each named by an acceptance test:
    document the walk genuinely cannot reach, on a tree `check` calls clean and regeneration
    reproduces byte-for-byte.
 
+The generator and the checker disagree in exactly one place, on purpose: the walk does not descend
+into dot-directories, while `git` lists a tracked document inside one. Coverage therefore reports a
+finding `index` can never clear, so it prints the two real remedies beside it — move the document
+out, or name the path in `.okfignore` — and names the trap, hand-writing the missing `index.md`,
+which sits outside the walk and so is never regenerated. AC-32 pins the advice; AC-35 pins that it
+stays absent for a path the walk reaches fine.
+
 Found by the new check on its first run against this repo, and fixed with it: a title containing
 `[...]` (`Gap analysis: [Feature Name]`) was emitted raw, producing a row `ENTRY_RE` cannot parse —
 so the round-trip description store dropped it and coverage read the document as indexed by nobody.

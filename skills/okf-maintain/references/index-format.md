@@ -158,6 +158,13 @@ and costs nothing.
 yet contain the document you are adding — so the check would go green on precisely the commit that
 introduces an unindexed document, and the omission would surface one commit later as a mystery.
 
+The two enumerators disagree in one place, deliberately: the walk does not descend into
+dot-directories (that way lie `.git`, `.venv` and every editor cache), while `git` happily lists a
+tracked document inside one. Coverage reports it and says what to do — move it out if it is
+documentation, name it in `.okfignore` if it is machine output. **Never** answer by hand-writing the
+missing `index.md`. It sits outside the walk, so no regeneration touches it, and a hand-maintained
+index that nothing refreshes is the failure this whole chapter is about.
+
 ## Staleness
 
 A stale-looking index is a regeneration task, never a reason to bypass it and grep the folder. It

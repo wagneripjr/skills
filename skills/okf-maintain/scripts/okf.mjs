@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from '
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const VERSION = '1.4.0';
+const VERSION = '1.4.1';
 const OKF_VERSION = '0.2';
 
 const USAGE = `usage:
@@ -570,6 +570,19 @@ function cmdCoverage(root, ignores) {
   for (const rel of missing) process.stdout.write(`unindexed: ${rel}\n`);
   process.stdout.write(
     `okf.mjs: ${required.length} tracked document(s) in ${indexes.length} index file(s), ${missing.length} reachable only by ls\n`);
+
+  // The walk skips dot-directories on purpose — they hold tooling, not knowledge, and
+  // descending into one reaches .git, .venv and every editor's cache. But naming a document
+  // there without naming the remedy leaves exactly one obvious next move, hand-writing an
+  // index.md, which is the drift this command exists to find and which nothing would ever
+  // regenerate. So say what the two real answers are.
+  const hidden = missing.filter((rel) => rel.split('/').slice(0, -1).some((p) => p.startsWith('.')));
+  if (hidden.length) {
+    process.stdout.write(
+      `okf.mjs: ${hidden.length} of those sit under a dot-directory, which the walk does not descend into - \`index\` will never write one there\n`);
+    process.stdout.write(
+      `okf.mjs: move the document out, or name the path in ${IGNORE_FILE}; do not hand-write an index.md, because nothing regenerates it and it goes stale unseen\n`);
+  }
   return missing.length ? 1 : 0;
 }
 

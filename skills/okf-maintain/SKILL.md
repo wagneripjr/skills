@@ -287,6 +287,14 @@ Two ways to clear a finding, and the choice is the whole point: index the docume
 `.okfignore` that something else owns it. There is no third option where it stays invisible, which
 is what the old behaviour amounted to.
 
+**Dot-directories are the one place `index` will not go**, and coverage says so when a finding lands
+there. The walk skips them because they hold tooling — descending reaches `.git`, `.venv`, and every
+editor's cache — so no amount of regenerating produces an index inside one. That leaves two honest
+answers and one trap. Move the document out of the dot-directory if it is real documentation; name
+the path in `.okfignore` if it is machine output. Do **not** hand-write the missing `index.md`: it is
+outside the walk, so nothing regenerates it, and it rots unseen — which is the exact failure this
+command exists to surface, reappearing at the one place the tool declines to reach.
+
 ## Anti-patterns
 
 - **Hand-editing a generated `index.md`.** The next regeneration silently discards it. Change the

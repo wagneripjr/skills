@@ -1,7 +1,7 @@
 {
   "name": "wagner-skills",
   "description": "Engineering skills: CLI design for agents and humans, Airflow 3 DAGs, Kubernetes SRE, requirements elicitation, requirement prototypes, incident postmortems, and Open Knowledge Format documentation maintenance",
-  "version": "6.4.0",
+  "version": "6.4.1",
   "author": {
     "name": "Wagner Ignacio Pinto Junior",
     "email": "wagneripjr@adustio.com.br"

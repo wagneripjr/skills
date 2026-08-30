@@ -15,7 +15,9 @@
 //
 //   AC-31 coverage: a fully indexed tree exits 0 (control — the check can pass)
 //   AC-32 coverage: CANARY — a document the walk never reaches is named, on the very tree
-//              that `check` and a full regeneration both call clean
+//              that `check` and a full regeneration both call clean, and the finding carries its
+//              remedy: the walk skips dot-directories by design, so `index` will never satisfy it
+//              and a hand-written index.md would be the very drift this command exists to find
 //   AC-33 coverage: declaring the unreachable path unowned is what clears it, and the line
 //              responsible is reported; deleting the index brings the finding back
 //   AC-34 coverage: a document written but not yet staged is reported (the enumeration is
@@ -105,6 +107,12 @@ eq('AC-32 coverage still exits 1 on the same tree', res.rc, 1);
 has('AC-32 and names the document reachable only by ls', res.out, 'unindexed: .hidden/note.md');
 hasNot('AC-32 control: it does not flag the documents that are indexed', res.out, 'unindexed: docs/');
 hasNot('AC-32 control: nor the project readme', res.out, 'unindexed: README.md');
+// Naming a file the generator can never reach, without naming the remedy, leaves one obvious
+// next move: hand-write the index. That is the drift this command exists to find, reappearing
+// at the one place the tool declines to go. So the remedy has to travel with the finding.
+has('AC-32 the dead end is named, not just the file', res.out, 'the walk does not descend into');
+has('AC-32 and both real remedies are given', res.out, 'move the document out, or name the path in .okfignore');
+has('AC-32 including the one to avoid', res.out, 'do not hand-write an index.md');
 
 // ---------- AC-33 the only thing that clears it is declaring the path unowned ----------
 write(join(R, '.okfignore'), '# owned by nothing here\n.hidden/\n');
@@ -153,6 +161,10 @@ git(R, 'add', '-A');
 res = run('coverage', R);
 eq('AC-35 a document missing from its own index is caught', res.rc, 1);
 has('AC-35 and named', res.out, 'unindexed: docs/requirements/FR-001.md');
+// control for AC-32's hint: an ordinary path is fixed by regenerating, so the dot-directory
+// advice would be wrong here and must not appear
+hasNot('AC-35 control: no dot-directory advice on a path the walk reaches fine',
+  res.out, 'the walk does not descend into');
 
 // ---------- AC-36 no repository means nothing was verified ----------
 const bare = join(WORK, 'not-a-repo');
