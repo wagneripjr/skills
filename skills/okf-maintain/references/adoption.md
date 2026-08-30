@@ -48,6 +48,12 @@ are still **listed** — a reader looking for the contributing guide should find
 for everything else — but they are exempt from the required-key check, so a readme with no
 frontmatter is not a violation.
 
+Two kinds of "somebody else's" the tool settles without asking, so they need no decision from you —
+but read the run's report, because both are announced there. A directory holding a `.git` entry is
+another repository's working tree and the walk stops at it (`separate-repo:`). An existing
+`index.md` with no generation marker is hand-maintained or another tool's output, and it is left
+byte-identical (`foreign-index:`) rather than downgraded to v0.2 rows.
+
 The decision that matters here is narrower: which paths does something *else* own. Three outcomes,
 in order of preference:
 

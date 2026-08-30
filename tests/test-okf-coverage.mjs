@@ -25,6 +25,11 @@
 //   AC-35 coverage: a subdirectory index that exists but omits one of its own documents is
 //              caught — the case a byte-comparison against a regenerated copy cannot see
 //   AC-36 coverage: outside a git work tree it exits 77, never 0
+//   AC-37 coverage: a real submodule is invisible to git's enumeration (one gitlink) and is not
+//              written into either — the two sides agree, which is why the walk's refusal to
+//              enter had to be structural: no check could have caught those writes
+//   AC-38 coverage: a tracked document inside a separate work tree (a vendored copy carrying its
+//              .git pointer) is demanded but unreachable, so the finding carries its remedy
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync, unlinkSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -165,6 +170,51 @@ has('AC-35 and named', res.out, 'unindexed: docs/requirements/FR-001.md');
 // advice would be wrong here and must not appear
 hasNot('AC-35 control: no dot-directory advice on a path the walk reaches fine',
   res.out, 'the walk does not descend into');
+
+// ---------- AC-37 a real submodule is invisible to both sides, and stays that way ----------
+// git reports a submodule as one gitlink, so coverage cannot see the documents inside it — which
+// is exactly why the walk refusing to enter had to be structural: no check would have caught the
+// writes. Assert the two agree, so a submodule is neither written into nor demanded.
+const upstream = join(WORK, 'upstream');
+mkdirSync(upstream, { recursive: true });
+git(upstream, 'init', '-q', '.');
+doc(join(upstream, 'docs/THEIRS.md'), 'Requirement', 'Not ours', 'Belongs to the other repo.');
+git(upstream, 'add', '-A');
+git(upstream, '-c', 'user.email=t@e.st', '-c', 'user.name=T', 'commit', '-qm', 'seed');
+
+R = repo('submodule', { unreachable: false });
+const added = git(R, '-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', upstream, 'vendor/sub');
+if (added.status !== 0) {
+  h.check('AC-37 submodule fixture could not be created — skipped, not assumed', true,
+    'git submodule add failed; the two assertions below did not run');
+} else {
+  describeAll(R);
+  git(R, 'add', '-A');
+  h.check('AC-37 canary: nothing was written inside the submodule work tree',
+    !existsSync(join(R, 'vendor/sub/docs/index.md')) && !existsSync(join(R, 'vendor/sub/index.md')));
+  res = run('coverage', R);
+  eq('AC-37 and coverage does not demand what it cannot see', res.rc, 0);
+  hasNot('AC-37 the submodule document is never named', res.out, 'THEIRS.md');
+}
+
+// ---------- AC-38 a tracked document inside a separate work tree gets the remedy ----------
+// The reachable version of this: a vendored tree the parent tracks, materialised from upstream by
+// a copy that brings the `.git` pointer along with it. The parent's index still lists the files,
+// so coverage demands them, while the walk refuses to enter — an unclearable finding, the same
+// dead end as the dot-directory case, and it needs the same treatment.
+R = repo('vendored', { unreachable: false });
+write(join(R, 'vendor/copy/GUIDE.md'), '# Vendored guide\n');
+git(R, 'add', '-A');
+write(join(R, 'vendor/copy/.git'), 'gitdir: ../../.git/modules/copy\n');
+describeAll(R);
+res = run('coverage', R);
+eq('AC-38 the tracked document inside it is still demanded', res.rc, 1);
+has('AC-38 and named', res.out, 'unindexed: vendor/copy/GUIDE.md');
+has('AC-38 the reason the walk cannot clear it is stated', res.out, 'separate git work tree');
+has('AC-38 with the remedy, and where indexing it belongs instead', res.out, 'never from here');
+hasNot('AC-38 control: the dot-directory advice does not fire here', res.out, 'dot-directory');
+write(join(R, '.okfignore'), 'vendor/copy/\n');
+eq('AC-38 control: declaring it unowned is what clears it', run('coverage', R).rc, 0);
 
 // ---------- AC-36 no repository means nothing was verified ----------
 const bare = join(WORK, 'not-a-repo');

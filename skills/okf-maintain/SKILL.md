@@ -96,7 +96,21 @@ node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs index <bundle-roo
 ```
 
 **Pass the repo root as the bundle root.** It walks deepest-first, so a subdirectory's description
-exists by the time its parent is written, and it is idempotent. Hand-rendering is the most reliable
+exists by the time its parent is written, and it is idempotent.
+
+Two things it will not touch, both reported rather than done quietly:
+
+- **Another repository's working tree.** A directory holding a `.git` entry is a submodule or a
+  nested clone, and the repo you invoked on only pins it. Writing there edits someone else's
+  repository, shows up in a `git status` nobody was looking at, and `coverage` cannot catch it
+  because git reports a submodule as a single gitlink. The walk stops at the boundary and says
+  `separate-repo: <path>/`. If that tree needs an index, generate it from inside that repository.
+- **An `index.md` it did not write.** Every generated index carries the marker in its first
+  content line; one without it is hand-maintained, or another tool's output, and its rows may carry
+  an id, a status or a shape v0.2 does not project. Overwriting is a silent lossy downgrade of the
+  exact catalog the index exists to be. It is left alone and reported as `foreign-index: <path>`.
+  Read it, then either delete it to hand this tool the directory, or name it in `.okfignore` to
+  leave it with its owner. Hand-rendering is the most reliable
 way to introduce drift — sort order, separator and trailing newline vary between one writing and the
 next, and nothing fails when they do. A stale-looking index is a regeneration task, never a reason
 to grep the folder.
@@ -299,6 +313,9 @@ command exists to surface, reappearing at the one place the tool declines to rea
 
 - **Hand-editing a generated `index.md`.** The next regeneration silently discards it. Change the
   source frontmatter instead.
+- **Deleting a `foreign-index:` file to make the report go away.** That is the one action that
+  destroys what the report was protecting. Read the file first: if its rows carry an id or a status,
+  the directory belongs to whatever produces them, and the answer is an `.okfignore` line.
 - **Inventing a `description`** to fill a column. An empty one is a visible gap; a fabricated one is
   a false claim in the field consumers trust most.
 - **Adding a `## Changelog` back** because a reviewer asked. Point at `git log --follow`.

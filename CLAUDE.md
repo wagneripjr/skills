@@ -60,6 +60,20 @@ Owned by `skills/okf-maintain`. Four parts, each named by an acceptance test:
    document the walk genuinely cannot reach, on a tree `check` calls clean and regeneration
    reproduces byte-for-byte.
 
+5. **The walk stops at another repository's working tree** — a directory holding a `.git` entry,
+   whether a submodule (a `.git` *file* with a gitdir pointer) or a nested clone. Writing there
+   edits a repository the caller only pins by SHA, it is indistinguishable in the output from the
+   caller's own files, and `coverage` can never catch it because git reports a submodule as one
+   gitlink. That combination is why the refusal is structural rather than an `.okfignore` line
+   nobody can add before the first run does the damage. Reported as `separate-repo:`.
+   `tests/test-okf-maintain.mjs` AC-39, `tests/test-okf-coverage.mjs` AC-37/AC-38.
+6. **An `index.md` carrying no generation marker is never overwritten.** A dialect's rows can hold
+   an id, a status or a shape v0.2 does not project, so regenerating over one is a silent lossy
+   downgrade of the catalog the index exists to be. Removing the profile refusal (part 1) took this
+   protection with it; the replacement turns on evidence in the file, which also covers a
+   hand-written index in a repo with no manifest — something the old refusal never did. Reported as
+   `foreign-index:`; resolve by deleting the file or naming it in `.okfignore`. AC-40.
+
 The generator and the checker disagree in exactly one place, on purpose: the walk does not descend
 into dot-directories, while `git` lists a tracked document inside one. Coverage therefore reports a
 finding `index` can never clear, so it prints the two real remedies beside it — move the document

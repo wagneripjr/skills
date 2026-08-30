@@ -50,9 +50,16 @@
 //              not move: a concept document with no type still fails check (canary)
 //   AC-30 listing: title degrades frontmatter -> first body heading -> filename stem, and
 //              a # inside a fenced block is a shell comment, not a heading
+//   AC-39 boundary: the walk stops at another repository's work tree — a submodule (.git as a
+//              FILE) or a nested clone (.git as a directory). Writing inside one edits a repo the
+//              caller does not own, and coverage cannot catch it because git reports a submodule
+//              as a single gitlink, so the refusal has to be structural
+//   AC-40 ownership: an index.md carrying no generation marker is never overwritten. A dialect's
+//              rows can hold an id, a status or a shape v0.2 does not project; regenerating over
+//              it is a silent lossy downgrade of the catalog the index exists to be
 //
-// The completeness half of FR-OKF-3 lives in test-okf-coverage.mjs, which needs a real git
-// work tree and therefore owns its own 77.
+// AC-31..38, the completeness half of FR-OKF-3, live in test-okf-coverage.mjs, which needs a
+// real git work tree and therefore owns its own 77. Numbers do not repeat across the two files.
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync, renameSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -484,5 +491,55 @@ const bracket1 = read(join(R, 'index.md'));
 run('index', R);
 h.check('AC-30 control: an escaped row is read back unchanged, so regeneration stays idempotent',
   read(join(R, 'index.md')) === bracket1);
+
+// ---------- AC-39 the walk stops at another repository's working tree ----------
+// A submodule's working tree carries `.git` as a FILE holding a gitdir: pointer; a nested clone
+// carries it as a directory. Either way the parent repo only pins it, and writing inside edits a
+// repository the caller does not own. It is invisible twice: nothing in the output distinguishes
+// those files from the caller's own, and `coverage` cannot catch it because git reports a
+// submodule as one gitlink. So the boundary is structural, not an .okfignore line nobody can add
+// before the first run does the damage.
+R = fixture('boundary');
+doc(join(R, 'vendor/sub/docs/THEIRS.md'), 'Requirement', 'Not ours', 'Lives in another repo.');
+write(join(R, 'vendor/sub/.git'), 'gitdir: ../../.git/modules/sub\n');
+doc(join(R, 'vendor/clone/NOTES.md'), 'Note', 'Also not ours', 'A nested clone.');
+mkdirSync(join(R, 'vendor/clone/.git'), { recursive: true });
+res = run('index', R);
+h.check('AC-39 canary: nothing is written inside a submodule work tree',
+  !existsSync(join(R, 'vendor/sub/docs/index.md')) && !existsSync(join(R, 'vendor/sub/index.md')));
+h.check('AC-39 canary: nor inside a nested clone',
+  !existsSync(join(R, 'vendor/clone/index.md')));
+has('AC-39 the boundary is reported, not silently crossed', res.err, 'separate-repo: vendor/sub/');
+has('AC-39 for a nested clone too', res.err, 'separate-repo: vendor/clone/');
+h.check('AC-39 and their documents are absent from the parent index',
+  !read(join(R, 'index.md')).includes('THEIRS') && !read(join(R, 'index.md')).includes('NOTES'));
+// control: an ordinary directory in the same position is still walked and written
+doc(join(R, 'vendor/ours/MINE.md'), 'Note', 'Ours', 'Lives in this repo.');
+run('index', R);
+h.check('AC-39 control: an ordinary sibling directory is still indexed',
+  existsSync(join(R, 'vendor/ours/index.md')));
+
+// ---------- AC-40 an index this tool did not write is never overwritten ----------
+// A dialect's index carries rows v0.2 does not project — an id, a status, a richer description.
+// Regenerating replaces that catalog with a poorer one and destroys the lookup the index exists
+// for. This used to be prevented by refusing profiled repos outright; that instrument was wrong
+// (FR-OKF-3) and took the protection with it, so the replacement turns on evidence in the file.
+R = fixture('foreign');
+const hand = '# Requirements\n\n* FR-001 — stable — Place an order.\n';
+write(join(R, 'docs/requirements/index.md'), hand);
+res = run('index', R);
+eq('AC-40 canary: an index with no generation marker is left byte-identical',
+  read(join(R, 'docs/requirements/index.md')), hand);
+has('AC-40 and it is named', res.err, 'foreign-index: docs/requirements/index.md');
+has('AC-40 with the downgrade spelled out', res.err, 'lossy downgrade');
+has('AC-40 and both ways to resolve it', res.err, 'Delete the file to hand this tool the directory');
+h.check('AC-40 control: the indexes it does own are still written',
+  read(join(R, 'docs/adr/index.md')).includes('JWT authentication'));
+// control: once the foreign file is gone, the directory is generated normally
+rmSync(join(R, 'docs/requirements/index.md'));
+res = run('index', R);
+h.check('AC-40 control: deleting it hands the directory over',
+  read(join(R, 'docs/requirements/index.md')).includes('Place an order'));
+hasNot('AC-40 control: and nothing is reported any more', res.err, 'foreign-index:');
 
 h.done();

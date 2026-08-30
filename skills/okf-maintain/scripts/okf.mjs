@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from '
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const VERSION = '1.4.1';
+const VERSION = '1.4.2';
 const OKF_VERSION = '0.2';
 
 const USAGE = `usage:
@@ -78,7 +78,7 @@ const byCodepoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const relPath = (root, path) => relative(root, path).split(sep).join('/');
 
 function readIgnores(root) {
-  const state = { entries: [], skipped: [], present: false };
+  const state = { entries: [], skipped: [], nested: [], present: false };
   let text;
   try { text = readFileSync(join(root, IGNORE_FILE), 'utf8'); } catch { return state; }
   state.present = true;
@@ -120,6 +120,9 @@ function ignoredFile(state, rel) {
 }
 
 function reportIgnores(state) {
+  for (const rel of [...new Set(state.nested)].sort(byCodepoint)) {
+    process.stderr.write(`separate-repo: ${rel}/ (own git work tree; not descended into, nothing written there)\n`);
+  }
   for (const line of [...state.skipped].sort(byCodepoint)) {
     process.stderr.write(`ignored: ${line}\n`);
   }
@@ -279,10 +282,24 @@ const isConcept = (name) => {
 
 const isListable = (name) => name.endsWith('.md') && !RESERVED.has(name.toLowerCase());
 
+// A directory holding a `.git` entry is another repository's working tree — a submodule
+// (where `.git` is a FILE containing a gitdir: pointer) or a nested clone. The parent only
+// pins a submodule by SHA; writing inside one edits a repository the caller does not own,
+// and it is invisible twice over: nothing in the output distinguishes those files from the
+// caller's own, and `coverage` cannot catch it because git reports a submodule as a single
+// gitlink. So the boundary is refused structurally, not left to a per-repo .okfignore line
+// nobody can add before the first run. `existsSync` on `.git` needs no git dependency.
+const isRepoBoundary = (dirpath) => existsSync(join(dirpath, '.git'));
+
 function walk(root, ignores) {
   const out = [];
   const keep = (dirpath, name, isDir) =>
     !ignoreHit(ignores, relPath(root, join(dirpath, name)), isDir);
+  const crossesBoundary = (dirpath, name) => {
+    if (!isRepoBoundary(join(dirpath, name))) return false;
+    ignores.nested.push(relPath(root, join(dirpath, name)));
+    return true;
+  };
   const visit = (dirpath) => {
     let entries;
     try { entries = readdirSync(dirpath, { withFileTypes: true }); } catch { return; }
@@ -290,6 +307,7 @@ function walk(root, ignores) {
       .filter((e) => e.isDirectory())
       .filter((e) => keep(dirpath, e.name, true))
       .filter((e) => !e.name.startsWith('.') && !SKIP_DIRS.has(e.name))
+      .filter((e) => !crossesBoundary(dirpath, e.name))
       .map((e) => e.name).sort(byCodepoint);
     const filenames = entries
       .filter((e) => e.isFile())
@@ -328,6 +346,22 @@ function priorDescriptions(dirpath) {
   }
   return found;
 }
+
+// Only a file this tool wrote may be rewritten by it. The generation marker is the evidence,
+// and it is the file's own claim rather than a convention held somewhere else.
+//
+// A hand-maintained index, or one a dialect's own generator produces, carries rows v0.2 does
+// not project — an id, a status, a richer description — and regenerating replaces that catalog
+// with a poorer one, silently, destroying the very lookup the index exists for. That used to be
+// prevented by refusing profiled repositories outright, which was the wrong instrument (FR-OKF-3)
+// and took this protection with it when it went. This is the right-sized replacement: it turns on
+// evidence in the file, so it also covers a hand-written index in a repository with no manifest
+// at all, which the old refusal never did.
+const ownsIndex = (target) => {
+  let text;
+  try { text = readFileSync(target, 'utf8'); } catch { return true; }
+  return text.includes(GEN_MARKER);
+};
 
 function renderRows(heading, rows) {
   const out = [`# ${heading}`, ''];
@@ -370,6 +404,7 @@ function cmdIndex(root, toStdout, described, ignores) {
   }
 
   const pending = new Set();
+  const foreign = [];
   let written = 0;
 
   for (const [dirpath, dirnames, filenames] of dirs) {
@@ -405,6 +440,10 @@ function cmdIndex(root, toStdout, described, ignores) {
 
     const text = render(sections, subdirs, dirpath === root);
     const target = join(dirpath, 'index.md');
+    if (!ownsIndex(target)) {
+      foreign.push(relOf(target));
+      continue;
+    }
     if (toStdout) {
       process.stdout.write(`==> ${relative(root, target).split(sep).join('/')} <==\n${text}\n`);
     } else {
@@ -420,6 +459,15 @@ function cmdIndex(root, toStdout, described, ignores) {
   }
   for (const report of [...overlong].sort(byCodepoint)) {
     process.stderr.write(`long-description: ${report}\n`);
+  }
+  for (const rel of [...foreign].sort(byCodepoint)) {
+    process.stderr.write(`foreign-index: ${rel} (not written by okf.mjs - left untouched)\n`);
+  }
+  if (foreign.length) {
+    process.stderr.write(
+      `okf.mjs: ${foreign.length} index file(s) carry no generation marker, so another hand or another tool maintains them\n`);
+    process.stderr.write(
+      `okf.mjs: read one before replacing it - a dialect's rows can carry an id, a status or a shape v${OKF_VERSION} does not project, and overwriting is a lossy downgrade. Delete the file to hand this tool the directory, or name it in ${IGNORE_FILE} to leave it with its owner\n`);
   }
   return 0;
 }
@@ -576,12 +624,23 @@ function cmdCoverage(root, ignores) {
   // there without naming the remedy leaves exactly one obvious next move, hand-writing an
   // index.md, which is the drift this command exists to find and which nothing would ever
   // regenerate. So say what the two real answers are.
-  const hidden = missing.filter((rel) => rel.split('/').slice(0, -1).some((p) => p.startsWith('.')));
+  const ancestors = (rel) => {
+    const parts = rel.split('/').slice(0, -1);
+    return parts.map((_, i) => parts.slice(0, i + 1).join('/'));
+  };
+  const hidden = missing.filter((rel) => ancestors(rel).some((p) => p.split('/').pop().startsWith('.')));
+  const nested = missing.filter((rel) => ancestors(rel).some((p) => isRepoBoundary(join(root, p))));
   if (hidden.length) {
     process.stdout.write(
       `okf.mjs: ${hidden.length} of those sit under a dot-directory, which the walk does not descend into - \`index\` will never write one there\n`);
     process.stdout.write(
       `okf.mjs: move the document out, or name the path in ${IGNORE_FILE}; do not hand-write an index.md, because nothing regenerates it and it goes stale unseen\n`);
+  }
+  if (nested.length) {
+    process.stdout.write(
+      `okf.mjs: ${nested.length} of those sit inside a separate git work tree, which the walk refuses to enter - it is not this repository's to write into\n`);
+    process.stdout.write(
+      `okf.mjs: name the path in ${IGNORE_FILE}; index it from inside that repository if it needs one, never from here\n`);
   }
   return missing.length ? 1 : 0;
 }
