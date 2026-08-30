@@ -30,6 +30,41 @@ describe-only gate's staging-only scope, and `FR-PROTO-1` / `FR-BUNDLE-3` name t
 matrices in `tests/`. Read each one as the name of a rule, and find the rule's actual definition
 in the hook or harness cited beside it.
 
+**A new identifier is minted here, not in a `docs/` tree.** There is no requirements bundle in this
+repository and adding one for a single rule would create a second place to look, contradicting the
+convention above. The rule statement goes in this file; the enforceable definition goes in the
+harness, which is the artifact that can actually be wrong.
+
+### FR-OKF-3 · A document is indexed because it exists
+
+Owned by `skills/okf-maintain`. Four parts, each named by an acceptance test:
+
+1. **A declared `profile:` in `docs/okf.yaml` is reported, never a refusal.** The refusal it
+   replaces was justified by a generator the profile would ship and a byte-exact index-sync gate it
+   would pair with — neither ever verified by the tool, and a guard whose condition nothing can
+   satisfy is a defect wearing a guard's clothes. Its effect was inverted: the repositories that
+   declared a profile were the ones guaranteed to have no index. `tests/test-okf-maintain.mjs` AC-15.
+2. **Every tracked markdown file gets a row**, readmes and files with no frontmatter included. The
+   title degrades — frontmatter `title`, first body `# ` heading, filename stem — so listing imposes
+   nothing. AC-29, AC-30.
+3. **Enforcement scope does not move.** `isConcept` keeps its name, its bytes and its job of deciding
+   which documents must carry required keys; only *indexing* stopped consulting it, via the separate
+   `isListable`. AC-29's canary pins that a concept document with no `type` still fails `check`.
+4. **`okf.mjs coverage`**, anchored to `git ls-files --cached --others --exclude-standard` from the
+   repository root — the flags are part of the contract, because plain `--cached` enumerates the git
+   *index* and is therefore blind to the document being added right now, going green on exactly the
+   commit that introduces an unindexed one (AC-34's canary). `check` and
+   regenerate-and-diff both read the corpus through the same walk, so a document the walk never
+   reaches is absent from both and compares equal — a projection checked against itself cannot
+   report a missing input. `tests/test-okf-coverage.mjs`, whose AC-32 is the negative control: a
+   document the walk genuinely cannot reach, on a tree `check` calls clean and regeneration
+   reproduces byte-for-byte.
+
+Found by the new check on its first run against this repo, and fixed with it: a title containing
+`[...]` (`Gap analysis: [Feature Name]`) was emitted raw, producing a row `ENTRY_RE` cannot parse —
+so the round-trip description store dropped it and coverage read the document as indexed by nobody.
+Titles are now escaped on the way out and unescaped on the way back in. AC-30.
+
 ## Repository Structure
 
 ```
@@ -71,6 +106,9 @@ tests/                   # Repo-level harnesses owned by neither plugin
   test-publication-safety.mjs  # repo-wide credential scan; structural rules + canaries both ways
   test-fr-bundle-3.mjs    # tree/closure AC matrix — the expected skill dirs of each plugin
   test-fr-proto-1.mjs     # prototype-spike AC matrix (AC-7 is the secret-shaped-token scan)
+  test-okf-maintain.mjs   # okf.mjs index/check/wire AC matrix (AC-17 pins the entry block byte-exact)
+  test-okf-coverage.mjs   # okf.mjs coverage AC matrix (FR-OKF-3) — git is a hard prerequisite,
+                         #   so it owns its own 77 instead of dragging the other suite down
   test-no-shell-invocation.mjs  # the viewer launcher opens a URL on darwin/linux/win32 without
                          #   a shell, plus a repo-wide scan: no .mjs reaches one
   test-tessl-quality-gate.mjs
@@ -101,11 +139,12 @@ skills/                  # One folder per skill — the 8 wagner-skills members
     evals/               # evals.json — 2 prompts x 19 assertions (with-skill 18/19 vs no-skill 7/19)
   okf-maintain/          # Adopt and maintain an Open Knowledge Format v0.2 doc bundle — frontmatter, chained
                          #   root indexes, no log.md / no in-doc history (git owns it), agent-entry wiring (FR-OKF-1)
-    SKILL.md             # Halt rule for profiled repos + the two workflows (adopt / maintain)
+    SKILL.md             # Profile-manifest reading + the two workflows (adopt / maintain)
     references/          # frontmatter (field families, actors, trust tiers), index-format (frozen grammar), adoption
-    scripts/             # okf.mjs — zero-dep Node (runs on node/bun/deno); `index` (generate) /
-                         #   `check` (§11, fail-closed frontmatter reader, no YAML lib) / `wire` (entry blocks).
-                         #   Refuses a repo whose okf.yaml declares a profile (exit 3)
+    scripts/             # okf.mjs — zero-dep Node (runs on node/bun/deno); `index` (generate, every
+                         #   tracked .md listed) / `check` (§11, fail-closed frontmatter reader, no YAML
+                         #   lib) / `coverage` (git ls-files vs the indexes) / `wire` (entry blocks).
+                         #   A declared profile is reported, never a refusal (FR-OKF-3)
   postmortem/            # Production-incident postmortems — numbered spine, machine-readable frontmatter
     SKILL.md             # Machine contract (frontmatter severity, finding-id stability) + per-section discipline + evidence rules
     references/          # full-template (long form), quick + Investigation variants
@@ -380,3 +419,13 @@ node tests/test-publication-safety.mjs
 # Run the tree/closure acceptance matrix (asserts only the 8 expected skill dirs exist)
 node tests/test-fr-bundle-3.mjs
 ```
+
+<!-- okf:entry -->
+## Documentation
+
+Start at [index.md](index.md). Every documentation folder carries a generated `index.md` listing
+each document's title and one-line description — answer "which doc covers X" and "does a doc for Y
+exist" from that index in one read, and open a document only after the index names it. Do not grep
+`docs/` for a document's identity; grep stays correct only for a literal phrase inside a body that
+the index cannot carry.
+<!-- /okf:entry -->

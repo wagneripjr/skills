@@ -32,8 +32,9 @@ Rules, all mechanical:
 2. One `# <Type>` heading per distinct `type` among the directory's own documents, headings sorted
    alphabetically. A document with no `type` groups under `# Other`.
 3. Entries within a section sorted by title, case-insensitively.
-4. Entry form is `* [<title>](<link>) - <description>`. Title falls back to the filename stem when
-   `title` is absent. When `description` is absent the entry is `* [<title>](<link>)` with **no
+4. Entry form is `* [<title>](<link>) - <description>`. Title degrades: frontmatter `title`, then
+   the first `# ` heading in the body (ignoring fenced blocks, where a `#` is a shell comment), then
+   the filename stem. When `description` is absent the entry is `* [<title>](<link>)` with **no
    trailing separator** — an empty description is a visible gap, not a dangling dash.
 5. A `description` is collapsed to one line, and one longer than **160 characters is dropped**,
    rendering the same bare `* [<title>](<link>)` as an absent one. The script never truncates: a
@@ -44,6 +45,11 @@ Rules, all mechanical:
    `<dir>/index.md`.
 7. Sections separated by one blank line; the file ends with exactly one trailing newline.
 8. `index.md` and `log.md` are reserved (§3.1) and never appear as entries.
+9. **Every other markdown file appears**, readme and contributing guide included. A document is
+   listed because it exists, not because its folder or kind was registered somewhere. Rule 4 is what
+   makes this free: the row degrades all the way to a filename, so listing never obliges a file to
+   carry frontmatter. Which documents must carry required keys is a separate question, and `check`
+   still answers it the same way.
 
 The separator between link and description is ` - ` (space hyphen space). It is a small thing that
 varies every time a human writes one, which is why a script writes them.
@@ -130,6 +136,27 @@ destination reached through it.
 **The one legitimate grep**: a literal phrase or token inside a body — something the index
 structurally cannot carry. An identity, existence, or description lookup is not that case. Being
 honest about this exception is what keeps people using the index for everything else.
+
+## Completeness is not staleness
+
+Regenerating fixes a **stale** index. It cannot fix an **incomplete** one, and the difference is
+worth holding onto: staleness is a row that disagrees with its document, incompleteness is a
+document with no row anywhere. Regenerate-and-diff catches the first and is blind to the second,
+because both copies come from the same walk — the document the walk never reached is missing from
+each of them, and they match.
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs coverage .
+```
+
+That runs `git ls-files --cached --others --exclude-standard` from the repository root and names
+every markdown file no index links to. The enumerator has to come from outside the tool for the
+comparison to mean anything, and `git` is the one at hand that is complete, honours ignore rules,
+and costs nothing.
+
+`--others` is not optional garnish. Without it the enumeration is the git *index*, which does not
+yet contain the document you are adding — so the check would go green on precisely the commit that
+introduces an unindexed document, and the omission would surface one commit later as a mystery.
 
 ## Staleness
 

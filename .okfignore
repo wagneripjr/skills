@@ -1,0 +1,6 @@
+# GitHub owns these — issue forms and workflow templates, not knowledge
+.github/
+
+# rebuilt by doc-this/skills/doc-this/evals/judgment-fixture/rebuild-fixture.mjs;
+# stamping frontmatter here is erased on that script's next run
+doc-this/skills/doc-this/evals/judgment-fixture/

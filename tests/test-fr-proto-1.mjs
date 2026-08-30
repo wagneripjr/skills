@@ -62,7 +62,10 @@ const refsDir = join(SKILL, 'references');
 for (const r of ['anatomy', 'ui-fidelity', 'harvest-playbook', 'control-derivation', 'fidelity-tiers', 'verification', 'exemplar-visit-report']) {
   h.check(`references/${r}.md exists`, nonEmpty(join(refsDir, `${r}.md`)));
 }
-const refCount = existsSync(refsDir) ? readdirSync(refsDir).filter((f) => f.endsWith('.md')).length : 0;
+// index.md is generated navigation (FR-OKF-3), not a reference file — it is not authored here
+// and counting it would make every regeneration look like a bundle change.
+const refCount = existsSync(refsDir)
+  ? readdirSync(refsDir).filter((f) => f.endsWith('.md') && f !== 'index.md').length : 0;
 h.check('exactly 7 reference files', refCount === 7, `found ${refCount} reference files, expected 7`);
 const refLinks = (skillText.match(/references\/[a-z-]*\.md/g) ?? []).length;
 h.check('SKILL.md points at every reference', refLinks >= 7, `found ${refLinks} reference links`);

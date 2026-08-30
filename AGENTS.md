@@ -7,3 +7,13 @@ project structure, plugin conventions, commands, and the reasoning behind the pi
 to consult here — read `CLAUDE.md` for structure and the per-skill `SKILL.md` for behavior.
 
 <!-- Auto-maintained by Claude Code -->
+
+<!-- okf:entry -->
+## Documentation
+
+Start at [index.md](index.md). Every documentation folder carries a generated `index.md` listing
+each document's title and one-line description — answer "which doc covers X" and "does a doc for Y
+exist" from that index in one read, and open a document only after the index names it. Do not grep
+`docs/` for a document's identity; grep stays correct only for a literal phrase inside a body that
+the index cannot carry.
+<!-- /okf:entry -->

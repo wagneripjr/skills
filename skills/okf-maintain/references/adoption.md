@@ -1,32 +1,37 @@
 # Adoption — making a repository OKF, and keeping it that way
 
-## Step 0 — the halt check
+## Step 0 — read the manifest, then carry on
 
 ```bash
 cat docs/okf.yaml 2>/dev/null
 ```
 
-If that file exists **and carries a `profile:` key**, stop. Report the profile name and that its
-own toolchain owns the bundle.
-
 `docs/okf.yaml` is not part of OKF v0.2 — the spec has no manifest file. It is a convention some
-toolchains add to declare a dialect: which folders are enumerable, which frontmatter keys are
-mandatory, and how the index rows are shaped. A profiled repo typically pairs it with a commit
-gate that regenerates the index and compares it **byte-for-byte** with what is staged.
+toolchains add to declare a dialect: which frontmatter keys are mandatory, and for which documents.
+Report what it says, because it changes how a conformance verdict should be read. Then continue.
 
-That is why this is a hard stop rather than a warning. A profile's index rows differ from v0.2's —
-different grouping, different sort key, often a status field v0.2 does not project — so
-regenerating in v0.2 grammar produces bytes the gate rejects, and **every subsequent commit in
-that repo is denied**. The documentation is fine; the repo is bricked until someone reverts. Do
-not offer to convert the corpus either: a profile migration has consequences past documentation
-and is not a call this skill makes.
+This used to be a hard stop. The argument was that a profile ships its own index generator whose
+rows differ from v0.2's, paired with a commit gate that regenerates the index and compares it
+**byte-for-byte** with what is staged — so writing v0.2 rows would brick the repo at someone else's
+next commit. It is a good argument and, where it holds, it still is. The problem was that nothing
+verified either half. Check them instead of assuming them:
 
-`okf.mjs` enforces this without being asked: `index` and `check` both refuse with exit `3` and
-write nothing when a manifest declares a `profile:`. Prose alone was not enough, because the
-failure is silent at the moment it happens and surfaces at someone else's next commit.
+- **Is there a generator?** Look for the command, not the claim. A tool that renders a traceability
+  matrix or a status roll-up is not an index generator; it projects a different thing.
+- **Is a gate armed?** Look in the repo's hooks and CI for something that regenerates an index and
+  diffs it. A gate nobody installed cannot deny a commit.
 
-A repo with no `docs/okf.yaml`, or one whose manifest has no `profile:` key, is in scope. This
-skill does not create a manifest — v0.2 needs none, and writing one would declare a dialect the
+Where both hold, the path that tool owns belongs in `.okfignore` — that is the mechanism for "this
+is not mine", and it says so per path rather than abandoning the whole repository. Where they do not
+hold, the old refusal produced exactly the wrong outcome: the repositories with a manifest were the
+ones guaranteed to have no index at all, and nobody was told, because writing nothing looked like a
+deliberate policy rather than a missing feature.
+
+Do not offer to convert an existing corpus to another dialect either. A profile migration has
+consequences past documentation and is not a call this skill makes; indexing a repository is not a
+migration.
+
+This skill does not create a manifest — v0.2 needs none, and writing one would declare a dialect the
 repo has not chosen.
 
 ## Step 1 — survey before restructuring
@@ -38,9 +43,13 @@ List what markdown already exists and how it is grouped.
 link, every bookmark, and every reference in code comments, and buys nothing the format asks for.
 
 Note what is *not* a concept document: README files that are project front matter rather than
-knowledge, generated API dumps, vendored third-party docs, delivery logs another tool writes.
-Decide deliberately, because everything under the root gets indexed. Three outcomes, in order of
-preference:
+knowledge, generated API dumps, vendored third-party docs, delivery logs another tool writes. They
+are still **listed** — a reader looking for the contributing guide should find it where they look
+for everything else — but they are exempt from the required-key check, so a readme with no
+frontmatter is not a violation.
+
+The decision that matters here is narrower: which paths does something *else* own. Three outcomes,
+in order of preference:
 
 1. **Make it conformant.** A generated file whose generator stamps `type` and a one-sentence
    `description` is an ordinary concept document. Prefer this for anything readers should find —
@@ -228,12 +237,28 @@ overreach and ignored wholesale.
 node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs check .
 ```
 
-Exit `0` conformant · `1` violations named · `3` profiled repo · `77` nothing evaluated · `64` usage.
+Exit `0` conformant · `1` violations named · `77` nothing evaluated · `64` usage.
 
 `77` means the scan found no concept document — wrong path, empty tree, or a bundle root that is
 not where you thought. **Never read it as a pass.** A clean verdict issued over zero files is the
 most convincing wrong answer a checker can give, which is why it is a distinct exit state rather
 than a `0` with a footnote.
+
+Then the half `check` cannot do:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs coverage .
+```
+
+`check` reads the corpus through the same walk that wrote the index, so a document the walk never
+reached is missing from both and the two agree. `coverage` asks `git ls-files --cached --others
+--exclude-standard` instead and names every markdown file no index links to. `--others` matters:
+without it the enumeration is the git index, which does not contain the document you are adding, so
+the check would go green on exactly the commit that introduces the problem. Same exit contract, with
+`77` meaning there was no git work tree to enumerate — again a refusal to verify, not a pass.
+
+A finding is closed one of two ways: index the document, or put it in `.okfignore` because something
+else owns it. Silence is not one of them.
 
 ## Step 8 — report
 

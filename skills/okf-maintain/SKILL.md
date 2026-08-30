@@ -1,6 +1,6 @@
 ---
 name: okf-maintain
-description: "Use when adopting the Open Knowledge Format (OKF v0.2) in a repository, or maintaining a documentation bundle already in it: bootstraps a conformant tree, stamps and repairs YAML frontmatter, regenerates every index.md bottom-up, excludes paths another tool owns via .okfignore, removes log.md and strips changelog/history sections because git already holds history losslessly, and wires CLAUDE.md/AGENTS.md/GEMINI.md to the root index so agents stop grepping for a document's identity. Ships a conformance check that fails closed. Triggers on: 'set up OKF', 'make these docs OKF-conformant', 'regenerate the docs index', 'add frontmatter to the docs', 'keep generated docs out of the index', 'our documentation keeps drifting'. NOT for writing a document's body or deciding its content - repo templates and the adr skill own that. NOT for a repo whose docs/okf.yaml declares a profile, which runs its own toolchain and makes this skill halt. NOT for reverse-engineering a codebase into fresh specs."
+description: "Use when adopting the Open Knowledge Format (OKF v0.2) in a repository, or maintaining a documentation bundle already in it: bootstraps a conformant tree, stamps and repairs YAML frontmatter, regenerates every index.md bottom-up so every tracked markdown file is listed, excludes paths another tool owns via .okfignore, removes log.md and strips changelog/history sections because git already holds history losslessly, and wires CLAUDE.md/AGENTS.md/GEMINI.md to the root index so agents stop grepping for a document's identity. Ships a conformance check that fails closed, plus a coverage check that names every document no index reaches. Triggers on: 'set up OKF', 'make these docs OKF-conformant', 'regenerate the docs index', 'add frontmatter to the docs', 'which docs are missing from the index', 'our documentation keeps drifting'. NOT for writing a document's body or deciding its content - repo templates and the adr skill own that. NOT for reverse-engineering a codebase into fresh specs."
 license: MIT
 ---
 
@@ -19,20 +19,23 @@ over documentation it did not write.
 Target: **OKF v0.2**. Read `references/frontmatter.md` for the field families and
 `references/index-format.md` for the frozen index grammar before writing either.
 
-## Halt first — is this repo already profiled?
+## A declared profile is reported, not obeyed
 
-Before touching anything, read `docs/okf.yaml` if it exists.
+`docs/okf.yaml` is not part of OKF v0.2 — it is a convention some toolchains use to declare a
+dialect, and a `profile:` key in it names **which documents must carry which keys**. Read it if it
+exists and say what it declares, because it changes how a conformance verdict should be read.
 
-**If it carries a `profile:` key, stop and report it.** A profile means the repo runs its own
-dialect and generator, usually behind a commit gate comparing the committed `index.md`
-byte-for-byte against that generator's output. Regenerating in v0.2 grammar produces different
-bytes, so **every subsequent commit in that repo is denied**. This skill's output does not break the
-corpus; it breaks the repo's own gate — silently, and at someone else's next commit, which is why
-the script enforces it too: every subcommand exits `3` and writes nothing.
+It does not change what gets indexed, and this skill no longer refuses a repository for carrying
+one. The refusal it replaces rested on two claims nothing ever checked: that a profile ships its own
+index generator, and that a commit gate somewhere compares the index byte-for-byte and would reject
+v0.2 output. Where those hold, they are worth respecting — so check them rather than assume them: is
+there a generator, and is a gate actually armed? Where they do not hold, refusing means the
+repositories most likely to want an index are the ones guaranteed not to have one, and a guard whose
+condition nothing can satisfy is a defect wearing a guard's clothes.
 
-Name the profile and say its toolchain owns the bundle. Do not offer to convert the corpus; a
-profile migration has consequences past documentation. A repo with no `docs/okf.yaml`, or one
-without a `profile:` key, is in scope. Full argument: `references/adoption.md`.
+If a repository really does regenerate its index from another tool, that path belongs in
+`.okfignore`, which is the mechanism for "another tool owns this" and states it per path instead of
+per repository. Full argument: `references/adoption.md`.
 
 ## What this skill owns
 
@@ -75,8 +78,18 @@ convention, and why a date-only `stale_after` is ignored: `references/frontmatte
 
 ## Indexes are generated — never hand-written
 
-Every directory containing markdown gets an `index.md` listing what is in it — unless `.okfignore`
-excludes it (below). Generate them with the bundled script, always:
+Every directory containing markdown gets an `index.md`, up to and including the repo root, listing
+**every** markdown file in it — unless `.okfignore` excludes it (below). A document is listed
+because it exists, not because its folder was registered anywhere: a reader hunting for the
+contributing guide or a stray plan cannot know the corpus filed it as furniture, and an index that
+confidently omits it sends them back to `ls`.
+
+Listing costs the document nothing. The row's title degrades — frontmatter `title`, then the first
+body heading, then the filename stem — so a file with no frontmatter is listed exactly as well as
+one with, and being listed never obliges it to carry keys. What must carry keys is a separate
+question, answered by `check` and unchanged.
+
+Generate them with the bundled script, always:
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs index <bundle-root>
@@ -173,7 +186,8 @@ ignored wholesale, costing more index reads than it buys.
 
 ## Workflow — adopting OKF in a repo
 
-1. **Halt check.** Read `docs/okf.yaml`. Profile key present → report and stop.
+1. **Manifest check.** Read `docs/okf.yaml` if it exists and report what it declares. A `profile:`
+   key scopes required keys; it is not a reason to stop.
 2. **Survey.** List the markdown present and how it is grouped. Do not restructure directories that
    already make sense; OKF is agnostic about layout. Put anything another tool writes into
    `.okfignore` now, before it produces violations you would try to fix by hand.
@@ -187,7 +201,9 @@ ignored wholesale, costing more index reads than it buys.
 6. **Generate.** `okf.mjs index` at the repo root, so `./index.md`, `docs/index.md` and every folder
    index are written as one chain. Supply `--describe` for each reported directory.
 7. **Wire.** `node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs wire .`
-8. **Verify.** `node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs check .` must exit 0.
+8. **Verify.** `node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs check .` must exit 0,
+   and `okf.mjs coverage .` must exit 0 too. `check` alone cannot tell you a document was never
+   walked — it and the index are the same projection.
 9. **Report** what was created, what was deleted, every `.okfignore` line and why, and any
    `description` you could not derive without guessing — leave it blank and say so.
 
@@ -199,11 +215,12 @@ it enumerates and sends readers back to grepping.
 
 Run after any change to the corpus: a document added, renamed, retyped, or re-described.
 
-1. Halt check, as above.
-2. `check .` — fix what it names; act on `unused-ignore:`, which means a declared path moved or
+1. `check .` — fix what it names; act on `unused-ignore:`, which means a declared path moved or
    was deleted and the line now protects nothing.
-3. `index .` — regenerate, and commit it *with* the content change, never as a follow-up commit
+2. `index .` — regenerate, and commit it *with* the content change, never as a follow-up commit
    someone forgets.
+3. `coverage .` — the added document is the one most likely to be orphaned, and it is the only
+   check that can say so.
 4. `wire .` — a no-op unless the block's wording changed, and safe to run every time for that
    reason.
 
@@ -222,8 +239,7 @@ only for their reserved purpose. It does **not** fail a bundle for missing optio
 forbids rejecting on those, and a check that invents its own strictness trains people to ignore it.
 Over-long descriptions come back as `note:` lines: the repair worklist.
 
-Exit codes: `0` conformant, `1` violations named, `3` profiled repo, `77` nothing was evaluated,
-`64` usage error.
+Exit codes: `0` conformant, `1` violations named, `77` nothing was evaluated, `64` usage error.
 
 **Treat `77` as a failure to verify, never as a pass.** The scan found no concept document at all —
 a wrong path, an empty tree, or an `.okfignore` broader than intended. A clean bill issued over zero
@@ -235,6 +251,42 @@ or nested content it cannot parse is a violation, because silent tolerance is ho
 behind a green light. Block scalars (`>`, `|`) are folded into their text — the danger in a
 hand-rolled reader is never the syntax it rejects, which is loud, but the syntax it misreads.
 
+## Coverage — the check `check` cannot perform
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs coverage <bundle-root>
+```
+
+`check` and "regenerate, then diff against the committed index" both read the corpus through the
+same walk. A document that walk never reaches is therefore missing from the committed index *and*
+from the regenerated one, the two agree perfectly, and the run is green. A projection compared
+against itself cannot report a missing input — not because the comparison is sloppy, but because
+the missing input is absent from both sides by construction.
+
+`coverage` gets a second, independent enumerator: `git ls-files --cached --others
+--exclude-standard`, resolved from the repository root. Every markdown file it lists that no
+`index.md` links to is named:
+
+```
+unindexed: .github/CONTRIBUTING.md
+okf.mjs: 113 tracked document(s) in 44 index file(s), 1 reachable only by ls
+```
+
+**Those three flags are the contract, not defaults.** Plain `git ls-files` reads the *index*, so a
+document written but not yet staged is invisible to it — and that is exactly the document at risk,
+the one being added right now. A check blind to it passes, the commit lands with no row, and the
+next commit belatedly adds the previous document's row with nobody the wiser. `--others` covers the
+working tree; `--exclude-standard` keeps the repo's own ignore rules authoritative so build output
+stays out. Indexes are likewise read from disk, so running straight after `index` and before `git
+add` tells you the truth about what you are about to commit.
+
+Exit `0` when nothing is orphaned, `1` naming each orphan, `77` outside a git work tree — which is a
+refusal to verify, never a pass.
+
+Two ways to clear a finding, and the choice is the whole point: index the document, or declare in
+`.okfignore` that something else owns it. There is no third option where it stays invisible, which
+is what the old behaviour amounted to.
+
 ## Anti-patterns
 
 - **Hand-editing a generated `index.md`.** The next regeneration silently discards it. Change the
@@ -242,8 +294,10 @@ hand-rolled reader is never the syntax it rejects, which is loud, but the syntax
 - **Inventing a `description`** to fill a column. An empty one is a visible gap; a fabricated one is
   a false claim in the field consumers trust most.
 - **Adding a `## Changelog` back** because a reviewer asked. Point at `git log --follow`.
-- **Treating a `77` from `check` as green**, or a profiled repo as convertible. Both fail elsewhere,
-  later, and quietly.
+- **Treating a `77` from `check` or `coverage` as green.** Both mean nothing was evaluated, and a
+  clean bill issued over zero files is the most convincing wrong answer a checker can give.
+- **Reading a green `check` as "everything is indexed".** It cannot mean that: it walks the same
+  tree the index came from. Only `coverage` compares against a list the walk did not produce.
 - **Stamping frontmatter into a file a generator rewrites.** It is erased on that tool's next run
   and nothing reports it. Fix the generator, or declare the path in `.okfignore`.
 - **Reaching for `.okfignore` to silence a violation.** It declares who owns a path, not which

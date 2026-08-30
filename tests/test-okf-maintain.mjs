@@ -20,8 +20,8 @@
 //   AC-12 index: single described child is inherited, not reported as pending
 //   AC-13 index: zero concept documents exits 77
 //   AC-14 cli: usage errors exit 64; --version exits 0
-//   AC-15 halt: a manifest declaring profile: refuses with 3 and writes nothing (canary),
-//              while a manifest without the key proceeds normally (negative control)
+//   AC-15 profile: a manifest declaring profile: is reported and indexed like any other
+//              repo — the refusal it replaces was a guard no profile could satisfy (FR-OKF-3)
 //   AC-16 wire: entry block added once and only once across repeated runs; pre-existing
 //              content preserved; refuses before an index exists
 //   AC-17 docs: the entry block shown in SKILL.md and adoption.md is byte-identical to the one
@@ -45,6 +45,14 @@
 //              would vanish behind a green exit
 //   AC-27 ignore: an .okfignore that swallows the corpus lands on 77, never a quiet 0
 //   AC-28 ignore: index stays byte-idempotent with an .okfignore present
+//   AC-29 listing: a document is listed because it exists — project-meta files and files
+//              with no frontmatter get rows (FR-OKF-3), while the required-keys scope does
+//              not move: a concept document with no type still fails check (canary)
+//   AC-30 listing: title degrades frontmatter -> first body heading -> filename stem, and
+//              a # inside a fenced block is a shell comment, not a heading
+//
+// The completeness half of FR-OKF-3 lives in test-okf-coverage.mjs, which needs a real git
+// work tree and therefore owns its own 77.
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync, renameSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -206,20 +214,25 @@ eq('AC-14 missing directory exits 64', run('index', join(WORK, 'nope')).rc, 64);
 eq('AC-14 malformed --describe exits 64', run('index', WORK, '--describe', 'bad').rc, 64);
 eq('AC-14 --version exits 0', run('--version').rc, 0);
 
-// ---------- AC-15 profiled repos are refused, unprofiled ones are not ----------
+// ---------- AC-15 a declared profile is reported, never a refusal ----------
+// The refusal it replaces was justified by a generator the profile would ship and a
+// commit gate that would reject v0.2 bytes. Neither was ever verified, and a guard no
+// profile can satisfy is not a guard — it left exactly the repositories that declare a
+// profile with no index at all. The key still names an enforcement dialect, so it is
+// still reported; it just stops deciding what gets enumerated.
 R = fixture('profiled');
 write(join(R, 'docs/okf.yaml'), 'profile: example-profile/v1\nokf_version: "0.1"\n');
-const before15 = countIndexes(R);
-eq('AC-15 index refuses a profiled repo with 3', run('index', R).rc, 3);
-eq('AC-15 check refuses a profiled repo with 3', run('check', R).rc, 3);
-const after15 = countIndexes(R);
-h.check(`AC-15 refusal wrote nothing (${before15} index files before and after)`, before15 === after15,
-  `was ${before15}, now ${after15}`);
+res = run('index', R);
+eq('AC-15 index proceeds on a profiled repo', res.rc, 0);
+has('AC-15 the profile is still named', res.err, 'declares profile example-profile/v1');
+h.check(`AC-15 and it actually wrote indexes (${countIndexes(R)})`, countIndexes(R) > 0);
+eq('AC-15 check proceeds on a profiled repo', run('check', R).rc, 0);
 
 R = fixture('unprofiled');
 write(join(R, 'docs/okf.yaml'), 'okf_version: "0.2"\nindex_filename: index.md\n');
-const rc15 = run('check', R).rc;
-h.check(`AC-15 manifest without profile: is not refused (rc=${rc15})`, rc15 !== 3);
+res = run('index', R);
+eq('AC-15 control: an unprofiled repo behaves identically', res.rc, 0);
+hasNot('AC-15 control: nothing is said about a profile', res.err, 'declares profile');
 
 // ---------- AC-16 entry wiring is idempotent ----------
 R = fixture('wiring');
@@ -407,7 +420,12 @@ R = owned('swallow'); write(join(R, '.okfignore'), 'docs/\n');
 res = run('check', R);
 eq('AC-27 ignoring the whole corpus exits 77, never 0', res.rc, 77);
 has('AC-27 the line responsible is named', res.out, 'ignored: docs/ (.okfignore:1)');
-eq('AC-27 index also exits 77 rather than reporting success', run('index', R).rc, 77);
+res = run('index', R);
+has('AC-27 index names the responsible line too', res.err, 'ignored: docs/ (.okfignore:1)');
+h.check('AC-27 nothing is written inside the swallowed subtree',
+  !existsSync(join(R, 'docs/index.md')));
+R = fixture('swallow_all'); write(join(R, '.okfignore'), 'docs/\nREADME.md\nLICENSE.md\n');
+eq('AC-27 an .okfignore that leaves nothing at all still exits 77', run('index', R).rc, 77);
 eq('AC-27 and writes no index files', countIndexes(R), 0);
 
 // ---------- AC-28 idempotency survives the new code path ----------
@@ -415,5 +433,56 @@ R = owned('idem2'); ignorefile(R);
 run('index', R); const first28 = read(join(R, 'docs/index.md'));
 run('index', R); const second28 = read(join(R, 'docs/index.md'));
 h.check('AC-28 index stays byte-idempotent with .okfignore present', first28 === second28);
+
+// ---------- AC-29 a document is listed because it exists ----------
+// The old rule listed only "concept" documents, so a reader looking for the readme, the
+// contributing guide or a plan found an index that confidently did not mention it. Being
+// listed has to stay free of any obligation, or the rule collapses back into a registry.
+R = fixture('listing');
+write(join(R, 'docs/CONTRIBUTING.md'), 'how to contribute, no frontmatter at all\n');
+run('index', R);
+const rootIdx = read(join(R, 'index.md'));
+h.check('AC-29 a project-meta file is listed', /^\* \[README\]\(README\.md\)$/m.test(rootIdx));
+h.check('AC-29 a file with no frontmatter is listed',
+  read(join(R, 'docs/index.md')).includes('](CONTRIBUTING.md)'));
+eq('AC-29 control: listing imposes no frontmatter requirement — check still exits 0',
+  run('check', R).rc, 0);
+h.check('AC-29 control: an index is still never listed as an entry',
+  !rootIdx.includes('](index.md)'));
+// Enforcement scope does not move with the listing rule: a document that is a concept
+// still owes `type`, and being newly visible in the index changes nothing about that.
+write(join(R, 'docs/plan.md'), 'a plan with no frontmatter at all\n');
+run('index', R);
+h.check('AC-29 the same run lists a concept document with no frontmatter',
+  read(join(R, 'docs/index.md')).includes('](plan.md)'));
+eq('AC-29 canary: and check still fails it for the missing type', run('check', R).rc, 1);
+
+// ---------- AC-30 the title degrades: frontmatter, then heading, then filename ----------
+R = fixture('titles');
+write(join(R, 'docs/from-heading.md'), '# Heading Wins\n\nbody\n');
+write(join(R, 'docs/from-filename.md'), 'no heading, no frontmatter\n');
+write(join(R, 'docs/fenced.md'), '```sh\n# not a heading\n```\n\n# Real Heading\n');
+write(join(R, 'docs/typed-no-title.md'), '---\ntype: Playbook\n---\n\n# Body Heading\n');
+run('index', R);
+const titles = read(join(R, 'docs/index.md'));
+h.check('AC-30 the first body heading is used when frontmatter has no title',
+  titles.includes('* [Heading Wins](from-heading.md)'));
+h.check('AC-30 the filename stem is the last resort',
+  titles.includes('* [from-filename](from-filename.md)'));
+h.check('AC-30 a # inside a fenced block is not mistaken for a heading',
+  titles.includes('* [Real Heading](fenced.md)'));
+h.check('AC-30 the heading fallback applies under a real type heading too',
+  /# Playbook\n[\s\S]*\* \[Body Heading\]\(typed-no-title\.md\)/.test(titles));
+// A bracketed title is ordinary in a template ("Gap analysis: [Feature Name]") and, left raw,
+// produces a row every consumer here silently fails to parse — the round-trip description store
+// drops it and coverage reports the document as indexed by nobody.
+write(join(R, 'docs/bracketed.md'), '# Gap analysis: [Feature Name]\n');
+run('index', R);
+has('AC-30 a bracketed title is escaped, not emitted raw',
+  read(join(R, 'docs/index.md')), '* [Gap analysis: \\[Feature Name\\]](bracketed.md)');
+const bracket1 = read(join(R, 'index.md'));
+run('index', R);
+h.check('AC-30 control: an escaped row is read back unchanged, so regeneration stays idempotent',
+  read(join(R, 'index.md')) === bracket1);
 
 h.done();
