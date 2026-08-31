@@ -598,4 +598,22 @@ res = run('index', R);
 h.check('AC-41 control: marketplace.json is an anchor too',
   !existsSync(join(R, 'skills/thing/index.md')));
 
+// A manifest at the package root, with no .claude-plugin/ directory at all, is the shape every
+// installed plugin under ~/.claude/plugins/cache/ actually has, and a marketplace entry pointing
+// at such a directory loads its commands and skills normally. Probing only the nested form was
+// stricter than the loader being modelled, and let the payload straight back in.
+R = fixture('payload-flat');
+write(join(R, 'plugin.json'), '{"name":"flat","version":"1.0.0"}\n');
+write(join(R, 'skills/thing/SKILL.md'), '---\nname: thing\ndescription: Does a thing.\n---\n\nbody\n');
+write(join(R, 'commands/speak.md'), '# speak\n');
+res = run('index', R);
+h.check('AC-41 canary: a manifest at the package root anchors a plugin root too',
+  !existsSync(join(R, 'skills/thing/index.md')) && !existsSync(join(R, 'commands/index.md')));
+has('AC-41 and is reported the same way', res.err, 'plugin-payload: commands/');
+eq('AC-41 and check leaves its SKILL.md alone', run('check', R).rc, 0);
+rmSync(join(R, 'plugin.json'));
+res = run('check', R);
+eq('AC-41 canary: removing the root manifest brings the demand back', res.rc, 1);
+has('AC-41 and names the SKILL.md again', res.out, 'skills/thing/SKILL.md');
+
 h.done();

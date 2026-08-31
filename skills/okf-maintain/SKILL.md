@@ -132,8 +132,9 @@ holding exactly one described document inherits that description and is not repo
 
 ## Plugin payload is refused, not configured
 
-At a **Claude Code plugin root** — a directory holding `.claude-plugin/plugin.json` or
-`marketplace.json` — the `commands/`, `agents/` and `skills/` children belong to the loader. Every
+At a **Claude Code plugin root** — a directory holding `plugin.json` or `marketplace.json`, either at
+the package root or under `.claude-plugin/`, both of which the loader accepts — the `commands/`,
+`agents/` and `skills/` children belong to the loader. Every
 `.md` under `commands/` *is* a slash command, every `.md` under `agents/` *is* an agent definition,
 and a skill folder's entry point is `SKILL.md`, carrying Claude Code's frontmatter schema rather
 than OKF's. Writing an `index.md` there puts a document where the loader expects payload; demanding

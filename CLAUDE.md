@@ -89,7 +89,8 @@ Titles are now escaped on the way out and unescaped on the way back in. AC-30.
 ### FR-OKF-4 · A plugin's payload directories are the loader's, not OKF's
 
 Owned by `skills/okf-maintain`. At a **Claude Code plugin root** — a directory holding
-`.claude-plugin/plugin.json` or `marketplace.json` — the `commands/`, `agents/` and `skills/`
+`plugin.json` or `marketplace.json`, either at the package root or under `.claude-plugin/`, both
+of which the loader accepts — the `commands/`, `agents/` and `skills/`
 children are enumerated by Claude Code, not by OKF: every `.md` under `commands/` *is* a slash
 command, every `.md` under `agents/` *is* an agent definition, and a skill folder's entry point is
 `SKILL.md`, carrying the loader's frontmatter schema. `okf.mjs` prunes them from the walk, from
@@ -108,7 +109,12 @@ Refused **structurally**, not via `.okfignore`, on the same argument as the sepa
 above: the line can only be written after the first run has already done the damage. Anchored on
 the **manifest, never the directory name** — a `docs/commands/` folder documenting a CLI is
 ordinary knowledge and stays indexed; removing the manifest brings every finding straight back,
-which is what the acceptance tests use as their canary. `tests/test-okf-maintain.mjs` AC-41 (index
+which is what the acceptance tests use as their canary. **Probe both manifest locations**: an
+installed plugin under `~/.claude/plugins/cache/` carries `plugin.json` at its package root with no
+`.claude-plugin/` directory at all, and a marketplace entry pointing at such a directory loads its
+commands and skills normally. 6.4.3 recognised only the nested form, which was stricter than the
+loader it models and let payload straight back in — reported from claude-code-config, fixed in
+6.4.4. `tests/test-okf-maintain.mjs` AC-41 (index
 and check), `tests/test-okf-coverage.mjs` AC-42 (the two enumerators must agree, or payload becomes
 permanent unindexed findings — the deliberate dot-directory disagreement must not gain a second).
 
@@ -416,9 +422,9 @@ Four fields, all edited by hand, all of which must agree:
 
 | File | Field | Current |
 |---|---|---|
-| `.claude-plugin/plugin.json` | `.version` | 6.4.3 |
-| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.4.3 |
-| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.4.3 / 1.1.4 |
+| `.claude-plugin/plugin.json` | `.version` | 6.4.4 |
+| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.4.4 |
+| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.4.4 / 1.1.4 |
 | `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.4 |
 
 **Never let `marketplace.json` fall behind `plugin.json`.** The marketplace entry is what the

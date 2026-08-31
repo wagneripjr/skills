@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from '
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const VERSION = '1.4.3';
+const VERSION = '1.4.4';
 const OKF_VERSION = '0.2';
 
 const USAGE = `usage:
@@ -300,8 +300,9 @@ const isListable = (name) => name.endsWith('.md') && !RESERVED.has(name.toLowerC
 // nobody can add before the first run. `existsSync` on `.git` needs no git dependency.
 const isRepoBoundary = (dirpath) => existsSync(join(dirpath, '.git'));
 
-// A directory holding .claude-plugin/plugin.json (or marketplace.json) is a Claude Code plugin
-// root, and its commands/, agents/ and skills/ children are payload the loader parses, not
+// A directory holding plugin.json or marketplace.json - at the package root or under
+// .claude-plugin/, both of which Claude Code loads - is a plugin root, and its
+// commands/, agents/ and skills/ children are payload the loader parses, not
 // documentation. Writing an index.md there puts a document where the loader expects executable
 // payload; demanding OKF frontmatter there asks a SKILL.md to carry keys that are not its schema
 // and a progressively-disclosed reference file to pay context for keys nobody reads. Neither is a
@@ -310,8 +311,14 @@ const isRepoBoundary = (dirpath) => existsSync(join(dirpath, '.git'));
 //
 // The anchor is the manifest rather than the directory name on purpose: a docs/commands/ folder
 // documenting a CLI is ordinary knowledge, and a name-only rule would silently swallow it.
+//
+// Both manifest locations are probed because Claude Code accepts both: an installed plugin in
+// ~/.claude/plugins/cache/ carries plugin.json at its package root with no .claude-plugin/ at all,
+// and a marketplace entry pointing at such a directory loads its commands, skills and hooks
+// normally. A probe that recognised only the nested form was stricter than the loader it models,
+// which is the same mistake in the opposite direction: it let payload back in.
 const isPluginRoot = (dirpath) => PLUGIN_MANIFESTS.some(
-  (m) => existsSync(join(dirpath, '.claude-plugin', m)));
+  (m) => existsSync(join(dirpath, '.claude-plugin', m)) || existsSync(join(dirpath, m)));
 
 // The walk prunes a payload directory by never descending into it. A path list arriving from
 // outside the walk (coverage) has no such moment, so each tracked path re-derives its own
