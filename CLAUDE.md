@@ -86,6 +86,37 @@ Found by the new check on its first run against this repo, and fixed with it: a 
 so the round-trip description store dropped it and coverage read the document as indexed by nobody.
 Titles are now escaped on the way out and unescaped on the way back in. AC-30.
 
+### FR-OKF-4 · A plugin's payload directories are the loader's, not OKF's
+
+Owned by `skills/okf-maintain`. At a **Claude Code plugin root** — a directory holding
+`.claude-plugin/plugin.json` or `marketplace.json` — the `commands/`, `agents/` and `skills/`
+children are enumerated by Claude Code, not by OKF: every `.md` under `commands/` *is* a slash
+command, every `.md` under `agents/` *is* an agent definition, and a skill folder's entry point is
+`SKILL.md`, carrying the loader's frontmatter schema. `okf.mjs` prunes them from the walk, from
+`check` and from `coverage`, reporting each as `plugin-payload: <path>/`.
+
+Two halves of one defect, both real in this repository before the fix. The visible half was 43
+generated `index.md` files stamped into payload directories — a document where the loader expects
+payload, inert today only because a frontmatter-less file happens not to register, which nothing
+guarantees. The larger half was `okf.mjs check .` returning **100 violations, all 100 of them
+payload**: 22 `SKILL.md` files "missing required key 'type'" and 78 `reference/` files with "no
+YAML frontmatter block". Satisfying either would put foreign keys in a loader-parsed file, or make
+a progressively-disclosed reference pay context for keys nobody reads — so the checker was
+permanently, unfixably red, and therefore never run.
+
+Refused **structurally**, not via `.okfignore`, on the same argument as the separate-repo boundary
+above: the line can only be written after the first run has already done the damage. Anchored on
+the **manifest, never the directory name** — a `docs/commands/` folder documenting a CLI is
+ordinary knowledge and stays indexed; removing the manifest brings every finding straight back,
+which is what the acceptance tests use as their canary. `tests/test-okf-maintain.mjs` AC-41 (index
+and check), `tests/test-okf-coverage.mjs` AC-42 (the two enumerators must agree, or payload becomes
+permanent unindexed findings — the deliberate dot-directory disagreement must not gain a second).
+
+Consequence for this repository, and it is the honest one: `check` now evaluates **zero** concept
+documents and exits 77. Its markdown is entirely plugin payload plus project meta; there is no
+documentation bundle here, which is what the `FR-`/`BUG-` note above already says. The root
+`index.md` lists the seven project-meta files and no subdirectories.
+
 ## Repository Structure
 
 ```
@@ -163,9 +194,11 @@ skills/                  # One folder per skill — the 8 wagner-skills members
     SKILL.md             # Profile-manifest reading + the two workflows (adopt / maintain)
     references/          # frontmatter (field families, actors, trust tiers), index-format (frozen grammar), adoption
     scripts/             # okf.mjs — zero-dep Node (runs on node/bun/deno); `index` (generate, every
-                         #   tracked .md listed) / `check` (§11, fail-closed frontmatter reader, no YAML
-                         #   lib) / `coverage` (git ls-files vs the indexes) / `wire` (entry blocks).
-                         #   A declared profile is reported, never a refusal (FR-OKF-3)
+                         #   tracked .md listed, minus plugin payload) / `check` (§11, fail-closed
+                         #   frontmatter reader, no YAML lib) / `coverage` (git ls-files vs the
+                         #   indexes) / `wire` (entry blocks). A declared profile is reported,
+                         #   never a refusal (FR-OKF-3); commands//agents//skills/ at a plugin
+                         #   root belong to Claude Code and are pruned (FR-OKF-4)
   postmortem/            # Production-incident postmortems — numbered spine, machine-readable frontmatter
     SKILL.md             # Machine contract (frontmatter severity, finding-id stability) + per-section discipline + evidence rules
     references/          # full-template (long form), quick + Investigation variants
@@ -383,10 +416,10 @@ Four fields, all edited by hand, all of which must agree:
 
 | File | Field | Current |
 |---|---|---|
-| `.claude-plugin/plugin.json` | `.version` | 6.3.1 |
-| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.3.1 |
-| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.3.1 / 1.1.3 |
-| `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.3 |
+| `.claude-plugin/plugin.json` | `.version` | 6.4.3 |
+| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.4.3 |
+| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.4.3 / 1.1.4 |
+| `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.4 |
 
 **Never let `marketplace.json` fall behind `plugin.json`.** The marketplace entry is what the
 client compares against; if it advertises a lower version, `claude plugin update` is a permanent

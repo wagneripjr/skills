@@ -28,6 +28,11 @@
 //   AC-37 coverage: a real submodule is invisible to git's enumeration (one gitlink) and is not
 //              written into either — the two sides agree, which is why the walk's refusal to
 //              enter had to be structural: no check could have caught those writes
+//   AC-42 coverage: the two enumerators agree about plugin payload. git lists every SKILL.md,
+//              so an exclusion the walk applies and coverage does not would turn the whole
+//              payload tree into permanent unindexed findings — a second disagreement beside
+//              the one dot-directory case that is deliberate. Removing the plugin manifest
+//              brings the findings back, proving the exclusion is doing the work (FR-OKF-4)
 //   AC-38 coverage: a tracked document inside a separate work tree (a vendored copy carrying its
 //              .git pointer) is demanded but unreachable, so the finding carries its remedy
 
@@ -223,5 +228,30 @@ write(join(bare, 'docs/thing.md'), '# thing\n');
 res = run('coverage', bare);
 eq('AC-36 outside a git work tree the answer is 77, never 0', res.rc, 77);
 has('AC-36 and says nothing was verified', res.out, 'nothing was verified');
+
+// ---------- AC-42 coverage agrees with the walk about plugin payload ----------
+// git ls-files happily lists every SKILL.md and every reference file. If coverage did not
+// apply the same payload rule the walk does, each of them would be demanded forever by an
+// index that can never be written — the generator and the checker are allowed exactly one
+// deliberate disagreement (dot-directories), and this must not become a second.
+R = repo('payload', { unreachable: false });
+write(join(R, '.claude-plugin/plugin.json'), '{"name":"demo","version":"1.0.0"}\n');
+write(join(R, 'skills/thing/SKILL.md'), '---\nname: thing\ndescription: Does a thing.\n---\n\nbody\n');
+write(join(R, 'skills/thing/references/guide.md'), '# Guide\n');
+doc(join(R, 'tools/skills/other/GUIDE.md'), 'Note', 'A guide', 'Not a plugin skill folder.');
+describeAll(R);
+git(R, 'add', '-A');
+res = run('coverage', R);
+eq('AC-42 payload is neither indexed nor demanded', res.rc, 0);
+hasNot('AC-42 so no SKILL.md is named', res.out, 'unindexed: skills/thing/SKILL.md');
+has('AC-42 and the exclusion is reported here too', res.out, 'plugin-payload: skills/');
+h.check('AC-42 control: a skills/ path with no manifest above it was reached by the walk',
+  existsSync(join(R, 'tools/skills/other/index.md')));
+// discriminating: without the manifest the same files are demanded, so the pass above is
+// the payload rule and not coverage having quietly stopped enumerating.
+unlinkSync(join(R, '.claude-plugin/plugin.json'));
+res = run('coverage', R);
+eq('AC-42 canary: with no manifest the payload is demanded again', res.rc, 1);
+has('AC-42 and named', res.out, 'unindexed: skills/thing/SKILL.md');
 
 h.done();

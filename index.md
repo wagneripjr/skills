@@ -13,8 +13,3 @@ okf_version: "0.2"
 * [Third-Party Notices](THIRD-PARTY-NOTICES.md)
 * [Wagner Skills](CLAUDE.md)
 * [wagner-skills](README.md)
-
-# Subdirectories
-
-* [doc-this](doc-this/index.md) - The doc-this plugin — the reverse-engineering Discovery pipeline, its enforcement gates, and the single bridge that promotes output into docs/.
-* [skills](skills/index.md) - The eight wagner-skills members — CLI design, Airflow, Kubernetes SRE, requirements elicitation, prototyping, postmortems and documentation upkeep.

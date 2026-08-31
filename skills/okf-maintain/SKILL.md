@@ -1,6 +1,6 @@
 ---
 name: okf-maintain
-description: "Use when adopting the Open Knowledge Format (OKF v0.2) in a repository, or maintaining a documentation bundle already in it: bootstraps a conformant tree, stamps and repairs YAML frontmatter, regenerates every index.md bottom-up so every tracked markdown file is listed, excludes paths another tool owns via .okfignore, removes log.md and strips changelog/history sections because git already holds history losslessly, and wires CLAUDE.md/AGENTS.md/GEMINI.md to the root index so agents stop grepping for a document's identity. Ships a conformance check that fails closed, plus a coverage check that names every document no index reaches. Triggers on: 'set up OKF', 'make these docs OKF-conformant', 'regenerate the docs index', 'add frontmatter to the docs', 'which docs are missing from the index', 'our documentation keeps drifting'. NOT for writing a document's body or deciding its content - repo templates and the adr skill own that. NOT for reverse-engineering a codebase into fresh specs."
+description: "Use when adopting the Open Knowledge Format (OKF v0.2) in a repository, or maintaining a documentation bundle already in it: bootstraps a conformant tree, stamps and repairs YAML frontmatter, regenerates every index.md bottom-up so no document goes unlisted, excludes paths another tool owns via .okfignore, removes log.md and strips changelog/history sections because git already holds history losslessly, and wires CLAUDE.md/AGENTS.md/GEMINI.md to the root index so agents stop grepping for a document's identity. Ships a conformance check that fails closed, plus a coverage check that names every document no index reaches. Triggers on: 'set up OKF', 'make these docs OKF-conformant', 'regenerate the docs index', 'add frontmatter to the docs', 'which docs are missing from the index', 'our documentation keeps drifting'. NOT for writing a document's body or deciding its content - repo templates and the adr skill own that. NOT for reverse-engineering a codebase into fresh specs."
 license: MIT
 ---
 
@@ -79,7 +79,8 @@ convention, and why a date-only `stale_after` is ignored: `references/frontmatte
 ## Indexes are generated — never hand-written
 
 Every directory containing markdown gets an `index.md`, up to and including the repo root, listing
-**every** markdown file in it — unless `.okfignore` excludes it (below). A document is listed
+**every** markdown file in it — unless `.okfignore` excludes it, or it is plugin payload (both
+below). A document is listed
 because it exists, not because its folder was registered anywhere: a reader hunting for the
 contributing guide or a stray plan cannot know the corpus filed it as furniture, and an index that
 confidently omits it sends them back to `ls`.
@@ -128,6 +129,25 @@ node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs index docs --desc
 
 It then persists by round-tripping through the generated index, so it is written once. A directory
 holding exactly one described document inherits that description and is not reported.
+
+## Plugin payload is refused, not configured
+
+At a **Claude Code plugin root** — a directory holding `.claude-plugin/plugin.json` or
+`marketplace.json` — the `commands/`, `agents/` and `skills/` children belong to the loader. Every
+`.md` under `commands/` *is* a slash command, every `.md` under `agents/` *is* an agent definition,
+and a skill folder's entry point is `SKILL.md`, carrying Claude Code's frontmatter schema rather
+than OKF's. Writing an `index.md` there puts a document where the loader expects payload; demanding
+`type` there asks a `SKILL.md` for keys that are not its schema and makes a progressively-disclosed
+reference file pay context for keys nobody reads.
+
+So the walk never descends into one, `check` never scans one, `coverage` never demands one, and each
+pruned directory is reported as `plugin-payload: <path>/`. This is refused structurally rather than
+left to an `.okfignore` line, for the same reason another repository's work tree is: the line can
+only be written after the first run has already done the damage.
+
+The anchor is the **manifest, never the directory name** — a `docs/commands/` folder documenting a
+CLI is ordinary knowledge and stays indexed. Delete the manifest and every one of those files is
+enumerated again.
 
 ## `.okfignore` — the paths this skill does not own
 

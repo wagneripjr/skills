@@ -56,7 +56,8 @@ varies every time a human writes one, which is why a script writes them.
 
 ## Chained roots
 
-Every directory containing markdown gets an index — except those `.okfignore` declares unowned — and
+Every directory containing markdown gets an index — except those `.okfignore` declares unowned, and
+a Claude Code plugin's `commands/`, `agents/` and `skills/` payload, which the loader owns — and
 the walk is **deepest-first** so a subdirectory's description exists by the time its parent is
 written:
 

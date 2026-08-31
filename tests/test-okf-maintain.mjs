@@ -57,6 +57,14 @@
 //   AC-40 ownership: an index.md carrying no generation marker is never overwritten. A dialect's
 //              rows can hold an id, a status or a shape v0.2 does not project; regenerating over
 //              it is a silent lossy downgrade of the catalog the index exists to be
+//   AC-41 payload: at a Claude Code plugin root — a directory holding .claude-plugin/plugin.json
+//              or marketplace.json — the commands/, agents/ and skills/ children are the loader's,
+//              not OKF's. No index.md is written inside one (a document where payload is expected)
+//              and no frontmatter is demanded of one (SKILL.md's schema belongs to the loader,
+//              and a progressively-disclosed reference file would pay context for keys nobody
+//              reads). The anchor is the manifest, never the directory name: removing the manifest
+//              brings every finding straight back, and a docs/commands/ folder that documents a
+//              CLI stays ordinary knowledge (FR-OKF-4)
 //
 // AC-31..38, the completeness half of FR-OKF-3, live in test-okf-coverage.mjs, which needs a
 // real git work tree and therefore owns its own 77. Numbers do not repeat across the two files.
@@ -541,5 +549,53 @@ res = run('index', R);
 h.check('AC-40 control: deleting it hands the directory over',
   read(join(R, 'docs/requirements/index.md')).includes('Place an order'));
 hasNot('AC-40 control: and nothing is reported any more', res.err, 'foreign-index:');
+
+// ---------- AC-41 a plugin's payload directories are the loader's, not OKF's ----------
+// Every .md under commands/ IS a slash command and every .md under agents/ IS an agent
+// definition; a skill folder's entry point is SKILL.md, carrying Claude Code's frontmatter
+// schema. Indexing them puts a document where the loader expects payload, and checking them
+// demands keys that are not their schema. Neither is a per-repo preference, so — exactly as
+// with another repository's work tree — the refusal is structural rather than an .okfignore
+// line nobody can write before the first run has already done the damage.
+R = fixture('payload');
+write(join(R, '.claude-plugin/plugin.json'), '{"name":"demo","version":"1.0.0"}\n');
+write(join(R, 'skills/thing/SKILL.md'), '---\nname: thing\ndescription: Does a thing.\n---\n\nbody\n');
+write(join(R, 'skills/thing/references/guide.md'), '# Guide\n\nno frontmatter, by design\n');
+write(join(R, 'commands/speak.md'), '# speak\n');
+write(join(R, 'agents/Explore.md'), '# Explore\n');
+// controls: the same directory names where no plugin manifest sits above them
+doc(join(R, 'tools/skills/other/GUIDE.md'), 'Note', 'A guide', 'Not a plugin skill folder.');
+doc(join(R, 'docs/commands/deploy.md'), 'Playbook', 'Deploy', 'How the CLI deploy command is run.');
+res = run('index', R);
+h.check('AC-41 canary: no index is written inside a plugin skills/ folder',
+  !existsSync(join(R, 'skills/index.md')) && !existsSync(join(R, 'skills/thing/index.md'))
+  && !existsSync(join(R, 'skills/thing/references/index.md')));
+h.check('AC-41 canary: nor inside commands/ or agents/',
+  !existsSync(join(R, 'commands/index.md')) && !existsSync(join(R, 'agents/index.md')));
+has('AC-41 the pruning is reported, not silent', res.err, 'plugin-payload: skills/');
+has('AC-41 for commands/ too', res.err, 'plugin-payload: commands/');
+has('AC-41 and agents/', res.err, 'plugin-payload: agents/');
+hasNot('AC-41 and payload never reaches the root index', read(join(R, 'index.md')), 'skills/index.md');
+res = run('check', R);
+eq('AC-41 check stops demanding OKF keys of the loader\'s files', res.rc, 0);
+hasNot('AC-41 so SKILL.md is never named', res.out, 'skills/thing/SKILL.md');
+h.check('AC-41 control: a skills/ directory with no plugin manifest above it is still indexed',
+  existsSync(join(R, 'tools/skills/other/index.md')));
+h.check('AC-41 control: and a docs/commands/ folder documenting a CLI stays knowledge',
+  read(join(R, 'docs/commands/index.md')).includes('Deploy'));
+// the discriminating half: the manifest is the whole anchor, so removing it must bring
+// every finding back. A rule that fired on the directory name would not notice.
+rmSync(join(R, '.claude-plugin'), { recursive: true, force: true });
+res = run('check', R);
+eq('AC-41 canary: with no manifest the same tree is checked again', res.rc, 1);
+has('AC-41 and SKILL.md is named after all', res.out, 'skills/thing/SKILL.md');
+res = run('index', R);
+h.check('AC-41 and the index returns to the same directory', existsSync(join(R, 'skills/thing/index.md')));
+// marketplace.json anchors a plugin root just as plugin.json does
+write(join(R, '.claude-plugin/marketplace.json'), '{"name":"demo-marketplace"}\n');
+rmSync(join(R, 'skills/thing/index.md'));
+res = run('index', R);
+h.check('AC-41 control: marketplace.json is an anchor too',
+  !existsSync(join(R, 'skills/thing/index.md')));
 
 h.done();
