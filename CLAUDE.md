@@ -123,6 +123,30 @@ documents and exits 77. Its markdown is entirely plugin payload plus project met
 documentation bundle here, which is what the `FR-`/`BUG-` note above already says. The root
 `index.md` lists the seven project-meta files and no subdirectories.
 
+### FR-OKF-5 · An index nothing links to may not vouch for a document
+
+Owned by `skills/okf-maintain`. `okf.mjs index` writes but never deletes, so anything that narrows
+what gets indexed — a new `.okfignore` line, FR-OKF-4's payload pruning, the last document leaving a
+folder — strands the `index.md` it stops maintaining on disk with its rows intact. `coverage` used
+to union the rows of **every** `index.md` it could find, which credits a document that nothing a
+reader can follow leads to: a fail-open, and the quietest kind, because an orphan is not an
+unreached document but a reached *nothing* — the totals read identically before and after the
+debris is removed. Found only by diffing the generated file list across two versions of the tool,
+reported from claude-code-config after FR-OKF-4 stranded eight index files there.
+
+`coverage` now credits only indexes the root index reaches through the chain of Subdirectories
+links the format is built on, and names generated strays as `orphan-index:`, exit 1. The
+generation marker gates the naming — the same evidence `ownsIndex` uses before overwriting — so a
+hand-written stray is never called this tool's debris, though its rows do not count either. With no
+root index at all every index is trusted, because a larger finding is already in flight and piling
+a second report on it helps nobody. `tests/test-okf-coverage.mjs` AC-43: canary a broken chain,
+controls that repairing it clears both findings together and that an unmarked stray is not named.
+Mutation-tested — removing the reachability gate flips the canary.
+
+Deliberately **not** done: `index` does not delete the debris it left. Naming it with the remedy is
+the smaller correct thing, and a generator that removes files it no longer claims is a much larger
+promise than one that refuses to write where it does not belong.
+
 ## Repository Structure
 
 ```
@@ -202,9 +226,10 @@ skills/                  # One folder per skill — the 8 wagner-skills members
     scripts/             # okf.mjs — zero-dep Node (runs on node/bun/deno); `index` (generate, every
                          #   tracked .md listed, minus plugin payload) / `check` (§11, fail-closed
                          #   frontmatter reader, no YAML lib) / `coverage` (git ls-files vs the
-                         #   indexes) / `wire` (entry blocks). A declared profile is reported,
-                         #   never a refusal (FR-OKF-3); commands//agents//skills/ at a plugin
-                         #   root belong to Claude Code and are pruned (FR-OKF-4)
+                         #   indexes, crediting only ones the root index reaches — FR-OKF-5) /
+                         #   `wire` (entry blocks). A declared profile is reported, never a
+                         #   refusal (FR-OKF-3); commands//agents//skills/ at a plugin root
+                         #   belong to Claude Code and are pruned (FR-OKF-4)
   postmortem/            # Production-incident postmortems — numbered spine, machine-readable frontmatter
     SKILL.md             # Machine contract (frontmatter severity, finding-id stability) + per-section discipline + evidence rules
     references/          # full-template (long form), quick + Investigation variants
@@ -422,9 +447,9 @@ Four fields, all edited by hand, all of which must agree:
 
 | File | Field | Current |
 |---|---|---|
-| `.claude-plugin/plugin.json` | `.version` | 6.4.4 |
-| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.4.4 |
-| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.4.4 / 1.1.4 |
+| `.claude-plugin/plugin.json` | `.version` | 6.4.5 |
+| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.4.5 |
+| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.4.5 / 1.1.4 |
 | `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.4 |
 
 **Never let `marketplace.json` fall behind `plugin.json`.** The marketplace entry is what the

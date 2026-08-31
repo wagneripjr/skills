@@ -315,12 +315,22 @@ working tree; `--exclude-standard` keeps the repo's own ignore rules authoritati
 stays out. Indexes are likewise read from disk, so running straight after `index` and before `git
 add` tells you the truth about what you are about to commit.
 
-Exit `0` when nothing is orphaned, `1` naming each orphan, `77` outside a git work tree — which is a
-refusal to verify, never a pass.
+Exit `0` when every document is reachable and no index is stranded, `1` naming each finding, `77`
+outside a git work tree — which is a refusal to verify, never a pass.
 
 Two ways to clear a finding, and the choice is the whole point: index the document, or declare in
 `.okfignore` that something else owns it. There is no third option where it stays invisible, which
 is what the old behaviour amounted to.
+
+**Only an index the root index reaches may vouch for a document.** `index` writes but never
+deletes, so anything that narrows what gets indexed — a new `.okfignore` line, a pruned plugin
+payload directory, the last document leaving a folder — strands the `index.md` it stops maintaining
+on disk with its rows intact. Counting those rows credits a document that nothing a reader can
+follow leads to, and the debris is invisible to every other check: an orphan is not an unreached
+document, it is a reached *nothing*, so the totals read identically before and after it is removed.
+Generated strays are therefore named as `orphan-index:` and their rows do not count. **Delete
+them** — the generation marker is the evidence they are this tool's own leavings. A stray with no
+marker is somebody else's file and is never named, though its rows do not count either.
 
 **Dot-directories are the one place `index` will not go**, and coverage says so when a finding lands
 there. The walk skips them because they hold tooling — descending reaches `.git`, `.venv`, and every

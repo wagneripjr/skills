@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from '
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const VERSION = '1.4.4';
+const VERSION = '1.4.5';
 const OKF_VERSION = '0.2';
 
 const USAGE = `usage:
@@ -18,7 +18,9 @@ bundle-root-relative path per line, trailing / for a directory, # for a comment.
 They are not enumerated, not checked, and never stamped.
 
 check reads the corpus the walk finds; coverage reads git ls-files instead, so a
-document the walk never reaches is named rather than agreed with.
+document the walk never reaches is named rather than agreed with. Only an index the
+root index reaches may vouch for a document; generated ones nothing links to are
+named as orphan-index and their rows do not count.
 
 exit: 0 ok | 1 violations | 77 nothing evaluated | 64 usage`;
 
@@ -628,6 +630,48 @@ function listedDocuments(root, indexes) {
   return listed;
 }
 
+// Which indexes are allowed to vouch for a document.
+//
+// `index` writes but never deletes: narrow what gets indexed - exclude a path, prune a payload
+// directory, remove the last document from a folder - and the index.md it stops maintaining stays
+// on disk with its rows intact. Counting those rows is a fail-open, and a quiet one, because an
+// orphan is not an unreached document but a reached *nothing*: coverage reports zero findings
+// before and after the debris is removed. Worse, a document listed ONLY by an orphan is credited
+// as indexed while nothing a reader can follow leads to it, which is the exact question this
+// command exists to answer.
+//
+// So an index vouches for its rows only if the root index reaches it, by the chain of
+// Subdirectories links the format is built on. With no root index at all there is a larger
+// finding already in flight, so every index is trusted rather than piling a second report on it.
+function reachableIndexes(root, indexes) {
+  const have = new Set(indexes);
+  if (!have.has('index.md')) return indexes;
+  const seen = new Set(['index.md']);
+  const queue = ['index.md'];
+  while (queue.length) {
+    const rel = queue.shift();
+    let lines;
+    try { lines = readFileSync(join(root, rel), 'utf8').split('\n'); } catch { continue; }
+    const dir = dirname(rel);
+    for (const line of lines) {
+      const m = ENTRY_RE.exec(line.replace(/\r$/, ''));
+      if (!m) continue;
+      const link = m[2].split('#')[0].trim();
+      if (!link || link.startsWith('/') || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(link)) continue;
+      const target = normalizeLink(dir, decodeURIComponent(link));
+      if (target && have.has(target) && !seen.has(target)) { seen.add(target); queue.push(target); }
+    }
+  }
+  return [...seen];
+}
+
+// Only debris this tool left behind is named. A hand-written index nobody links to is somebody
+// else's file and a different conversation; the generation marker is the same evidence `ownsIndex`
+// uses before overwriting one.
+const wasGenerated = (root, rel) => {
+  try { return readFileSync(join(root, rel), 'utf8').includes(GEN_MARKER); } catch { return false; }
+};
+
 // The completeness half, and the reason it cannot reuse the walk.
 //
 // `check` regenerates from the same enumerator that wrote the committed index, so a
@@ -652,7 +696,9 @@ function cmdCoverage(root, ignores) {
   const indexes = [...dirs].sort(byCodepoint)
     .map((d) => (d === '.' ? 'index.md' : `${d}/index.md`))
     .filter((p) => existsSync(join(root, p)));
-  const listed = listedDocuments(root, indexes);
+  const reachable = reachableIndexes(root, indexes);
+  const listed = listedDocuments(root, reachable);
+  const orphans = indexes.filter((p) => !reachable.includes(p) && wasGenerated(root, p));
 
   const required = [];
   const payloadCache = new Map();
@@ -674,8 +720,15 @@ function cmdCoverage(root, ignores) {
 
   const missing = required.filter((rel) => !listed.has(rel)).sort(byCodepoint);
   for (const rel of missing) process.stdout.write(`unindexed: ${rel}\n`);
+  for (const rel of orphans) process.stdout.write(`orphan-index: ${rel}\n`);
   process.stdout.write(
-    `okf.mjs: ${required.length} tracked document(s) in ${indexes.length} index file(s), ${missing.length} reachable only by ls\n`);
+    `okf.mjs: ${required.length} tracked document(s) in ${reachable.length} index file(s), ${missing.length} reachable only by ls\n`);
+  if (orphans.length) {
+    process.stdout.write(
+      `okf.mjs: ${orphans.length} generated index file(s) are linked from no index, so \`index\` no longer maintains them and their rows go stale unseen\n`);
+    process.stdout.write(
+      `okf.mjs: delete them - their rows were not counted here, so a document only they listed is named above\n`);
+  }
 
   // The walk skips dot-directories on purpose — they hold tooling, not knowledge, and
   // descending into one reaches .git, .venv and every editor's cache. But naming a document
@@ -700,7 +753,7 @@ function cmdCoverage(root, ignores) {
     process.stdout.write(
       `okf.mjs: name the path in ${IGNORE_FILE}; index it from inside that repository if it needs one, never from here\n`);
   }
-  return missing.length ? 1 : 0;
+  return missing.length || orphans.length ? 1 : 0;
 }
 
 function cmdWire(root, toStdout) {
