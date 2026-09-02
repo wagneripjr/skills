@@ -1,0 +1,11 @@
+{
+  "description": "a chomping indicator on the sigil is accepted and the trailing blank line is dropped either way",
+  "consumers": {
+    "okf": {
+      "ok": true,
+      "data": { "type": "Note", "description": "chomped" },
+      "heading": "Chomped"
+    },
+    "agentic-sdlc": { "ok": true, "note": "same keys" }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "description": "an unindented line that is not `key:` cannot be read as anything; the reader names the line instead of skipping it",
+  "consumers": {
+    "okf": { "ok": false, "error": "line 3: not a mapping entry", "heading": "Not a mapping" },
+    "agentic-sdlc": { "ok": false, "note": "expectation to be pinned by the vendoring repo's own test" }
+  }
+}

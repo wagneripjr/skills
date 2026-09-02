@@ -1,0 +1,7 @@
+{
+  "description": "a duplicate key is rejected rather than last-wins: silently keeping one of two contradictory declarations is how a document ends up filed under a type nobody wrote",
+  "consumers": {
+    "okf": { "ok": false, "error": "line 3: duplicate key 'type'", "heading": "Duplicate" },
+    "agentic-sdlc": { "ok": false, "note": "expectation to be pinned by the vendoring repo's own test" }
+  }
+}

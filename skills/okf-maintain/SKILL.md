@@ -332,6 +332,16 @@ Generated strays are therefore named as `orphan-index:` and their rows do not co
 them** — the generation marker is the evidence they are this tool's own leavings. A stray with no
 marker is somebody else's file and is never named, though its rows do not count either.
 
+**A row whose document git will not commit is named too.** `index` reads the *working tree*, so a
+document written and not yet added is listed on purpose — that is what lets the regeneration hook
+index it on the edit that created it. What happens next is the hazard: `git commit -a` stages
+modifications to *tracked* files, so the updated index goes into the commit and the document it now
+vouches for does not. The result is self-consistent and wrong, and every other enumerator here reads
+the working tree, where both files are present, so nothing else can see it. Such rows are reported
+as `dangling-row:` naming the index that carries them; `git add` the document, or delete it and
+regenerate. Scoped to indexes that are themselves tracked — an untracked index is not going into
+that commit either, so there is no half-commit to warn about.
+
 **Dot-directories are the one place `index` will not go**, and coverage says so when a finding lands
 there. The walk skips them because they hold tooling — descending reaches `.git`, `.venv`, and every
 editor's cache — so no amount of regenerating produces an index inside one. That leaves two honest
@@ -339,6 +349,39 @@ answers and one trap. Move the document out of the dot-directory if it is real d
 the path in `.okfignore` if it is machine output. Do **not** hand-write the missing `index.md`: it is
 outside the walk, so nothing regenerates it, and it rots unseen — which is the exact failure this
 command exists to surface, reappearing at the one place the tool declines to reach.
+
+## Regeneration happens on edit, not on memory
+
+The plugin ships a `PostToolUse` hook (`hooks/okf-index-regen.mjs`) that runs `index` whenever a
+markdown document is written or edited inside an adopted bundle. A projection refreshed only by hand
+is stale from the first time somebody forgets, and nothing reports it until `coverage` runs — so
+every OKF repository is a mechanical client of the generator rather than a manual one.
+
+What it refuses, all of it before any write:
+
+- **A repository with no `okf.yaml`** (at the root or under `docs/`). Adoption is the opt-in; without
+  it the hook would stamp indexes into every repository you happen to edit markdown in.
+- **An index edit**, which would otherwise react to its own output.
+- **A path named in `.okfignore`**, and a file that is not markdown.
+- **An index carrying no generation marker** — the same `ownsIndex` rule `index` itself applies.
+- **A repository declaring a newer `okf_version`** than the installed generator writes. The marker is
+  versionless, so an older plugin would silently regenerate a richer catalog into a poorer one. The
+  declaration is read from `okf.yaml` and from the root index's own stamp, and the higher wins.
+
+The root is resolved from the **edited file** — `git -C <dir of the file> rev-parse --show-toplevel`,
+with the file required to be inside the answer — never from the session's working directory. A cwd
+default is how an edit aimed into a linked worktree or a submodule rewrites the session repository's
+indexes while the edited one stays stale: the wrong tree written, the right tree not, and no error
+on either side.
+
+It is **never gated on `check`**. A repository can carry frontmatter violations and still owe its
+readers an accurate index; the two questions are independent. It writes only indexes whose bytes
+differ, and it fails open — every path exits 0, because a hook that can block an edit trades a
+stale index for a stuck session.
+
+The hook does not retire the manual command: it fires only on edits made through Claude Code, so a
+human editor, a merge or a rebase still leaves the projection stale, and `coverage` is still what
+proves it.
 
 ## Anti-patterns
 

@@ -4,7 +4,7 @@ Repo hosting **two** Claude Code plugins published from one marketplace (`wagner
 
 | Plugin | Root | Contents | Default state |
 |---|---|---|---|
-| `wagner-skills` | `./` | 8 engineering skills — CLI design (agent + human), Airflow 3, Kubernetes SRE, requirements elicitation, prototype-spike, postmortem, OKF documentation maintenance. No hooks. | enabled |
+| `wagner-skills` | `./` | 8 engineering skills — CLI design (agent + human), Airflow 3, Kubernetes SRE, requirements elicitation, prototype-spike, postmortem, OKF documentation maintenance. One hook: OKF index regeneration on edit. | enabled |
 | `doc-this` | `./doc-this` | The 14-skill reverse-engineering Discovery pipeline + its 9 enforcement gates + `/doc-this-promote`. | **disabled** (FR-DOC-PLUGIN-1) |
 
 `doc-this` is split out because it is only needed while reverse-engineering a legacy codebase, and
@@ -147,6 +147,53 @@ Deliberately **not** done: `index` does not delete the debris it left. Naming it
 the smaller correct thing, and a generator that removes files it no longer claims is a much larger
 promise than one that refuses to write where it does not belong.
 
+### FR-OKF-6 · An index is regenerated when a document under it changes
+
+Owned by `skills/okf-maintain`, and the first hook surface in this plugin. Four parts, each named by
+an acceptance test:
+
+1. **`okf.mjs` is importable.** Its tail was a bare `process.exit(main(…))`, which runs the CLI — and
+   terminates the host process — the instant anything imports the file, so the generator could not be
+   reused by a client of it. Guarded with `import.meta.url === pathToFileURL(process.argv[1]).href`;
+   `cmdIndex`, `parseBlock`, `readDoc`, `declaredProfile`, `readIgnores`, `ignoredFile` and
+   `declaredOkfVersion` are exported. Exit codes and `--version` unchanged.
+   `tests/test-okf-maintain.mjs` AC-45, asserted from a separate process because an import that exits
+   takes the harness with it.
+2. **The hook** — `hooks/okf-index-regen.mjs`, PostToolUse `Write|Edit`, importing the core by
+   relative path and spawning only `git` (ADR-014). **The root comes from the edited file**, via
+   `git -C <its dir> rev-parse --show-toplevel` with the file required to be inside the answer, never
+   from the session cwd: a cwd default rewrites the session repository's indexes for an edit aimed
+   into a linked worktree or a submodule, leaving the edited tree stale with no error either side.
+   git answers a realpath, so the containment test resolves symlinks first — on macOS `/var` versus
+   `/private/var` is otherwise enough to read a file inside the repository as outside it.
+   Refusals, all before any write: not markdown; no `okf.yaml` (adoption is the opt-in); the edit is
+   itself an `index.md`; the path is in `.okfignore`; the index carries no generation marker; the
+   repository declares a **newer** `okf_version` than this generator writes — the marker is
+   versionless, so an older installed plugin would otherwise downgrade a richer catalog silently.
+   Never gated on `check`: a repository can carry frontmatter violations and still owe its readers an
+   accurate index. Writes only bytes that differ, and fails open — every path exits 0, because a hook
+   that can block an edit trades a stale index for a stuck session.
+   `tests/test-okf-index-regen.mjs` AC-47..AC-54.
+3. **A fixture corpus** at `tests/fixtures/okf-frontmatter/`, one expected-parse JSON per document,
+   with an expectation recorded **per consumer** — `agentic-sdlc` vendors the same files and its
+   lenient reader disagrees with this strict one on malformed input **by design** (its `extractBlock`
+   consumes to end of file on a missing closing delimiter, fail-open; `readDoc` here reports
+   `unterminated YAML frontmatter block`, because `check` is its job). Neither is made to converge.
+   Every expectation is hand-written: one generated from the implementation is the
+   projection-checked-against-itself fail-open in a new costume. AC-46, which also pins the
+   `profile:` spellings `declaredProfile` accepts and the near-misses it must not.
+4. **`coverage` names a `dangling-row`** — a row in a *tracked* index pointing at a document git is
+   not tracking. `index` reads the working tree on purpose, which is what lets the hook index a
+   document on the edit that created it; `git commit -a` then carries the modified index and leaves
+   the document behind, producing a commit that is self-consistent and wrong. Every other enumerator
+   here reads the working tree, where both files are present, so nothing else can see it. Scoped to
+   tracked indexes because an untracked one is not going into that commit either.
+   `tests/test-okf-coverage.mjs` AC-44.
+
+All four guards are mutation-tested: reverting the root resolution to cwd, dropping the version-skew
+refusal, unscoping the dangling-row check, removing the byte-diff write, and removing the import
+guard each flip at least one canary.
+
 ## Repository Structure
 
 ```
@@ -182,6 +229,10 @@ doc-this/                # SECOND PLUGIN — the doc-this reverse-engineering su
       assets/dist/         # PREBUILT static SPA served at runtime (no npm install for the user)
       scripts/             # build-manifest.mjs, serve.mjs + launch.mjs (localhost server), build.mjs, test harness (all zero-dep Node)
       references/          # manifest-schema.md (viewer-manifest.json contract)
+hooks/                   # The wagner-skills plugin's hooks (auto-loaded via hooks/hooks.json)
+  okf-index-regen.mjs    # PostToolUse Write|Edit — regenerates an adopted bundle's index.md files
+                         #   from the EDITED file's repository; refuses on version skew, foreign
+                         #   indexes, unadopted repos, .okfignore hits (FR-OKF-6)
 tests/                   # Repo-level harnesses owned by neither plugin
   run-all.mjs            # THE runner — every suite in the repo; 77 = INCOMPLETE, never a pass.
                          #   Excludes test-tessl-quality-gate.mjs (77 without auth = permanent red)
@@ -191,6 +242,11 @@ tests/                   # Repo-level harnesses owned by neither plugin
   test-okf-maintain.mjs   # okf.mjs index/check/wire AC matrix (AC-17 pins the entry block byte-exact)
   test-okf-coverage.mjs   # okf.mjs coverage AC matrix (FR-OKF-3) — git is a hard prerequisite,
                          #   so it owns its own 77 instead of dragging the other suite down
+  test-okf-index-regen.mjs # the regeneration hook's AC matrix (FR-OKF-6) — AC-48 is the canary
+                         #   that the root comes from the edited file, not the session cwd
+  fixtures/okf-frontmatter/ # the frontmatter contract corpus: one document plus a hand-written
+                         #   expected-parse JSON per case, an expectation PER CONSUMER, and the
+                         #   profile: spellings declaredProfile accepts (FR-OKF-6)
   test-no-shell-invocation.mjs  # the viewer launcher opens a URL on darwin/linux/win32 without
                          #   a shell, plus a repo-wide scan: no .mjs reaches one
   test-tessl-quality-gate.mjs
@@ -223,11 +279,13 @@ skills/                  # One folder per skill — the 8 wagner-skills members
                          #   root indexes, no log.md / no in-doc history (git owns it), agent-entry wiring (FR-OKF-1)
     SKILL.md             # Profile-manifest reading + the two workflows (adopt / maintain)
     references/          # frontmatter (field families, actors, trust tiers), index-format (frozen grammar), adoption
-    scripts/             # okf.mjs — zero-dep Node (runs on node/bun/deno); `index` (generate, every
+    scripts/             # okf.mjs — zero-dep Node (runs on node/bun/deno), importable core plus a
+                         #   guarded CLI; `index` (generate, every
                          #   tracked .md listed, minus plugin payload) / `check` (§11, fail-closed
                          #   frontmatter reader, no YAML lib) / `coverage` (git ls-files vs the
                          #   indexes, crediting only ones the root index reaches — FR-OKF-5) /
-                         #   `wire` (entry blocks). A declared profile is reported, never a
+                         #   `wire` (entry blocks). Rows pointing at a document git will not
+                         #   commit are named dangling-row (FR-OKF-6). A declared profile is reported, never a
                          #   refusal (FR-OKF-3); commands//agents//skills/ at a plugin root
                          #   belong to Claude Code and are pruned (FR-OKF-4)
   postmortem/            # Production-incident postmortems — numbered spine, machine-readable frontmatter
@@ -447,9 +505,9 @@ Four fields, all edited by hand, all of which must agree:
 
 | File | Field | Current |
 |---|---|---|
-| `.claude-plugin/plugin.json` | `.version` | 6.4.5 |
-| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.4.5 |
-| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.4.5 / 1.1.4 |
+| `.claude-plugin/plugin.json` | `.version` | 6.5.0 |
+| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.5.0 |
+| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.5.0 / 1.1.4 |
 | `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.4 |
 
 **Never let `marketplace.json` fall behind `plugin.json`.** The marketplace entry is what the

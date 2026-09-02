@@ -41,6 +41,15 @@
 //              clears both, and a hand-written stray is never called debris this tool left
 //   AC-38 coverage: a tracked document inside a separate work tree (a vendored copy carrying its
 //              .git pointer) is demanded but unreachable, so the finding carries its remedy
+//   AC-44 coverage: a tracked index row pointing at a document git is NOT tracking is named
+//              (dangling-row). `index` indexes the working tree on purpose — that is what lets the
+//              regeneration hook list a document on the edit that created it — so `git commit -a`
+//              then carries the modified index and leaves the new document behind. Every other
+//              enumerator here reads the working tree, where both files are present, so the
+//              half-commit is invisible to all of them. CANARY: a regenerated row for a document
+//              nobody added, named before AND after the commit -a that makes it permanent. Controls:
+//              git add clears it, and an UNTRACKED index carrying the same row is not reported,
+//              because that index is not going into the commit either
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync, unlinkSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -294,5 +303,47 @@ write(join(R, 'docs/index.md'), '# Docs\n\n* [Requirements](requirements/index.m
 res = run('coverage', R);
 eq('AC-43 control: an unreachable hand-written index still fails', res.rc, 1);
 hasNot('AC-43 control: but is never reported as this tool\'s debris', res.out, 'orphan-index: docs/index.md');
+
+
+// ---------- AC-44 a row that git will not commit alongside its index ----------
+// The failure this closes is a self-consistent commit: the index says the document is there,
+// the working tree agrees, and only the commit disagrees. `--cached` is the second enumerator
+// that can see it, exactly as `git ls-files` was the second enumerator that could see AC-32.
+R = repo('dangling', { unreachable: false });
+describeAll(R);
+git(R, 'add', '-A');
+git(R, '-c', 'user.email=t@example.com', '-c', 'user.name=t', 'commit', '-qm', 'base');
+eq('AC-44 control: the committed tree starts clean', run('coverage', R).rc, 0);
+
+// a new document, indexed the way the regen hook indexes it: written, not added
+doc(join(R, 'docs/requirements/FR-002.md'), 'Requirement', 'Cancel an order', 'User cancels.');
+describeAll(R);
+res = run('coverage', R);
+// Named before the commit, not after it: the row and the untracked document are already the
+// half-commit waiting to happen, and this is the only moment the fix is one `git add`.
+eq('AC-44 the finding fires while it is still cheap to fix', res.rc, 1);
+has('AC-44 naming the row that outran the document', res.out, 'dangling-row: docs/requirements/FR-002.md');
+
+git(R, '-c', 'user.email=t@example.com', '-c', 'user.name=t', 'commit', '-aqm', 'half');
+res = run('coverage', R);
+eq('AC-44 CANARY: and it survives the commit -a that made it permanent', res.rc, 1);
+has('AC-44 and the row is named with the index that carries it', res.out,
+  'dangling-row: docs/requirements/FR-002.md (listed by docs/requirements/index.md)');
+has('AC-44 with the mechanism stated', res.out, 'git commit -a');
+has('AC-44 and the remedy', res.out, 'git add the document(s) named above');
+hasNot('AC-44 control: it is not also reported as unindexed - it IS indexed', res.out, 'unindexed:');
+
+// control: adding the document is what clears it
+git(R, 'add', '-A');
+res = run('coverage', R);
+eq('AC-44 control: git add clears the finding', res.rc, 0);
+hasNot('AC-44 control: and nothing dangles', res.out, 'dangling-row:');
+
+// control: an UNTRACKED index carrying the same shape of row is not reported. There is no
+// half-commit to warn about when neither file is going into the commit.
+R = repo('dangling-fresh', { unreachable: false });
+describeAll(R);
+res = run('coverage', R);
+hasNot('AC-44 control: a bundle nobody has added yet dangles nothing', res.out, 'dangling-row:');
 
 h.done();

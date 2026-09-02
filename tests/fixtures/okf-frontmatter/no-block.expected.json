@@ -1,0 +1,7 @@
+{
+  "description": "a document with no frontmatter still yields its heading, because a row has to be rendered for it either way (FR-OKF-3)",
+  "consumers": {
+    "okf": { "ok": false, "error": "no YAML frontmatter block", "heading": "Just a heading" },
+    "agentic-sdlc": { "ok": false, "note": "absent frontmatter is not malformed frontmatter; both readers agree here" }
+  }
+}

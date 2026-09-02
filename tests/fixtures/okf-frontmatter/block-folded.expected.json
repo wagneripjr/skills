@@ -1,0 +1,11 @@
+{
+  "description": "a > block scalar folds continuation lines with a space and keeps a blank line as a newline",
+  "consumers": {
+    "okf": {
+      "ok": true,
+      "data": { "type": "Note", "description": "folded onto one line\nafter a blank" },
+      "heading": "Folded"
+    },
+    "agentic-sdlc": { "ok": true, "note": "same keys" }
+  }
+}

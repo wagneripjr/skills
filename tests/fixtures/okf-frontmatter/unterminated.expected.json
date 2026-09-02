@@ -1,0 +1,7 @@
+{
+  "description": "THE disagreement: okf is strict because `check` is its job; agentic-sdlc's extractBlock consumes to end of file and is fail-open by ADR-001. Neither is made to converge.",
+  "consumers": {
+    "okf": { "ok": false, "error": "unterminated YAML frontmatter block", "heading": "" },
+    "agentic-sdlc": { "ok": true, "note": "extractBlock consumes to EOF and parses what it found; fail-open (hooks/lib/frontmatter.mjs:5-13)" }
+  }
+}

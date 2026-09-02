@@ -1,0 +1,16 @@
+{
+  "description": "every okf.yaml line declaredProfile must recognise, and the near-misses it must not. A profile scopes which documents carry required keys; misreading one silently changes what `check` means.",
+  "cases": [
+    { "line": "profile: agentic-sdlc", "expected": "agentic-sdlc" },
+    { "line": "profile:    agentic-sdlc", "expected": "agentic-sdlc" },
+    { "line": "profile:\tagentic-sdlc", "expected": "agentic-sdlc" },
+    { "line": "profile: agentic-sdlc   ", "expected": "agentic-sdlc" },
+    { "line": "profile: \"agentic-sdlc\"", "expected": "\"agentic-sdlc\"" },
+    { "line": "profile: agentic sdlc", "expected": "agentic sdlc" },
+    { "line": "profile:", "expected": null },
+    { "line": "profile: ", "expected": null },
+    { "line": "  profile: agentic-sdlc", "expected": null },
+    { "line": "# profile: agentic-sdlc", "expected": null },
+    { "line": "okf_profile: agentic-sdlc", "expected": null }
+  ]
+}

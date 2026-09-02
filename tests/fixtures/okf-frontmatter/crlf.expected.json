@@ -1,0 +1,11 @@
+{
+  "description": "CRLF line endings parse identically to LF; the carriage return never reaches a value",
+  "consumers": {
+    "okf": {
+      "ok": true,
+      "data": { "type": "Guide", "title": "CRLF survivor", "description": "written on windows" },
+      "heading": "CRLF"
+    },
+    "agentic-sdlc": { "ok": true, "note": "same keys" }
+  }
+}

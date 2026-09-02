@@ -1,0 +1,7 @@
+{
+  "description": "frontmatter must be a mapping; a top-level sequence has no keys to read and is named rather than silently yielding an empty document",
+  "consumers": {
+    "okf": { "ok": false, "error": "line 2: top-level sequence; frontmatter must be a mapping", "heading": "Sequence" },
+    "agentic-sdlc": { "ok": false, "note": "expectation to be pinned by the vendoring repo's own test" }
+  }
+}

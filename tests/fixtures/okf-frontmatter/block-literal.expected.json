@@ -1,0 +1,11 @@
+{
+  "description": "a | block scalar keeps its newlines and is clipped of trailing blank lines",
+  "consumers": {
+    "okf": {
+      "ok": true,
+      "data": { "type": "Note", "description": "first line\nsecond line" },
+      "heading": "Literal"
+    },
+    "agentic-sdlc": { "ok": true, "note": "same keys" }
+  }
+}

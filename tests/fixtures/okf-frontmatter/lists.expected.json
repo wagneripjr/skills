@@ -1,0 +1,11 @@
+{
+  "description": "a flow sequence is kept as its raw text; a block sequence is nested content the reader accepts and does not project",
+  "consumers": {
+    "okf": {
+      "ok": true,
+      "data": { "type": "Requirement", "specs": "[a.feature, b.feature]", "adrs": "" },
+      "heading": "Lists"
+    },
+    "agentic-sdlc": { "ok": true, "note": "same keys; relation keys are read by the SDLC projection, not by okf" }
+  }
+}

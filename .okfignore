@@ -1,2 +1,6 @@
 # GitHub owns these — issue forms and workflow templates, not knowledge
 .github/
+
+# The frontmatter contract corpus — parser inputs, deliberately including malformed ones.
+# Test data is not knowledge, and half of it would fail `check` on purpose.
+tests/fixtures/

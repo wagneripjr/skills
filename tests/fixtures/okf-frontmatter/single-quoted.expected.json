@@ -1,0 +1,11 @@
+{
+  "description": "single-quoted scalars are unquoted; the YAML '' escape is NOT expanded by this reader",
+  "consumers": {
+    "okf": {
+      "ok": true,
+      "data": { "type": "ADR", "title": "It''s quoted", "description": "plain" },
+      "heading": "ADR one"
+    },
+    "agentic-sdlc": { "ok": true, "note": "same keys" }
+  }
+}

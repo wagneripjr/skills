@@ -1,0 +1,7 @@
+{
+  "description": "an unterminated quoted scalar is a violation, not a value: unquoting it would invent a string the author never closed",
+  "consumers": {
+    "okf": { "ok": false, "error": "line 3: unterminated quoted value for 'description'", "heading": "Broken scalar" },
+    "agentic-sdlc": { "ok": false, "note": "expectation to be pinned by the vendoring repo's own test" }
+  }
+}

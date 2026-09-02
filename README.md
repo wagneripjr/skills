@@ -6,7 +6,7 @@ ATDD-ready specifications.
 
 | Plugin | Skills | Default state |
 |---|---|---|
-| [`wagner-skills`](#wagner-skills-1) | 8 | enabled |
+| [`wagner-skills`](#wagner-skills-1) | 8 + 1 hook | enabled |
 | [`doc-this`](#doc-this) | 14 + 9 enforcement hooks | **disabled** |
 
 ## Install
@@ -44,7 +44,7 @@ claude plugin disable doc-this@wagner-skills-marketplace
 | `human-cli` | The sibling for **human** CLIs — naming grammar, prompts with flag bypasses, colors, progress, error messages with resolution URLs, XDG paths, shell completions. Same 0–21 rubric. |
 | `airflow-dags` | Apache Airflow 3 DAG authoring — TaskFlow API, asset-driven scheduling, XCom, deferrable operators, dynamic task mapping, multi-layer test suites. 12 reference docs. |
 | `platform-sre-kubernetes` | SRE-focused Kubernetes production deployments and manifest review. |
-| `okf-maintain` | Adopts the [Open Knowledge Format](https://github.com/GoogleCloudPlatform/open-knowledge-format) v0.2 in a repo and keeps the bundle healthy — frontmatter repair, generated `index.md` chained from the project root, `log.md` and in-document changelogs removed because git already holds history, and `CLAUDE.md`/`AGENTS.md`/`GEMINI.md` pointed at the index so `docs/` is never grepped for a document's identity. |
+| `okf-maintain` | Adopts the [Open Knowledge Format](https://github.com/GoogleCloudPlatform/open-knowledge-format) v0.2 in a repo and keeps the bundle healthy — frontmatter repair, generated `index.md` chained from the project root, `log.md` and in-document changelogs removed because git already holds history, and `CLAUDE.md`/`AGENTS.md`/`GEMINI.md` pointed at the index so `docs/` is never grepped for a document's identity. Ships the plugin's one hook: in a repository that has adopted OKF (an `okf.yaml` is the opt-in), editing a document regenerates the indexes above it, so the catalog cannot drift from the corpus between manual runs. |
 | `postmortem` | Production-incident postmortems with a numbered spine — impact and blast radius with per-service evidence, timeline, root cause with mechanism plus five whys plus discarded hypotheses, empirical proof, palliative vs root fix. |
 | `prototype-spike` | Turns a requirement into one self-contained clickable HTML file that doubles as a design spike. Rebuilds existing screens at high fidelity from real source with `file:line` citations; the control panel *is* the set of open questions. |
 | `requirements-elicitation` | Analyzes PRDs and feature specs for gaps, generates clarifying questions for PMs and engineers, assesses technical risk. |
@@ -116,6 +116,7 @@ node tests/test-fr-bundle-3.mjs          # tree/closure matrix
 node tests/test-fr-proto-1.mjs           # prototype-spike acceptance matrix
 node tests/test-okf-maintain.mjs         # okf-maintain acceptance matrix (okf.mjs index + check)
 node tests/test-okf-coverage.mjs         # okf.mjs coverage — needs a real git work tree
+node tests/test-okf-index-regen.mjs      # the index-regeneration hook — needs a real git work tree
 node tests/test-no-shell-invocation.mjs  # no .mjs in the tree reaches a shell
 node doc-this/hooks/run-all.mjs          # the doc-this gate harnesses
 node tests/test-publication-safety.mjs  # repo-wide scan for credential-shaped material

@@ -65,6 +65,16 @@
 //              reads). The anchor is the manifest, never the directory name: removing the manifest
 //              brings every finding straight back, and a docs/commands/ folder that documents a
 //              CLI stays ordinary knowledge (FR-OKF-4)
+//   AC-45 core: okf.mjs is importable — the tail no longer terminates the host process, and the
+//              generator surface a client needs is exported. The guard IS the feature: a bare
+//              process.exit(main(...)) runs the CLI the instant anything imports the file, which
+//              is why the regeneration hook could not reuse the generator it is a client of
+//              (FR-OKF-6 (i)). CANARY: importing must not exit, and the CLI must still behave
+//   AC-46 contract: the frontmatter reader is pinned by a fixture corpus with a hand-written
+//              expectation per file, PER CONSUMER — agentic-sdlc vendors the same files and its
+//              lenient reader disagrees with this strict one on malformed input by design
+//              (FR-OKF-6 (iii)). An expectation generated from the implementation would be the
+//              projection-checked-against-itself fail-open all over again, so none of these were
 //
 // AC-31..38, the completeness half of FR-OKF-3, live in test-okf-coverage.mjs, which needs a
 // real git work tree and therefore owns its own 77. Numbers do not repeat across the two files.
@@ -615,5 +625,85 @@ rmSync(join(R, 'plugin.json'));
 res = run('check', R);
 eq('AC-41 canary: removing the root manifest brings the demand back', res.rc, 1);
 has('AC-41 and names the SKILL.md again', res.out, 'skills/thing/SKILL.md');
+
+
+// ---------- AC-45 the core is importable, the CLI still is one ----------
+// Proven from a SEPARATE process, because an import that calls process.exit takes the harness
+// with it — the failure would read as a crashed suite, not a failed assertion.
+const probe = `
+  import * as okf from ${JSON.stringify(OKF)};
+  const want = ['cmdIndex', 'parseBlock', 'readDoc', 'declaredProfile', 'readIgnores',
+                'ignoredFile', 'declaredOkfVersion', 'OKF_VERSION', 'GEN_MARKER'];
+  const missing = want.filter((k) => okf[k] === undefined);
+  process.stdout.write(JSON.stringify({ alive: true, missing }));
+`;
+const imported = spawnSync(process.execPath, ['--input-type=module', '-e', probe], { encoding: 'utf8' });
+eq('AC-45 importing okf.mjs does not exit the host process', imported.status, 0);
+let surface = {};
+try { surface = JSON.parse(imported.stdout || '{}'); } catch { surface = {}; }
+h.check('AC-45 the import completed', surface.alive === true, imported.stderr);
+h.check('AC-45 and the client surface is exported',
+  Array.isArray(surface.missing) && surface.missing.length === 0,
+  `missing: ${(surface.missing || ['<no answer>']).join(', ')}`);
+// control: the guard did not disable the CLI. AC-14 covers usage codes; this is the entry point.
+eq('AC-45 control: run as a script it still executes', run('--version').rc, 0);
+has('AC-45 control: and still prints its version', run('--version').out, 'okf.mjs ');
+
+// ---------- AC-46 the frontmatter contract corpus ----------
+const CORPUS = resolve(DIR, 'fixtures', 'okf-frontmatter');
+if (!existsSync(CORPUS)) {
+  h.bad('AC-46 the fixture corpus is missing', CORPUS);
+} else {
+  const cases = readdirSync(CORPUS).filter((f) => f.endsWith('.expected.json')).sort();
+  h.check('AC-46 the corpus is not empty', cases.length >= 12, `${cases.length} case(s)`);
+  const readCase = `
+    import { readDoc } from ${JSON.stringify(OKF)};
+    const [data, err, heading] = readDoc(process.argv[1]);
+    process.stdout.write(JSON.stringify({ data, err, heading }));
+  `;
+  for (const name of cases) {
+    const stem = name.slice(0, -'.expected.json'.length);
+    const docPath = join(CORPUS, `${stem}.md`);
+    const expected = JSON.parse(readFileSync(join(CORPUS, name), 'utf8'));
+    if (!existsSync(docPath)) { h.bad(`AC-46 ${stem}: expectation without a fixture`, docPath); continue; }
+    // Both halves are required to exist. A corpus that records only the consumer it happens to
+    // run against is not a contract — it is this repository's behaviour with a filename.
+    h.check(`AC-46 ${stem}: an expectation is recorded for both consumers`,
+      !!(expected.consumers && expected.consumers.okf && expected.consumers['agentic-sdlc']),
+      `keys: ${Object.keys(expected.consumers || {}).join(', ')}`);
+    const want = (expected.consumers || {}).okf || {};
+    const r = spawnSync(process.execPath, ['--input-type=module', '-e', readCase, docPath], { encoding: 'utf8' });
+    let got = {};
+    try { got = JSON.parse(r.stdout || '{}'); } catch { got = {}; }
+    if (want.ok) {
+      h.check(`AC-46 ${stem}: parses`, got.err === null, `error: ${got.err}`);
+      h.check(`AC-46 ${stem}: keys match the hand-written expectation`,
+        JSON.stringify(got.data) === JSON.stringify(want.data),
+        `expected ${JSON.stringify(want.data)} got ${JSON.stringify(got.data)}`);
+    } else {
+      h.check(`AC-46 ${stem}: is rejected, not read as an empty document`, got.err === want.error,
+        `expected ${JSON.stringify(want.error)} got ${JSON.stringify(got.err)}`);
+    }
+    if (want.heading !== undefined) {
+      h.check(`AC-46 ${stem}: heading survives regardless`, got.heading === want.heading,
+        `expected ${JSON.stringify(want.heading)} got ${JSON.stringify(got.heading)}`);
+    }
+  }
+
+  // declaredProfile's accepted spellings, and the near-misses it must reject. A profile scopes
+  // which documents carry required keys, so misreading a line silently changes what check means.
+  const spellings = JSON.parse(readFileSync(join(CORPUS, 'profile-spellings.json'), 'utf8'));
+  const P = join(WORK, 'profile-spellings');
+  for (const { line, expected } of spellings.cases) {
+    rmSync(P, { recursive: true, force: true });
+    write(join(P, 'docs/okf.yaml'), `${line}\n`);
+    write(join(P, 'docs/one.md'), '---\ntype: Note\ndescription: d\n---\n\nbody\n');
+    const out = run('index', P).err;
+    const declared = /declares profile (.+?) - proceeding/.exec(out);
+    const got = declared ? declared[1] : null;
+    h.check(`AC-46 profile spelling ${JSON.stringify(line)}`, got === expected,
+      `expected ${JSON.stringify(expected)} got ${JSON.stringify(got)}`);
+  }
+}
 
 h.done();

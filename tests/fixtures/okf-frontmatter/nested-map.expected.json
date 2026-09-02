@@ -1,0 +1,11 @@
+{
+  "description": "a nested mapping is accepted as nested content, its keys are not flattened into the top level",
+  "consumers": {
+    "okf": {
+      "ok": true,
+      "data": { "type": "Requirement", "owner": "" },
+      "heading": "Nested"
+    },
+    "agentic-sdlc": { "ok": true, "note": "same keys" }
+  }
+}

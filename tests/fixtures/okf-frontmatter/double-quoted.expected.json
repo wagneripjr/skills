@@ -1,0 +1,15 @@
+{
+  "description": "double-quoted scalars keep their inner escapes; the reader unquotes but does not re-interpret them",
+  "consumers": {
+    "okf": {
+      "ok": true,
+      "data": {
+        "type": "Requirement",
+        "title": "A title with \\\"quotes\\\" and a colon: here",
+        "description": "Escaped \\\\ backslash"
+      },
+      "heading": "Body heading"
+    },
+    "agentic-sdlc": { "ok": true, "note": "same keys; this reader is lenient only about malformed input" }
+  }
+}

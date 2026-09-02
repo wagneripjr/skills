@@ -2,9 +2,11 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 
-const VERSION = '1.4.5';
+const VERSION = '1.5.0';
 const OKF_VERSION = '0.2';
+export { VERSION, OKF_VERSION, GEN_MARKER };
 
 const USAGE = `usage:
   okf.mjs index    <bundle-root> [--stdout] [--describe <dir>=<text>]...
@@ -20,7 +22,9 @@ They are not enumerated, not checked, and never stamped.
 check reads the corpus the walk finds; coverage reads git ls-files instead, so a
 document the walk never reaches is named rather than agreed with. Only an index the
 root index reaches may vouch for a document; generated ones nothing links to are
-named as orphan-index and their rows do not count.
+named as orphan-index and their rows do not count. A tracked index whose row points
+at a document git is not tracking is named as dangling-row: 'git commit -a' would
+carry the index and leave the document behind.
 
 exit: 0 ok | 1 violations | 77 nothing evaluated | 64 usage`;
 
@@ -84,7 +88,7 @@ const byCodepoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
 const relPath = (root, path) => relative(root, path).split(sep).join('/');
 
-function readIgnores(root) {
+export function readIgnores(root) {
   const state = { entries: [], skipped: [], nested: [], payload: [], present: false };
   let text;
   try { text = readFileSync(join(root, IGNORE_FILE), 'utf8'); } catch { return state; }
@@ -113,7 +117,7 @@ function ignoreHit(state, rel, isDir) {
 // The walk prunes a declared directory by never descending into it. A path list
 // arriving from outside the walk (coverage) has no such moment, so a directory
 // line has to be re-read as "this path, or anything beneath it".
-function ignoredFile(state, rel) {
+export function ignoredFile(state, rel) {
   for (const entry of state.entries) {
     const hit = entry.isDir ? rel.startsWith(`${entry.target}/`) : rel === entry.target;
     if (!hit) continue;
@@ -144,7 +148,7 @@ function reportIgnores(state) {
   }
 }
 
-function declaredProfile(root) {
+export function declaredProfile(root) {
   for (const candidate of [join(root, 'docs', 'okf.yaml'), join(root, 'okf.yaml')]) {
     let text;
     try { text = readFileSync(candidate, 'utf8'); } catch { continue; }
@@ -156,7 +160,7 @@ function declaredProfile(root) {
   return [null, null];
 }
 
-function scalar(raw) {
+export function scalar(raw) {
   if (raw === undefined || raw === null) return '';
   return raw.trim();
 }
@@ -202,7 +206,7 @@ function readBlockScalar(lines, start, style) {
   return [folded.join(''), i];
 }
 
-function parseBlock(block) {
+export function parseBlock(block) {
   const data = {};
   let seenKey = false;
   const lines = block.split('\n');
@@ -258,7 +262,7 @@ function firstHeading(lines, start) {
 
 // [frontmatter, error, first-heading]. The heading is returned even when the
 // frontmatter is absent or unparseable, because a row still has to be rendered.
-function readDoc(path) {
+export function readDoc(path) {
   let text;
   try { text = readFileSync(path, 'utf8'); }
   catch (err) { return [null, `unreadable: ${err.message}`, '']; }
@@ -418,6 +422,48 @@ const ownsIndex = (target) => {
   return text.includes(GEN_MARKER);
 };
 
+// A rewrite that changes nothing is not free: it churns mtime, so a watcher fires, a build
+// re-runs, and `git status` shows a file the run did not actually change. Comparing first
+// makes `index` safe to call on every edit, which is what the regen hook does.
+const currentText = (target) => {
+  try { return readFileSync(target, 'utf8'); } catch { return null; }
+};
+
+// Which dialect this repository's catalog is written in, and the two places that can say so:
+// the manifest declares it, and the root index carries what the generator that wrote it stamped.
+// The higher of the two wins, because either one being newer means a richer generator has been
+// here and this one would be a downgrade.
+const versionOrder = (a, b) => {
+  const pa = String(a).split('.').map(Number);
+  const pb = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i += 1) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x !== y) return x < y ? -1 : 1;
+  }
+  return 0;
+};
+
+export function declaredOkfVersion(root) {
+  let best = null;
+  const consider = (source, raw) => {
+    const value = unquote(String(raw ?? '').trim());
+    if (!/^\d+(?:\.\d+)*$/.test(value)) return;
+    if (!best || versionOrder(value, best[1]) > 0) best = [source, value];
+  };
+  for (const candidate of [join(root, 'docs', 'okf.yaml'), join(root, 'okf.yaml')]) {
+    let text;
+    try { text = readFileSync(candidate, 'utf8'); } catch { continue; }
+    for (const line of text.split('\n')) {
+      const m = /^okf_version:[ \t]*(\S.*?)[ \t]*$/.exec(line.replace(/\r$/, ''));
+      if (m) consider(relPath(root, candidate), m[1]);
+    }
+  }
+  const [fm] = readDoc(join(root, 'index.md'));
+  if (fm && fm.okf_version) consider('index.md', fm.okf_version);
+  return best || [null, null];
+}
+
 function renderRows(heading, rows) {
   const out = [`# ${heading}`, ''];
   const sorted = [...rows].sort((a, b) => byCodepoint(a[0].toLowerCase(), b[0].toLowerCase()));
@@ -437,7 +483,7 @@ function render(sections, subdirs, isRoot) {
   return isRoot ? `---\nokf_version: "${OKF_VERSION}"\n---\n\n${body}` : body;
 }
 
-function cmdIndex(root, toStdout, described, ignores) {
+export function cmdIndex(root, toStdout, described, ignores) {
   const [dirs, carries] = indexable(root, ignores);
   if (!dirs.length) {
     process.stderr.write(`okf.mjs: no documents found under ${root} - nothing written\n`);
@@ -501,7 +547,7 @@ function cmdIndex(root, toStdout, described, ignores) {
     }
     if (toStdout) {
       process.stdout.write(`==> ${relative(root, target).split(sep).join('/')} <==\n${text}\n`);
-    } else {
+    } else if (currentText(target) !== text) {
       writeFileSync(target, text, 'utf8');
       written += 1;
     }
@@ -527,7 +573,7 @@ function cmdIndex(root, toStdout, described, ignores) {
   return 0;
 }
 
-function cmdCheck(root, ignores) {
+export function cmdCheck(root, ignores) {
   const violations = [];
   const notes = [];
   let scanned = 0;
@@ -595,10 +641,15 @@ function trackedMarkdown(root) {
     cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024,
   });
   try { git(['rev-parse', '--show-toplevel']); } catch { return null; }
-  let out;
-  try { out = git(['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', '*.md']); }
-  catch { return null; }
-  return [...new Set(out.split('\0').filter(Boolean).map((p) => p.split(sep).join('/')))];
+  const list = (args) => {
+    const out = git(['ls-files', '-z', ...args, '--', '*.md']);
+    return [...new Set(out.split('\0').filter(Boolean).map((p) => p.split(sep).join('/')))];
+  };
+  try {
+    // `all` is what must be indexed; `cached` is what `git commit -a` will actually carry.
+    // The gap between them is a real hazard, not a bookkeeping detail — see dangling rows below.
+    return { all: list(['--cached', '--others', '--exclude-standard']), cached: new Set(list(['--cached'])) };
+  } catch { return null; }
 }
 
 function normalizeLink(base, link) {
@@ -612,22 +663,49 @@ function normalizeLink(base, link) {
   return out.join('/');
 }
 
+function rowTargets(root, rel) {
+  const targets = new Set();
+  let lines;
+  try { lines = readFileSync(join(root, rel), 'utf8').split('\n'); } catch { return targets; }
+  const base = dirname(rel);
+  for (const line of lines) {
+    const m = ENTRY_RE.exec(line.replace(/\r$/, ''));
+    if (!m) continue;
+    const link = m[2].split('#')[0].trim();
+    if (!link || link.startsWith('/') || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(link)) continue;
+    const target = normalizeLink(base, decodeURIComponent(link));
+    if (target) targets.add(target);
+  }
+  return targets;
+}
+
 function listedDocuments(root, indexes) {
   const listed = new Set();
+  for (const rel of indexes) for (const t of rowTargets(root, rel)) listed.add(t);
+  return listed;
+}
+
+// A row pointing at a document git will not commit.
+//
+// `index` indexes the working tree, so a document written and not yet added is listed on
+// purpose — that is the whole reason the regeneration hook can run on the edit that created it.
+// The hazard is what happens next: `git commit -a` stages modifications to TRACKED files, so the
+// updated index goes in and the document it now vouches for does not. The commit is self-
+// consistent and wrong, and every enumerator here reads the working tree, where both files are
+// present, so nothing else can see it.
+//
+// Scoped to indexes that are themselves tracked, because an untracked index is not going into
+// that commit either — there is no half-commit to warn about, only a bundle nobody has added yet.
+function danglingRows(root, indexes, cached) {
+  const found = [];
   for (const rel of indexes) {
-    let lines;
-    try { lines = readFileSync(join(root, rel), 'utf8').split('\n'); } catch { continue; }
-    const base = dirname(rel);
-    for (const line of lines) {
-      const m = ENTRY_RE.exec(line.replace(/\r$/, ''));
-      if (!m) continue;
-      const link = m[2].split('#')[0].trim();
-      if (!link || link.startsWith('/') || /^[A-Za-z][A-Za-z0-9+.-]*:/.test(link)) continue;
-      const target = normalizeLink(base, decodeURIComponent(link));
-      if (target) listed.add(target);
+    if (!cached.has(rel)) continue;
+    for (const target of rowTargets(root, rel)) {
+      if (!target.endsWith('.md') || cached.has(target)) continue;
+      found.push(`${target} (listed by ${rel})`);
     }
   }
-  return listed;
+  return [...new Set(found)].sort(byCodepoint);
 }
 
 // Which indexes are allowed to vouch for a document.
@@ -679,12 +757,13 @@ const wasGenerated = (root, rel) => {
 // is a projection checked against itself, and it cannot report a missing input by
 // construction. Anchoring to the tracked-file list gives the comparison a second,
 // independent source — which is the only way a document nobody indexed can be named.
-function cmdCoverage(root, ignores) {
-  const tracked = trackedMarkdown(root);
-  if (!tracked) {
+export function cmdCoverage(root, ignores) {
+  const enumerated = trackedMarkdown(root);
+  if (!enumerated) {
     process.stderr.write(`okf.mjs: ${root} is not inside a git work tree (or git is unavailable) - nothing was verified\n`);
     return 77;
   }
+  const { all: tracked, cached } = enumerated;
 
   // Where an index could live is derived from the tracked documents themselves, not
   // from the walk — an index inside a directory the walk prunes still counts, and a
@@ -699,6 +778,7 @@ function cmdCoverage(root, ignores) {
   const reachable = reachableIndexes(root, indexes);
   const listed = listedDocuments(root, reachable);
   const orphans = indexes.filter((p) => !reachable.includes(p) && wasGenerated(root, p));
+  const dangling = danglingRows(root, reachable, cached);
 
   const required = [];
   const payloadCache = new Map();
@@ -721,6 +801,7 @@ function cmdCoverage(root, ignores) {
   const missing = required.filter((rel) => !listed.has(rel)).sort(byCodepoint);
   for (const rel of missing) process.stdout.write(`unindexed: ${rel}\n`);
   for (const rel of orphans) process.stdout.write(`orphan-index: ${rel}\n`);
+  for (const line of dangling) process.stdout.write(`dangling-row: ${line}\n`);
   process.stdout.write(
     `okf.mjs: ${required.length} tracked document(s) in ${reachable.length} index file(s), ${missing.length} reachable only by ls\n`);
   if (orphans.length) {
@@ -728,6 +809,13 @@ function cmdCoverage(root, ignores) {
       `okf.mjs: ${orphans.length} generated index file(s) are linked from no index, so \`index\` no longer maintains them and their rows go stale unseen\n`);
     process.stdout.write(
       `okf.mjs: delete them - their rows were not counted here, so a document only they listed is named above\n`);
+  }
+
+  if (dangling.length) {
+    process.stdout.write(
+      `okf.mjs: ${dangling.length} index row(s) point at a document git is not tracking, so \`git commit -a\` commits the index without it\n`);
+    process.stdout.write(
+      'okf.mjs: git add the document(s) named above, or remove the row by deleting the document and regenerating\n');
   }
 
   // The walk skips dot-directories on purpose — they hold tooling, not knowledge, and
@@ -753,10 +841,10 @@ function cmdCoverage(root, ignores) {
     process.stdout.write(
       `okf.mjs: name the path in ${IGNORE_FILE}; index it from inside that repository if it needs one, never from here\n`);
   }
-  return missing.length || orphans.length ? 1 : 0;
+  return missing.length || orphans.length || dangling.length ? 1 : 0;
 }
 
-function cmdWire(root, toStdout) {
+export function cmdWire(root, toStdout) {
   if (!existsSync(join(root, 'index.md'))) {
     process.stderr.write(`okf.mjs: no index.md at ${root} - run \`index\` first\n`);
     return 1;
@@ -803,7 +891,7 @@ function usage(message) {
   return 64;
 }
 
-function main(argv) {
+export function main(argv) {
   if (argv.includes('--version')) {
     process.stdout.write(`okf.mjs ${VERSION} (OKF v${OKF_VERSION})\n`);
     return 0;
@@ -859,4 +947,10 @@ function main(argv) {
   return cmdIndex(root, toStdout, described, ignores);
 }
 
-process.exit(main(process.argv.slice(2)));
+// Importable core plus a CLI, and the guard is what makes the split real: a bare
+// `process.exit(main(...))` at the tail runs — and terminates the host process — the moment
+// anything imports this file, which is why the regen hook could not reuse the generator it
+// is a client of. argv[1] is absent when Node is fed a script on stdin, so it is checked.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  process.exit(main(process.argv.slice(2)));
+}
