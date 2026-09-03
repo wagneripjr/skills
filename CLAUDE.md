@@ -194,6 +194,46 @@ All four guards are mutation-tested: reverting the root resolution to cwd, dropp
 refusal, unscoping the dangling-row check, removing the byte-diff write, and removing the import
 guard each flip at least one canary.
 
+### BUG-006 · A published example may not borrow authority from what the reader cannot see
+
+Two rules, both found by a confidentiality audit of the public tree and both about the same mistake
+— an example that is more convincing than it is entitled to be, because part of what makes it
+convincing sits outside the repository.
+
+1. **A shipped skill may not assert that tooling exists which this repo does not ship.**
+   `doc-this-design-system`'s description ended with `NOT for design generation (use frontend-design
+   plugin)`. `frontend-design` appears in none of the three manifests — it is a plugin in the
+   author's environment. A stranger's agent reads the clause as a fact and routes into tooling it
+   cannot run, so the claim is not merely unverifiable, it is *steering*. The disambiguation was
+   kept and the plugin name dropped. Applies to every shipped surface: skill descriptions and
+   bodies, hooks, README, SECURITY, CONTRIBUTING. Maintainer meta (`CLAUDE.md`, `AGENTS.md`) may
+   name private tooling; it is not addressed to strangers.
+
+2. **A worked example may not carry unlabelled counts from a real engagement.** Four passages
+   narrated an actual `/doc-this` run as observation, each quoting an exact file count beside the
+   named technology stack it ran against. Any one of them is a defensible anecdote; together the
+   stack-and-scale pair is a fingerprint, and it sat beside a *fictional* example on the identical
+   stack, which invites the inference that the fiction was abstracted from the fact. The counts
+   became orders of magnitude. The pedagogy is untouched — `N scripts means N reads` teaches what an
+   exact number taught. The stack detail stays where the routing rule is genuinely stack-specific:
+   it is the *combination* that fingerprints, so removing one side breaks it.
+
+   **This clause is itself bound by the rule.** The audit that produced it restated the counts here
+   on the first draft, which republished the fingerprint in a tracked file — the remediation
+   becoming the next disclosure. A rule about a leak names the *shape* of what leaked, never the
+   values. If you need the specifics to re-verify, read them out of `git log -p` for this commit,
+   not out of this file.
+
+The matching hygiene rule for fiction: **every** file carrying a shared invented example states that
+it is invented. `prototype-spike` had the label in three of six files; the densest instance,
+`evals/evals.json`, was the one missing it, and was also the only file siting the app under a
+`~/dev/<client>/` path — so a reader could not tell a placeholder from a redaction. An unlabelled
+sanitized example is not a leak, but it guarantees every future audit re-litigates it.
+
+Re-running the audit sweeps: use `$(git rev-list --all)` **inline**, never a `$VAR` — zsh does not
+word-split an unquoted variable, so `git grep <pat> $REVS` passes one bogus rev, finds nothing, and
+reports clean. Pair every sweep with a control term that must match.
+
 ## Repository Structure
 
 ```
@@ -505,10 +545,10 @@ Four fields, all edited by hand, all of which must agree:
 
 | File | Field | Current |
 |---|---|---|
-| `.claude-plugin/plugin.json` | `.version` | 6.5.0 |
-| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.5.0 |
-| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.5.0 / 1.1.4 |
-| `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.4 |
+| `.claude-plugin/plugin.json` | `.version` | 6.5.1 |
+| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.5.1 |
+| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.5.1 / 1.1.5 |
+| `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.5 |
 
 **Never let `marketplace.json` fall behind `plugin.json`.** The marketplace entry is what the
 client compares against; if it advertises a lower version, `claude plugin update` is a permanent
