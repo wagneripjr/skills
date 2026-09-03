@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // test-doc-this-coverage-gate.mjs — regression test for the Total Source
-// Coverage gate (BUG-003: doc-this counted hundreds of WebForms files in the inventory
-// but never read them, recording their contents as 🔴 gaps).
+// Coverage gate (BUG-003: doc-this counted hundreds of WebForms files in the
+// inventory but never read them, recording their contents as 🔴 gaps).
 //
 // Asserts the gate's exit codes per transition:
 //   allow = exit 0, deny = exit 2.

@@ -178,5 +178,5 @@ Same as all doc-this hooks: `touch /tmp/.claude-doc-this-bypass-${CLAUDE_SESSION
 - Never use LSP `summary` or `detail` text as spec content — those are IDE tooltips, not business documentation
 - Never cite an LSP operation as the evidence source (wrong: "per LSP incomingCalls"). Cite the file:line that LSP pointed to (right: `OrderService.cs:42`)
 - Never run LSP operations on files outside the project (e.g., NuGet cache, node_modules internals)
-- Never treat LSP unavailability (timeout, unsupported file type, exhausted budget) as permission to skip a file — coverage is governed by the file manifest and the Code Analyst's routing table, not by LSP support. The observed legacy-WebForms incident (hundreds of unread markup files recorded as 🔴 gaps after csharp-ls timed out) is exactly this failure.
+- Never treat LSP unavailability (timeout, unsupported file type, exhausted budget) as permission to skip a file — coverage is governed by the file manifest and the Code Analyst's routing table, not by LSP support. A legacy-WebForms run hit exactly this failure: hundreds of unread markup files recorded as 🔴 gaps after csharp-ls timed out.
 - Never assume LSP is available — always check `state.json.structural_extraction.lsp_available` and fall back gracefully

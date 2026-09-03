@@ -3,8 +3,9 @@
 //
 // Mechanically enforces Total Source Coverage (describe-only pact) at phase
 // transitions. Agents under token pressure rationalize skipping files and
-// recording their contents as 🔴 gaps — observed case: hundreds of WebForms markup files
-// counted in the inventory, never read, openly logged as "not read in full".
+// recording their contents as 🔴 gaps — observed case: hundreds of WebForms
+// markup files counted in the inventory, never read, openly logged as
+// "not read in full".
 // Prose forbids that (the pact); this gate makes it mechanical.
 //
 // Transition checks (all derived from .doc-this/context/file-manifest.json):
