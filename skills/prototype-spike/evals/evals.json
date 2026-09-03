@@ -1,5 +1,6 @@
 {
   "skill_name": "prototype-spike",
+  "note": "The orchard-console app in these prompts is fictional — the same invented app used in references/harvest-playbook.md and references/anatomy.md. The repo path, component names, feature flags, timings and endpoints point at nothing real; they illustrate shape only.",
   "evals": [
     {
       "id": 0,

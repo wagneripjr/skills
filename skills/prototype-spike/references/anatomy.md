@@ -46,8 +46,8 @@ the three-group structure and the citation format, never the specific colors or 
   --ink:    #22302A;  /* src/styles/palette.ts:26 */
 
   /* prototype-only — justified */
-  --novo:   #B5179E;  /* annotation layer only; MUST NOT exist in the app, so it can never be
-                         mistaken for product UI */
+  --annotation-accent: #B5179E;  /* annotation layer only; MUST NOT exist in the app, so it can never be
+                                    mistaken for product UI */
 }
 ```
 
@@ -108,7 +108,7 @@ reachable through it, and nothing else is.
 ```css
 .tag { display: none; }
 body.annot .tag { display: inline-block; }
-body.annot .is-new { outline: 2px dashed var(--novo); outline-offset: -2px; }
+body.annot .is-new { outline: 2px dashed var(--annotation-accent); outline-offset: -2px; }
 ```
 
 Use `outline`, not `border` — a border changes layout and the annotated screen stops matching the

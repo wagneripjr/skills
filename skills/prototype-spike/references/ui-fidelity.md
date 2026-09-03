@@ -1,5 +1,9 @@
 # UI fidelity: rebuilding a screen that already exists
 
+> The orchard app in the examples below is **fictional** — the same invented app used in
+> `harvest-playbook.md`, `anatomy.md` and `exemplar-visit-report.md`. Paths, component names,
+> feature flags, timings and endpoints point at nothing real; they illustrate shape only.
+
 When the prototype covers a screen the client already uses daily, fidelity is not polish — it is what
 makes the exercise valid. A client reviewing a prototype is reading it as *their app plus a change*.
 Every element that silently differs from their app is a second, unannounced change they now have to

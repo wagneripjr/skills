@@ -1,5 +1,9 @@
 # Data fidelity tiers
 
+> The orchard app in the examples below is **fictional** — the same invented app used in
+> `harvest-playbook.md`, `anatomy.md` and `exemplar-visit-report.md`. Paths, component names,
+> feature flags, timings and endpoints point at nothing real; they illustrate shape only.
+
 What the screen *shows* has its own ladder, independent of how faithfully the screen is *built*. A
 labeled stub inside a source-faithful UI is a perfectly good prototype. An invented payload inside a
 beautiful one is worthless, because everything the reviewer concludes from it is about a system that
