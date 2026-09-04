@@ -1,0 +1,142 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ReviewRunResults",
+  "description": "Output schema for the skill-reviewer plugin. Judges are a generic map keyed by rubric file stem (e.g. 'description', 'content') — one entry per rubric. Scoring contains one component per judge; each component's weight comes from that judge's entry in config.json's judges map.",
+  "type": "object",
+  "required": [],
+  "additionalProperties": false,
+  "properties": {
+    "judges": {
+      "type": "object",
+      "description": "Map of rubric stem → judge result. One entry per rubric file discovered in ./rubrics/. Absent when no judges have run yet.",
+      "additionalProperties": { "$ref": "#/$defs/SkillReviewJudgeResult" }
+    },
+    "reviewScore": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Overall review score 0–100. Computed as floor(100 * weighted sum of component scores). Component weights come from config.json's judges map. Absent if the scoring block is incomplete."
+    },
+    "scoring": {
+      "type": "object",
+      "description": "Per-component normalized scores — one entry per judge. Each component's weight comes from that judge's entry in config.json's judges map.",
+      "required": ["components"],
+      "additionalProperties": false,
+      "properties": {
+        "components": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "weight", "normalized"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Component id: the rubric file stem of the judge component."
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Component weight: the judge's weight from config.json (config.judges[stem].weight)."
+              },
+              "normalized": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Normalized score for this component (0–1): the judge's normalizedScore."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "SkillReviewDimensionScore": {
+      "type": "object",
+      "required": ["score", "reasoning"],
+      "additionalProperties": false,
+      "properties": {
+        "score": {
+          "type": "number",
+          "description": "Numeric score within the rubric's scale range."
+        },
+        "reasoning": {
+          "type": "string",
+          "description": "1–2 sentence justification."
+        }
+      }
+    },
+    "SkillReviewJudgeEvaluation": {
+      "type": "object",
+      "required": ["scores", "overall_assessment", "suggestions"],
+      "additionalProperties": false,
+      "properties": {
+        "scores": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/SkillReviewDimensionScore" },
+          "description": "Map of dimension id → score. Must include every dimension from the rubric."
+        },
+        "overall_assessment": {
+          "type": "string"
+        },
+        "suggestions": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "SkillReviewJudgeResult": {
+      "type": "object",
+      "required": ["success"],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "success": { "const": true } }, "required": ["success"] },
+          "then": { "required": ["evaluation", "weightedScore", "normalizedScore"] }
+        },
+        {
+          "if": { "properties": { "success": { "const": false } }, "required": ["success"] },
+          "then": { "required": ["errorMessage"] }
+        }
+      ],
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "description": "True if the judge ran and produced a valid evaluation. False when the judge branch failed and returns an errorMessage."
+        },
+        "errorMessage": {
+          "type": "string",
+          "description": "Error message if success is false."
+        },
+        "evaluation": {
+          "$ref": "#/$defs/SkillReviewJudgeEvaluation",
+          "description": "Judge output. Present when success is true."
+        },
+        "weightedScore": {
+          "type": "number",
+          "description": "Weighted average of dimension scores. sum(score * weight) / sum(weight)."
+        },
+        "scale": {
+          "type": "object",
+          "description": "The rubric's scoring scale, copied from the rubric file's top-level scale field.",
+          "required": ["min", "max"],
+          "additionalProperties": false,
+          "properties": {
+            "min": { "type": "number" },
+            "max": { "type": "number" }
+          }
+        },
+        "normalizedScore": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "weightedScore normalized to [0, 1]: (weightedScore - scale.min) / (scale.max - scale.min)."
+        }
+      }
+    }
+  }
+}

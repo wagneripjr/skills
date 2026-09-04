@@ -1,0 +1,7 @@
+{
+  "name": "wagneripjr/wagner-skills-reviewer",
+  "version": "0.1.0",
+  "description": "Forks the default Tessl skill-review rubric with three corrections this repository's documented tradeoffs require: an orchestrator-dispatched worker is scored on its dispatch contract rather than on user-intent keywords, recorded rationale is not counted as padding, and a fenced block quoting a tool's emitted output is credited for fidelity rather than penalised for links that only resolve in the target repository",
+  "private": true,
+  "skills": "./skills/"
+}

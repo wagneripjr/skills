@@ -1,0 +1,12 @@
+{
+  "$schema": "../schemas/config.schema.json",
+  "validation_weight": 0.2,
+  "judges": {
+    "description": {
+      "weight": 0.4
+    },
+    "content": {
+      "weight": 0.4
+    }
+  }
+}

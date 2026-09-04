@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "config.schema.json",
+  "title": "SkillReviewConfig",
+  "description": "JSON Schema for the reviewer plugin configuration file (config.json).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "validation_weight": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Weight of the validation component in the overall score (0–1). Default: 0.2."
+    },
+    "judges": {
+      "type": "object",
+      "description": "Per-judge weight map keyed by rubric filename stem. Each key must match a rubric file in rubrics/. The judge weights plus validation_weight must sum to 1.0 (validated at publish time, not enforced by this schema).",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["weight"],
+        "additionalProperties": false,
+        "properties": {
+          "weight": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    }
+  }
+}

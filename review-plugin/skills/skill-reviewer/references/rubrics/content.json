@@ -1,0 +1,216 @@
+{
+  "$schema": "../schemas/rubric.schema.json",
+  "evaluation_target": "content",
+  "scope": "SKILL.md body (markdown content after YAML frontmatter)",
+  "scale": {
+    "min": 1,
+    "max": 5
+  },
+  "reference_examples": {
+    "judging_guidelines": [
+      "Evaluate what is written, not what could be inferred or added.",
+      "Penalize explanations of concepts Claude already knows (e.g., what a PDF is, how libraries work, basic programming concepts).",
+      "Reward brevity that preserves clarity; penalize verbosity even if accurate.",
+      "Code examples should be executable and complete, not pseudocode, unless flexibility is explicitly justified.",
+      "Time-sensitive information (specific dates, version numbers) should penalize conciseness unless placed in an 'old patterns' or 'deprecated' section.",
+      "For simple skills (single task, no multi-step process), workflow clarity can score 5 if the single action is unambiguous.",
+      "For skills under 50 lines with no need for external references, progressive disclosure can score 5 with just well-organized sections.",
+      "Missing validation/verification steps in workflows involving destructive or batch operations should cap workflow clarity at 3. This cap takes precedence over the simple-skill exception: a destructive or batch skill without validation cannot score above 3 even if it is single-purpose.",
+      "When bundle files are provided, score `progressive_disclosure` against the actual bundle structure (file listing + any referenced paths) rather than on references alone.",
+      "BOUNDARY GUIDANCE: Use odd scores (1, 3, 5) when the content clearly matches one anchor. Use even scores (2, 4) when it falls between two anchors. A score of 2 means noticeably below the midpoint; 4 means noticeably above it.",
+      "ANTI-DRIFT: After assigning each score, re-read the anchors for the score above and below. If the content fits a neighboring anchor better, adjust the score to whichever anchor is the best fit. This prevents anchoring bias in either direction.",
+      "LOAD-BEARING RATIONALE: a passage is not padding when it records why a decision was made - a rejected alternative, a documented tradeoff, a named past failure, or a discipline restated because a real run violated it. Distinguish \"explains what Claude already knows\" (penalize) from \"explains what this codebase decided and why\" (do not penalize). If cutting the passage would let a competent reader silently reintroduce the problem it describes, it earns its tokens.",
+      "Verify a length claim before scoring on it. Count the lines or sections you are objecting to rather than asserting the file is long; an unverified size assertion is not a finding."
+    ],
+    "good_overall_examples": [
+      "## Quick start\n\nExtract text with pdfplumber:\n```python\nimport pdfplumber\nwith pdfplumber.open(\"file.pdf\") as pdf:\n    text = pdf.pages[0].extract_text()\n```\n\n## Advanced features\n\n**Form filling**: See [FORMS.md](FORMS.md) for complete guide\n**API reference**: See [REFERENCE.md](REFERENCE.md) for all methods",
+      "## Commit message format\n\nGenerate commit messages following these examples:\n\n**Example 1:**\nInput: Added user authentication with JWT tokens\nOutput:\n```\nfeat(auth): implement JWT-based authentication\n\nAdd login endpoint and token validation middleware\n```\n\nFollow this style: type(scope): brief description, then detailed explanation.",
+      "## Document editing process\n\n1. Make your edits to `word/document.xml`\n2. **Validate immediately**: `python ooxml/scripts/validate.py unpacked_dir/`\n3. If validation fails:\n   - Review the error message carefully\n   - Fix the issues in the XML\n   - Run validation again\n4. **Only proceed when validation passes**\n5. Rebuild: `python ooxml/scripts/pack.py unpacked_dir/ output.docx`"
+    ],
+    "bad_overall_examples": [
+      "PDF (Portable Document Format) files are a common file format that contains text, images, and other content. To extract text from a PDF, you'll need to use a library. There are many libraries available for PDF processing, but we recommend pdfplumber because it's easy to use and handles most cases well. First, you'll need to install it using pip...",
+      "You can use pypdf, or pdfplumber, or PyMuPDF, or pdf2image, or camelot, or tabula-py depending on your needs. Each has different strengths...",
+      "Process the document.\n\nSee advanced.md for more details.\n\n(In advanced.md: See details.md for the actual instructions.)",
+      "If you're doing this before August 2025, use the old API. After August 2025, use the new API."
+    ]
+  },
+  "dimensions": [
+    {
+      "id": "conciseness",
+      "name": "Conciseness / Token Efficiency",
+      "weight": 0.28,
+      "question": "Does it respect token budget and assume Claude’s intelligence, without cutting the rationale a reader needs to not undo a deliberate decision?",
+      "rationale": "The context window is a public good and every unnecessary token competes with it. But the cut has a direction: prose explaining what Claude already knows is waste, while prose recording WHY this codebase chose X over Y is the most expensive thing in the file to regenerate and the first thing an agent needs in order not to revert it. Length spent on a named incident, a rejected alternative, or a restated discipline that a prior run actually violated is load-bearing. Scoring it as padding is how a reviewer talks a maintainer into deleting the reason.",
+      "scores": [
+        {
+          "score": 1,
+          "anchor": "Severely verbose; extensively explains concepts Claude already knows; heavily padded. Length is spent on background, not on decisions.",
+          "example": "PDF (Portable Document Format) files are a common file format that contains text, images, and other content. To extract text from a PDF, you'll need to use a library. There are many libraries available..."
+        },
+        {
+          "score": 2,
+          "anchor": "Noticeably verbose; several unnecessary explanations or padded sections that carry no decision or constraint.",
+          "example": "PDF files store text and images in a structured format. Use pdfplumber to extract the text content. It's a reliable library.\n\n```python\nimport pdfplumber\n```"
+        },
+        {
+          "score": 3,
+          "anchor": "Mostly efficient but includes some restatement that carries neither instruction nor rationale, or a general-knowledge aside that could be cut without losing a reason.",
+          "example": "Use pdfplumber for text extraction. It's a good library that handles most PDF formats well.\n\n```python\nimport pdfplumber\nwith pdfplumber.open(\"file.pdf\") as pdf:\n    text = pdf.pages[0].extract_text()\n```"
+        },
+        {
+          "score": 4,
+          "anchor": "Efficient. Every long passage is doing work - an instruction, a constraint, or a recorded reason - with minor over-explanation that could still be trimmed.",
+          "example": "Extract PDF text using pdfplumber (handles most formats):\n\n```python\nimport pdfplumber\nwith pdfplumber.open(\"file.pdf\") as pdf:\n    text = pdf.pages[0].extract_text()\n```"
+        },
+        {
+          "score": 5,
+          "anchor": "Every token earns its place. General knowledge is assumed; what remains is instruction plus the rationale that keeps a future reader from undoing a deliberate choice. A skill is not less concise for stating why a tempting alternative was rejected, for naming the incident a rule came from, or for restating a discipline that a real run violated - that is the content, not padding around it.",
+          "example": "Never add user-intent keywords to a dispatched worker: keywords added to chase a reviewer score had to be reverted, because the worker then fired with no pipeline state. (Four lines that prevent one expensive regression.)"
+        }
+      ]
+    },
+    {
+      "id": "actionability",
+      "name": "Actionability",
+      "weight": 0.28,
+      "question": "Does it provide concrete, executable guidance vs vague direction?",
+      "rationale": "Skills succeed when Claude knows exactly what to do. Concrete code, specific commands, and clear examples beat abstract descriptions.",
+      "scores": [
+        {
+          "score": 1,
+          "anchor": "Entirely vague or abstract; no concrete code or commands; only describes rather than instructs",
+          "example": "Use a PDF library to extract the text content from the document and process it as needed."
+        },
+        {
+          "score": 2,
+          "anchor": "Minimal concrete guidance; high-level hints but missing the specific steps to execute",
+          "example": "Import pdfplumber and use it to open the PDF file, then extract text from each page."
+        },
+        {
+          "score": 3,
+          "anchor": "Some concrete guidance but incomplete; pseudocode instead of executable code; missing key details",
+          "example": "Use pdfplumber to extract text:\n```\n# pseudocode\nopen pdf\nfor each page:\n    extract text\n```"
+        },
+        {
+          "score": 4,
+          "anchor": "Mostly executable guidance; concrete code or commands with minor gaps",
+          "example": "```python\nimport pdfplumber\nwith pdfplumber.open(\"file.pdf\") as pdf:\n    text = pdf.pages[0].extract_text()\n```"
+        },
+        {
+          "score": 5,
+          "anchor": "Fully executable; copy-paste ready code or commands; specific examples cover the common cases",
+          "example": "```python\nimport pdfplumber\nwith pdfplumber.open(\"file.pdf\") as pdf:\n    for page in pdf.pages:\n        print(page.extract_text())\n```\n\nFor tables: `page.extract_tables()` returns list of lists."
+        }
+      ]
+    },
+    {
+      "id": "workflow_clarity",
+      "name": "Workflow Clarity",
+      "weight": 0.24,
+      "question": "Are multi-step processes clearly sequenced with validation checkpoints?",
+      "rationale": "Complex operations fail when steps are unclear or validation is missing. Clear workflows with explicit checkpoints catch errors early and guide Claude through fragile operations.",
+      "scores": [
+        {
+          "score": 1,
+          "anchor": "Steps missing or incoherent; no sequence; no validation for risky operations",
+          "example": "Edit the XML file, then rebuild the document. Make sure it's valid."
+        },
+        {
+          "score": 2,
+          "anchor": "Rough sequence present but many gaps; steps poorly defined; validation absent",
+          "example": "1. Open the document\n2. Make changes\n3. Save and close"
+        },
+        {
+          "score": 3,
+          "anchor": "Steps listed but validation gaps; sequence present but checkpoints missing or implicit",
+          "example": "1. Unpack the document\n2. Edit word/document.xml\n3. Repack the document\n4. Test the output"
+        },
+        {
+          "score": 4,
+          "anchor": "Clear sequence with most checkpoints present; minor validation gaps",
+          "example": "1. Unpack: `python scripts/unpack.py input.docx`\n2. Edit `word/document.xml`\n3. Repack: `python scripts/pack.py unpacked/ output.docx`\n4. Verify output is valid"
+        },
+        {
+          "score": 5,
+          "anchor": "Clear sequence with explicit validation steps; feedback loops for error recovery; checklists for complex processes",
+          "example": "1. Unpack: `python scripts/unpack.py input.docx`\n2. Edit `word/document.xml`\n3. **Validate**: `python scripts/validate.py unpacked/`\n4. If errors: fix and re-validate\n5. **Only when valid**: `python scripts/pack.py unpacked/ output.docx`"
+        }
+      ]
+    },
+    {
+      "id": "progressive_disclosure",
+      "name": "Progressive Disclosure",
+      "weight": 0.12,
+      "question": "Does it appropriately structure content across files with clear navigation?",
+      "rationale": "SKILL.md should be an overview pointing to detailed materials. References should be one level deep, clearly signaled, and organized for discovery.",
+      "scores": [
+        {
+          "score": 1,
+          "anchor": "Monolithic wall of text with no structure; or deeply nested references (2+ levels); impossible to navigate",
+          "example": "See advanced.md for details.\n\n(In advanced.md: See details.md for the actual information.)\n\n(In details.md: The real content is here.)"
+        },
+        {
+          "score": 2,
+          "anchor": "Minimal structure; content that clearly belongs in separate files is inlined; or references are buried",
+          "example": "[300 lines of API reference that should be in a separate file with no section headers]"
+        },
+        {
+          "score": 3,
+          "anchor": "Some structure but could be better organized; references present but not clearly signaled; content that should be separate is inline",
+          "example": "## Overview\n[200 lines of API reference that could be in a separate file]\n\n## Advanced\nSee ADVANCED.md"
+        },
+        {
+          "score": 4,
+          "anchor": "Good structure; most content is appropriately placed; references mostly clear; minor organization gaps",
+          "example": "## Quick start\n[Reasonable getting-started content]\n\n## Advanced features\nSee ADVANCED.md for details\n\n## API reference\n[A few key examples inline, bulk in separate file]"
+        },
+        {
+          "score": 5,
+          "anchor": "Clear overview with well-signaled one-level-deep references; content appropriately split; easy navigation",
+          "example": "## Quick start\n[Concise getting-started content]\n\n## Advanced features\n**Form filling**: See [FORMS.md](FORMS.md)\n**API reference**: See [REFERENCE.md](REFERENCE.md)\n**Examples**: See [EXAMPLES.md](EXAMPLES.md)"
+        }
+      ]
+    },
+    {
+      "id": "quoted_output_fidelity",
+      "name": "Quoted Output and Target-Path Fidelity",
+      "weight": 0.08,
+      "question": "Where the skill reproduces bytes a tool emits, or names a path in the target project rather than in its own bundle, is that reproduced verbatim and marked as such?",
+      "rationale": "A skill that documents a generator has to quote what the generator writes. That quote is a specification: it must stay byte-identical or the doc lies, and its relative links resolve in the target repository, where they are correct, not in the skill directory, where they can never resolve. The same holds for a skill that names runtime paths in the project it operates on. Rewriting either to satisfy a link checker makes the skill wrong, so the reviewer must credit the fidelity rather than penalize the unresolvable path.",
+      "scores": [
+        {
+          "score": 1,
+          "anchor": "Emitted output is paraphrased or silently edited so it no longer matches what the tool writes, or target-project paths are presented as if they were bundle files.",
+          "example": "A doc that shows a tidied-up version of the block its script emits, so following the doc produces different bytes than running the tool."
+        },
+        {
+          "score": 2,
+          "anchor": "Output is quoted but drifts from the emitter, with no test or note pinning the two together.",
+          "example": "A fenced block that once matched the generator and has since diverged."
+        },
+        {
+          "score": 3,
+          "anchor": "Output is quoted verbatim, but nothing tells the reader it is a quote rather than authored guidance.",
+          "example": "An unlabelled fenced block whose links point at a repository the skill is run against."
+        },
+        {
+          "score": 4,
+          "anchor": "Output is quoted verbatim and identified as emitted output; the reader can tell its paths are target-relative.",
+          "example": "A block introduced with \"that writes the following into CLAUDE.md\" before the fence."
+        },
+        {
+          "score": 5,
+          "anchor": "Output is quoted verbatim, identified as emitted, and pinned - a test asserts the quote matches the emitter byte-for-byte, or the doc names the emitter and line so a reader can check. Unresolvable relative links inside such a block are correct and are not defects.",
+          "example": "A fenced block quoting a generator’s entry template, with the acceptance test that pins it byte-identical named beside it, and a note that its links resolve in the target repo."
+        }
+      ]
+    }
+  ],
+  "scoring_notes": {
+    "simple_skills": "For simple, single-purpose skills (under 50 lines, single task), workflow_clarity and progressive_disclosure can score 5 if the content is clear and well-organized, even without explicit multi-step workflows or external file references.",
+    "code_vs_instruction_skills": "Apply the same rubric to both. Code skills should have executable examples; instruction-only skills should have concrete, specific guidance. Absence of code in an instruction-only skill is not penalized if the guidance is actionable.",
+    "feedback_loops": "Feedback loops (validate -> fix -> retry) are especially important for: batch operations, destructive changes, XML/document manipulation, database operations. Missing feedback loops in these contexts should cap workflow_clarity at 3.",
+    "load_bearing_rationale": "Recorded rationale - rejected alternatives, documented tradeoffs, named incidents, and disciplines restated because a run violated them - counts as content, not padding, under conciseness. A skill whose instructions are inseparable from why they exist may score 5 on conciseness at a length that would be verbose in a skill that merely explains a library.",
+    "quoted_tool_output": "A fenced block that reproduces bytes some tool emits is a specification of that tool, not authored prose. Its links and paths resolve in the tool’s target environment, not the skill directory, and it must stay byte-identical to be true. Do not score it under conciseness, and do not treat a link inside it as a broken link."
+  }
+}

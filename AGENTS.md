@@ -17,3 +17,7 @@ exist" from that index in one read, and open a document only after the index nam
 `docs/` for a document's identity; grep stays correct only for a literal phrase inside a body that
 the index cannot carry.
 <!-- /okf:entry -->
+
+# Agent Rules <!-- tessl-managed -->
+
+@.tessl/RULES.md follow the [instructions](.tessl/RULES.md)
