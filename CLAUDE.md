@@ -233,8 +233,21 @@ because npx would turn a local structural check into a network call on a cold CI
 `test-tessl-quality-gate.mjs` stays excluded, and only because it cannot assert anything without an
 account.
 
-Deliberately **not** done: no `.tessl-plugin/plugin.json` anywhere. Tessl's documented layout is
-plugin-rooted, and `--context <path>` reaches the same result without a fifth hand-synced semver.
+Two `.tessl-plugin/plugin.json` manifests **are** committed — repo root and `doc-this/` — and they
+exist for one reason: `tessl skill lint` hard-refuses without one (`Not a Tessl plugin: no
+.tessl-plugin/plugin.json or tile.json found in the package root`). Lint is not a quality review
+and costs nothing: it runs the publisher's pack step offline and reports per-skill context cost,
+orphaned files, skill files outside the spec directories, and credential-denylist exclusions. That
+is worth two files. The earlier position — that `--context <path>` reaches the same result — was
+about *evals*, where it still holds; it never covered lint, which has no `--context`.
+
+The refusal's stated price — a fifth and sixth hand-synced semver — is **not** paid: neither
+manifest carries a `version`. Lint only warns (`No version set. Publishing will require --version
+or --bump.`), and that warning states a fact that is permanently true here, since publishing to the
+registry stays refused for the reasons under **Not worth doing**. A version field nothing reads and
+no harness checks is exactly the drift this repo has already been bitten by, so the four fields
+under **Versioning** stay four. `private: true` in both manifests is what keeps an accidental
+`publish` private.
 
 ### BUG-006 · A published example may not borrow authority from what the reader cannot see
 
@@ -350,13 +363,13 @@ SECURITY.md              # Reporting address + what the hooks and skills do loca
 skills/                  # One folder per skill — the 8 wagner-skills members
   airflow-dags/          # Apache Airflow 3 DAG authoring with 12 reference docs
     SKILL.md             # Main skill file
-    reference/           # Deep-dive docs (authoring, scheduling, testing, etc.)
+    references/          # Deep-dive docs (authoring, scheduling, testing, etc.)
   agent-cli/             # Build and evaluate CLIs for AI agent consumption
     SKILL.md             # Main skill file
-    reference/           # Command design, output design, input security, discoverability, composability, agent knowledge, scoring rubric, framework patterns
+    references/          # Command design, output design, input security, discoverability, composability, agent knowledge, scoring rubric, framework patterns
   human-cli/             # Design and evaluate CLIs for human users
     SKILL.md             # Main skill file
-    reference/           # Command ergonomics, visual output, interactive input, help docs, performance, polish, human scoring rubric, framework UX patterns
+    references/          # Command ergonomics, visual output, interactive input, help docs, performance, polish, human scoring rubric, framework UX patterns
   platform-sre-kubernetes/  # SRE-focused Kubernetes production deployments and manifest review
     SKILL.md             # Main skill file
   requirements-elicitation/ # Analyze PRDs/specs for gaps, generate clarifying questions, assess risk
@@ -579,10 +592,11 @@ Free plan: 1000/month, **overage not allowed** — work simply stops. Read it be
 anything paid; the delta is the real price. `--review-plugin` (custom rubric) requires a **paid
 plan**: do not plan around custom rubrics.
 
-Caveat that survives the migration: the validation check is named for `references/` **plural**,
-while `agent-cli`, `human-cli` and `airflow-dags` use `reference/` **singular** — before trusting a
-low `progressive_disclosure` on those three, confirm the run's validation block actually counted
-their files. Worth a separate `fix:` commit to rename.
+Every skill now uses `references/` **plural**, the name tessl's packer and the validation check both
+recognise. `agent-cli`, `human-cli` and `airflow-dags` were the last three on `reference/` singular,
+which made their files invisible to the bundle and produced a false-low `progressive_disclosure`;
+a `progressive_disclosure` score on those three from before the rename is not comparable to one
+after it.
 
 **"MCP and CLI scores are not one scale" is under re-verification.** The recorded gap (MCP 89 vs
 harness 93, okf-maintain, 2026-08-23) was MCP-bundle vs CLI-*local*. Both paths now run the same
@@ -642,12 +656,12 @@ precedent as `.claude/`. `tessl project repair` re-links a broken one.
 tessl eval run ./evals/wagner-skills/postmortem --context ./skills/postmortem --wait
 ```
 
-`--context` takes a local path or glob, so **no `.tessl-plugin/plugin.json` is committed anywhere**
-in this repo. Tessl's documented layout is plugin-rooted (a manifest beside `evals/`, unlocking
-`tessl scenario generate` and the `eval run ./my-plugin` shorthand) and we deliberately do not
-adopt it: each manifest carries its own semver, and four hand-synced version fields is already one
-problem too many. If generated scenarios are ever wanted, do it in a **throwaway copy outside this
-repo** (`tessl skill import` → `scenario generate` → `scenario download --output` → curate → copy
+`--context` takes a local path or glob, so **an eval never needs the plugin manifest**. The two
+`.tessl-plugin/plugin.json` files this repo does carry are there for `tessl skill lint` alone (see
+FR-TESSL-1); they are not what makes evals work, and pointing `eval run` at a plugin root instead
+of `--context` buys nothing here. `tessl scenario generate` and the `eval run ./my-plugin`
+shorthand remain unused: if generated scenarios are ever wanted, do it in a **throwaway copy
+outside this repo** (`tessl skill import` → `scenario generate` → `scenario download --output` → curate → copy
 the good ones in). Never point `scenario download` at the real tree: its default
 `--strategy merge` overwrites `scenario-N/` directories and destroys hand edits.
 
@@ -704,6 +718,11 @@ Four fields, all edited by hand, all of which must agree:
 | `.claude-plugin/marketplace.json` | `.metadata.version` | 6.5.1 |
 | `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.5.1 / 1.1.5 |
 | `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.5 |
+
+**Still four, not six.** The two `.tessl-plugin/plugin.json` manifests deliberately carry no
+`version` — see FR-TESSL-1. Do not "complete" them by adding one: it would be a fifth and sixth
+field that nothing reads and no harness checks, drifting silently, for a registry this repo does
+not publish to.
 
 **Never let `marketplace.json` fall behind `plugin.json`.** The marketplace entry is what the
 client compares against; if it advertises a lower version, `claude plugin update` is a permanent

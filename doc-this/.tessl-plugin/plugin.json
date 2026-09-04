@@ -1,0 +1,6 @@
+{
+  "name": "wagneripjr/doc-this",
+  "description": "Reverse-engineer a legacy codebase into ATDD-ready, traceable specifications",
+  "private": true,
+  "skills": "./skills"
+}

@@ -16,20 +16,20 @@ This skill targets **command-based CLIs** (like `git`, `docker`, `gh`, `kubectl`
 
 | Need | Approach | Reference |
 |------|----------|-----------|
-| Design command grammar and hierarchy | Noun-verb or verb-noun pattern, 2-3 levels max | [command-design.md](reference/command-design.md) |
-| Add `--json` flag with consistent envelope | `{ "status", "data", "error", "meta" }` on every command | [output-design.md](reference/output-design.md) |
-| Stream results without buffering | NDJSON — one JSON object per `\n`-separated line | [output-design.md](reference/output-design.md) |
-| Reduce agent token consumption | `--fields`, `--quiet`, `--limit`, `--summary` flags | [output-design.md](reference/output-design.md) |
-| Accept raw JSON payloads | `--data '{"key":"val"}'` or stdin pipe alongside flags | [input-security.md](reference/input-security.md) |
-| Defend against agent hallucination inputs | Reject path traversals, control chars, embedded query params | [input-security.md](reference/input-security.md) |
-| Add `--help-json` schema introspection | Machine-readable command/flag/type/enum metadata | [discoverability.md](reference/discoverability.md) |
-| Generate shell completions | Framework-native: Cobra, Click, clap, oclif | [discoverability.md](reference/discoverability.md) |
-| Add `--dry-run` to mutating commands | Return planned changes as structured JSON | [composability-safety.md](reference/composability-safety.md) |
-| Make operations idempotent | `--if-not-exists` for create, safe retry semantics | [composability-safety.md](reference/composability-safety.md) |
-| Ship CONTEXT.md / AGENTS.md / llms.txt | Agent knowledge packaging templates | [agent-knowledge.md](reference/agent-knowledge.md) |
-| Wrap CLI as MCP tools | JSON-RPC typed tool definitions from CLI commands | [agent-knowledge.md](reference/agent-knowledge.md) |
-| Score CLI agent-friendliness (0-21) | 7-axis rubric with per-level criteria | [scoring-rubric.md](reference/scoring-rubric.md) |
-| Framework boilerplate (Node/Python/Go/Rust) | JSON envelope, TTY detection, error handling per framework | [framework-patterns.md](reference/framework-patterns.md) |
+| Design command grammar and hierarchy | Noun-verb or verb-noun pattern, 2-3 levels max | [command-design.md](references/command-design.md) |
+| Add `--json` flag with consistent envelope | `{ "status", "data", "error", "meta" }` on every command | [output-design.md](references/output-design.md) |
+| Stream results without buffering | NDJSON — one JSON object per `\n`-separated line | [output-design.md](references/output-design.md) |
+| Reduce agent token consumption | `--fields`, `--quiet`, `--limit`, `--summary` flags | [output-design.md](references/output-design.md) |
+| Accept raw JSON payloads | `--data '{"key":"val"}'` or stdin pipe alongside flags | [input-security.md](references/input-security.md) |
+| Defend against agent hallucination inputs | Reject path traversals, control chars, embedded query params | [input-security.md](references/input-security.md) |
+| Add `--help-json` schema introspection | Machine-readable command/flag/type/enum metadata | [discoverability.md](references/discoverability.md) |
+| Generate shell completions | Framework-native: Cobra, Click, clap, oclif | [discoverability.md](references/discoverability.md) |
+| Add `--dry-run` to mutating commands | Return planned changes as structured JSON | [composability-safety.md](references/composability-safety.md) |
+| Make operations idempotent | `--if-not-exists` for create, safe retry semantics | [composability-safety.md](references/composability-safety.md) |
+| Ship CONTEXT.md / AGENTS.md / llms.txt | Agent knowledge packaging templates | [agent-knowledge.md](references/agent-knowledge.md) |
+| Wrap CLI as MCP tools | JSON-RPC typed tool definitions from CLI commands | [agent-knowledge.md](references/agent-knowledge.md) |
+| Score CLI agent-friendliness (0-21) | 7-axis rubric with per-level criteria | [scoring-rubric.md](references/scoring-rubric.md) |
+| Framework boilerplate (Node/Python/Go/Rust) | JSON envelope, TTY detection, error handling per framework | [framework-patterns.md](references/framework-patterns.md) |
 
 ## Hard Gates
 
@@ -50,31 +50,31 @@ Violation of any gate halts progress. No workaround. No exceptions.
 
 Design the command surface: grammar, subcommand hierarchy, flag conventions, and naming standards. Pick noun-verb (`mycli pod list`) or verb-noun (`mycli list pods`) and apply consistently. Limit hierarchy to 2-3 levels. Prefer flags over positional arguments — flags are self-documenting and order-independent.
 
-Define global flags available on every command: `--json`, `--quiet`, `--verbose`, `--no-color`, `--help`, `--version`. Load `reference/command-design.md` for grammar patterns, flag type conventions, and the backward compatibility contract.
+Define global flags available on every command: `--json`, `--quiet`, `--verbose`, `--no-color`, `--help`, `--version`. Load `references/command-design.md` for grammar patterns, flag type conventions, and the backward compatibility contract.
 
 ## Phase 2: Output Architecture
 
 Implement the JSON envelope, NDJSON streaming, field selection, and TTY-aware dual-mode output. Every command outputs human-readable tables when stdout is a TTY and clean JSON when piped or `--json` is passed. Every output — success or failure — guides the next action with suggested commands.
 
-Add `--fields` for context window discipline (agents select only needed columns, reducing token cost by 90%+). Add `--limit` and cursor-based pagination for large result sets. Load `reference/output-design.md` for envelope schema, NDJSON rules, and token efficiency benchmarks.
+Add `--fields` for context window discipline (agents select only needed columns, reducing token cost by 90%+). Add `--limit` and cursor-based pagination for large result sets. Load `references/output-design.md` for envelope schema, NDJSON rules, and token efficiency benchmarks.
 
 ## Phase 3: Input Handling
 
 Support raw JSON input (`--data '{"key":"val"}'`) alongside individual flags. Accept stdin pipes for batch operations. Harden all inputs against agent-specific failure modes: path traversal (`../../.ssh/id_rsa`), control character injection (`\x00`, `\x1b`), shell metacharacters (`;`, `$()`, backticks), double encoding, and embedded query params in resource IDs.
 
-The agent is not a trusted operator — validate at the CLI boundary, fail closed. Load `reference/input-security.md` for attack patterns, mitigation code, and the security posture.
+The agent is not a trusted operator — validate at the CLI boundary, fail closed. Load `references/input-security.md` for attack patterns, mitigation code, and the security posture.
 
 ## Phase 4: Discoverability & Schema
 
 Implement `--help` with examples (the most-read section), flag types, defaults, allowed values, exit codes, and see-also. Add `--help-json` for machine-readable schema introspection — agents use this to discover commands without pre-stuffed documentation.
 
-Generate shell completions (bash, zsh, fish) via framework tooling. Create `CONTEXT.md` and `AGENTS.md` knowledge files for agent consumption. Load `reference/discoverability.md` for help text structure, `--help-json` schema, and knowledge file templates.
+Generate shell completions (bash, zsh, fish) via framework tooling. Create `CONTEXT.md` and `AGENTS.md` knowledge files for agent consumption. Load `references/discoverability.md` for help text structure, `--help-json` schema, and knowledge file templates.
 
 ## Phase 5: Safety & Composability
 
 Add `--dry-run` on every mutating command — output planned changes as structured JSON. Make operations idempotent (`--if-not-exists` for create, safe retry for update/delete). Design commands for pipe composition: create outputs the resource ID, list supports `--fields` and `--quiet`, action commands accept IDs as flags.
 
-Implement config precedence: flags > env vars > project config > user config > defaults. Handle SIGINT (exit 130), SIGTERM (exit 143), SIGPIPE (exit 141 silently). Load `reference/composability-safety.md` for pipe patterns, signal handling, and backward compatibility rules.
+Implement config precedence: flags > env vars > project config > user config > defaults. Handle SIGINT (exit 130), SIGTERM (exit 143), SIGPIPE (exit 141 silently). Load `references/composability-safety.md` for pipe patterns, signal handling, and backward compatibility rules.
 
 ## Phase 6: Agent Knowledge Packaging
 
@@ -83,7 +83,7 @@ Ship knowledge files alongside the CLI:
 - **AGENTS.md** — cross-agent instructions pointing to CONTEXT.md with rules and preferred patterns
 - **llms.txt** — minimal orientation for LLM project scanning
 
-For advanced integration, wrap CLI commands as MCP tools with typed input schemas, or ship Claude Code skill files with guardrails. Load `reference/agent-knowledge.md` for templates and packaging strategies.
+For advanced integration, wrap CLI commands as MCP tools with typed input schemas, or ship Claude Code skill files with guardrails. Load `references/agent-knowledge.md` for templates and packaging strategies.
 
 ## Phase 7: Evaluate (optional)
 
@@ -99,7 +99,7 @@ Score the CLI on 7 axes (0-3 each, 0-21 total):
 | Safety Rails | Can agents validate before acting? |
 | Agent Knowledge Packaging | Does the CLI ship agent-consumable knowledge? |
 
-**0-5 = Human-only**, **6-10 = Agent-tolerant**, **11-15 = Agent-ready**, **16-21 = Agent-first**. Load `reference/scoring-rubric.md` for full per-level criteria, evaluation procedure, and example scores for `gh`, `aws`, `kubectl`, and `docker`.
+**0-5 = Human-only**, **6-10 = Agent-tolerant**, **11-15 = Agent-ready**, **16-21 = Agent-first**. Load `references/scoring-rubric.md` for full per-level criteria, evaluation procedure, and example scores for `gh`, `aws`, `kubectl`, and `docker`.
 
 ## Common Mistakes
 
@@ -118,14 +118,14 @@ Score the CLI on 7 axes (0-3 each, 0-21 total):
 
 | File | When to load |
 |------|-------------|
-| [command-design.md](reference/command-design.md) | Command grammar, subcommand hierarchy, flag conventions, naming, backward compatibility |
-| [output-design.md](reference/output-design.md) | JSON envelope, NDJSON streaming, field selection, TTY detection, token efficiency |
-| [input-security.md](reference/input-security.md) | Raw JSON input, stdin pipes, path traversal, injection, control chars, output sandboxing |
-| [discoverability.md](reference/discoverability.md) | --help structure, --help-json schema, shell completions, CONTEXT.md format |
-| [composability-safety.md](reference/composability-safety.md) | --dry-run, idempotency, pipe composition, config precedence, signal handling |
-| [agent-knowledge.md](reference/agent-knowledge.md) | CONTEXT.md/AGENTS.md/llms.txt templates, MCP wrapping, skill files |
-| [scoring-rubric.md](reference/scoring-rubric.md) | 7-axis rubric (0-21), per-level criteria, evaluation procedure, example scores |
-| [framework-patterns.md](reference/framework-patterns.md) | Boilerplate: Commander.js, oclif, Click, Typer, Cobra, clap — JSON, TTY, errors |
+| [command-design.md](references/command-design.md) | Command grammar, subcommand hierarchy, flag conventions, naming, backward compatibility |
+| [output-design.md](references/output-design.md) | JSON envelope, NDJSON streaming, field selection, TTY detection, token efficiency |
+| [input-security.md](references/input-security.md) | Raw JSON input, stdin pipes, path traversal, injection, control chars, output sandboxing |
+| [discoverability.md](references/discoverability.md) | --help structure, --help-json schema, shell completions, CONTEXT.md format |
+| [composability-safety.md](references/composability-safety.md) | --dry-run, idempotency, pipe composition, config precedence, signal handling |
+| [agent-knowledge.md](references/agent-knowledge.md) | CONTEXT.md/AGENTS.md/llms.txt templates, MCP wrapping, skill files |
+| [scoring-rubric.md](references/scoring-rubric.md) | 7-axis rubric (0-21), per-level criteria, evaluation procedure, example scores |
+| [framework-patterns.md](references/framework-patterns.md) | Boilerplate: Commander.js, oclif, Click, Typer, Cobra, clap — JSON, TTY, errors |
 
 ## Rules
 
@@ -134,7 +134,7 @@ Score the CLI on 7 axes (0-3 each, 0-21 total):
 3. **Structured output is a versioned contract** — adding optional fields is safe, removing or renaming fields is breaking
 4. **TTY detection governs mode** — human-readable when interactive, machine-readable when piped, `--json` overrides both
 5. **Token cost is a design constraint** — every unnecessary byte in stdout costs the agent context window and API spend
-6. **Framework boilerplate first** — load `reference/framework-patterns.md` for the target language before writing code
+6. **Framework boilerplate first** — load `references/framework-patterns.md` for the target language before writing code
 7. **Evaluate after building** — run Phase 7 scoring to identify gaps, prioritize lowest-scoring axes
 
 ## Downstream Handoff

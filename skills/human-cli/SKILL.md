@@ -12,14 +12,14 @@ license: MIT
 
 | Need | Approach | Reference |
 |------|----------|-----------|
-| Design command names, grammar, aliases | kebab-case, consistent verb-noun or noun-verb, short aliases | [command-ergonomics.md](reference/command-ergonomics.md) |
-| Add color, tables, icons to output | TTY-aware rendering, NO_COLOR, semantic palette | [visual-output.md](reference/visual-output.md) |
-| Add interactive prompts with automation bypass | Confirm/select/input prompts, `--yes`/`--force` flags | [interactive-input.md](reference/interactive-input.md) |
-| Structure `--help`, add completions, man pages | Help layout, examples section, shell completions, man generation | [help-documentation.md](reference/help-documentation.md) |
-| Add spinners, progress bars, reduce startup time | Lazy loading, spinner on >1s ops, progress bars for file/network | [performance-feedback.md](reference/performance-feedback.md) |
-| XDG paths, config precedence, signal handling | Platform conventions, env > file > defaults, graceful SIGINT | [polish-conventions.md](reference/polish-conventions.md) |
-| Score CLI human-friendliness (0-21) | 7-axis rubric with per-level criteria | [human-scoring-rubric.md](reference/human-scoring-rubric.md) |
-| Framework-specific UX libraries | Color, prompts, tables, progress per framework | [framework-ux-patterns.md](reference/framework-ux-patterns.md) |
+| Design command names, grammar, aliases | kebab-case, consistent verb-noun or noun-verb, short aliases | [command-ergonomics.md](references/command-ergonomics.md) |
+| Add color, tables, icons to output | TTY-aware rendering, NO_COLOR, semantic palette | [visual-output.md](references/visual-output.md) |
+| Add interactive prompts with automation bypass | Confirm/select/input prompts, `--yes`/`--force` flags | [interactive-input.md](references/interactive-input.md) |
+| Structure `--help`, add completions, man pages | Help layout, examples section, shell completions, man generation | [help-documentation.md](references/help-documentation.md) |
+| Add spinners, progress bars, reduce startup time | Lazy loading, spinner on >1s ops, progress bars for file/network | [performance-feedback.md](references/performance-feedback.md) |
+| XDG paths, config precedence, signal handling | Platform conventions, env > file > defaults, graceful SIGINT | [polish-conventions.md](references/polish-conventions.md) |
+| Score CLI human-friendliness (0-21) | 7-axis rubric with per-level criteria | [human-scoring-rubric.md](references/human-scoring-rubric.md) |
+| Framework-specific UX libraries | Color, prompts, tables, progress per framework | [framework-ux-patterns.md](references/framework-ux-patterns.md) |
 
 ## Hard Gates
 
@@ -67,7 +67,7 @@ Design the command surface for memorability and consistency. Pick a grammar patt
 
 Design flags for discoverability: long names are self-documenting (`--output-format`), short aliases save keystrokes (`-o`). Keep the "argument budget" low — if a command needs more than 5 flags, consider subcommands or config files. Use `--` to separate flags from positional arguments.
 
-Load `reference/command-ergonomics.md` for naming patterns, alias strategy, flag design conventions, and the argument budget rule.
+Load `references/command-ergonomics.md` for naming patterns, alias strategy, flag design conventions, and the argument budget rule.
 
 ## Phase 2: Visual Output Design
 
@@ -75,7 +75,7 @@ Implement TTY-aware dual-mode output: rich tables with alignment and color when 
 
 Respect `NO_COLOR` (env var), `--no-color` (flag), and `TERM=dumb`. Never encode meaning in color alone — always pair with text labels or icons. Strip ANSI when piped.
 
-Load `reference/visual-output.md` for color palette conventions, table libraries, icon usage, TTY detection patterns, and ANSI stripping.
+Load `references/visual-output.md` for color palette conventions, table libraries, icon usage, TTY detection patterns, and ANSI stripping.
 
 ## Phase 3: Interactive Input & Prompting
 
@@ -83,7 +83,7 @@ Add interactive prompts for destructive operations (delete, overwrite, deploy to
 
 When stdin is not a TTY, never prompt — fail with an actionable error message explaining which flag to pass. Implement `--dry-run` as a preview mechanism that shows what would happen without executing.
 
-Load `reference/interactive-input.md` for prompt patterns, bypass flag conventions, TTY detection, and dry-run preview design.
+Load `references/interactive-input.md` for prompt patterns, bypass flag conventions, TTY detection, and dry-run preview design.
 
 ## Phase 4: Help & Discoverability
 
@@ -91,7 +91,7 @@ Structure `--help` with: one-line description, usage pattern, flags with types a
 
 Generate shell completions (bash, zsh, fish) via framework tooling. Consider generating man pages for system-level CLIs. Add a `mycli help <topic>` command for guided tutorials on common workflows.
 
-Load `reference/help-documentation.md` for help text layout, examples formatting, completion generation, man page tooling, and README/CHANGELOG conventions.
+Load `references/help-documentation.md` for help text layout, examples formatting, completion generation, man page tooling, and README/CHANGELOG conventions.
 
 ## Phase 5: Performance & Responsiveness
 
@@ -99,7 +99,7 @@ Startup must complete in under 500ms. Lazy-load plugins, network calls, and heav
 
 Show a spinner for operations taking more than 1 second. Switch to a progress bar when total work is known (file transfer, batch processing). Render progress on stderr so stdout remains clean for piping. For very long operations (>30 seconds), consider OS notifications on completion.
 
-Load `reference/performance-feedback.md` for startup optimization, lazy loading patterns, spinner/progress bar libraries, and notification strategies.
+Load `references/performance-feedback.md` for startup optimization, lazy loading patterns, spinner/progress bar libraries, and notification strategies.
 
 ## Phase 6: Polish & Delight
 
@@ -109,7 +109,7 @@ Handle signals gracefully: SIGINT triggers cleanup and exits 130, SIGTERM exits 
 
 Follow semver for the CLI's public interface: flag names, output format, and exit codes are the API contract. Changing a flag name or removing a subcommand is a breaking change.
 
-Load `reference/polish-conventions.md` for XDG paths, config precedence, signal handling, backward compatibility, and personality guidelines.
+Load `references/polish-conventions.md` for XDG paths, config precedence, signal handling, backward compatibility, and personality guidelines.
 
 ## Phase 7: Evaluate (optional)
 
@@ -125,7 +125,7 @@ Score the CLI on 7 axes (0-3 each, 0-21 total):
 | Responsiveness | Does the CLI feel fast and show progress for slow operations? |
 | Configuration & Conventions | Does the CLI follow platform conventions and respect preferences? |
 
-**0-5 = Hostile**, **6-10 = Functional**, **11-15 = Comfortable**, **16-21 = Delightful**. Load `reference/human-scoring-rubric.md` for full per-level criteria, evaluation procedure, and example scores for `gh`, `rg`, `docker`, and `aws`.
+**0-5 = Hostile**, **6-10 = Functional**, **11-15 = Comfortable**, **16-21 = Delightful**. Load `references/human-scoring-rubric.md` for full per-level criteria, evaluation procedure, and example scores for `gh`, `rg`, `docker`, and `aws`.
 
 ## Dual-Audience Bridge
 
@@ -151,7 +151,7 @@ TTY detection branches the same command into human and machine output. `--json` 
 3. **Errors are teaching moments** — every error message tells the user what to do next
 4. **Progress is mandatory for slow operations** — silence is ambiguous; a spinner proves the tool is alive
 5. **Platform conventions over invention** — XDG paths, NO_COLOR, semver, shell completions are not optional
-6. **Framework libraries first** — load `reference/framework-ux-patterns.md` for the target language before writing UI code
+6. **Framework libraries first** — load `references/framework-ux-patterns.md` for the target language before writing UI code
 7. **Evaluate after building** — run Phase 7 scoring to identify gaps, prioritize lowest-scoring axes
 
 ## Downstream Handoff

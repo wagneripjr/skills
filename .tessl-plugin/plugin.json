@@ -1,0 +1,6 @@
+{
+  "name": "wagneripjr/wagner-skills",
+  "description": "Engineering skills: CLI design for agents and humans, Airflow 3 DAGs, Kubernetes SRE, requirements elicitation, requirement prototypes, incident postmortems, and Open Knowledge Format documentation maintenance",
+  "private": true,
+  "skills": "./skills"
+}

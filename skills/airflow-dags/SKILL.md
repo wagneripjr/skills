@@ -30,24 +30,24 @@ project/
 
 | Need | Approach | Reference |
 |------|----------|-----------|
-| Standard multi-task pipeline | TaskFlow API (`@dag`/`@task`) | [dag-authoring.md](reference/dag-authoring.md) |
-| Single data producer task | Asset-oriented (`@asset`) | [dag-authoring.md](reference/dag-authoring.md) |
-| Legacy code / specific operators | Traditional syntax (`DAG` class) | [dag-authoring.md](reference/dag-authoring.md) |
-| Variable number of task copies | Dynamic Task Mapping (`.expand()`) | [dynamic-tasks.md](reference/dynamic-tasks.md) |
-| 50+ similar DAGs from config | Dynamic DAGs (`dag-factory`) | [dynamic-tasks.md](reference/dynamic-tasks.md) |
-| Time-based runs | Cron / timetables | [scheduling.md](reference/scheduling.md) |
-| Data-driven runs | Assets | [scheduling.md](reference/scheduling.md) |
-| External event triggers | AssetWatcher + triggers | [scheduling.md](reference/scheduling.md) |
-| Conditional execution | Branching / trigger rules | [dependencies.md](reference/dependencies.md) |
-| Pass data between tasks | XCom / custom backends | [data-passing.md](reference/data-passing.md) |
-| External system integration | Operators / hooks / sensors | [operators.md](reference/operators.md) |
-| Credentials / secrets | Connections / secrets backends | [connections.md](reference/connections.md) |
-| ETL/ELT pipeline patterns | 11 practical DAG examples | [etl-elt-patterns.md](reference/etl-elt-patterns.md) |
-| Data quality checks in pipelines | Quality gates with temp-table swap | [data-quality.md](reference/data-quality.md) |
-| Testing DAGs | 5-layer testing strategy | [testing.md](reference/testing.md) |
-| Production operations | Versioning, scaling, monitoring | [production.md](reference/production.md) |
-| Migrating Airflow 2 DAGs to 3 | Breaking changes, Ruff AIR30 linting | [migration.md](reference/migration.md) |
-| API-triggered processing (GenAI) | Inference execution pattern | [dag-authoring.md](reference/dag-authoring.md) |
+| Standard multi-task pipeline | TaskFlow API (`@dag`/`@task`) | [dag-authoring.md](references/dag-authoring.md) |
+| Single data producer task | Asset-oriented (`@asset`) | [dag-authoring.md](references/dag-authoring.md) |
+| Legacy code / specific operators | Traditional syntax (`DAG` class) | [dag-authoring.md](references/dag-authoring.md) |
+| Variable number of task copies | Dynamic Task Mapping (`.expand()`) | [dynamic-tasks.md](references/dynamic-tasks.md) |
+| 50+ similar DAGs from config | Dynamic DAGs (`dag-factory`) | [dynamic-tasks.md](references/dynamic-tasks.md) |
+| Time-based runs | Cron / timetables | [scheduling.md](references/scheduling.md) |
+| Data-driven runs | Assets | [scheduling.md](references/scheduling.md) |
+| External event triggers | AssetWatcher + triggers | [scheduling.md](references/scheduling.md) |
+| Conditional execution | Branching / trigger rules | [dependencies.md](references/dependencies.md) |
+| Pass data between tasks | XCom / custom backends | [data-passing.md](references/data-passing.md) |
+| External system integration | Operators / hooks / sensors | [operators.md](references/operators.md) |
+| Credentials / secrets | Connections / secrets backends | [connections.md](references/connections.md) |
+| ETL/ELT pipeline patterns | 11 practical DAG examples | [etl-elt-patterns.md](references/etl-elt-patterns.md) |
+| Data quality checks in pipelines | Quality gates with temp-table swap | [data-quality.md](references/data-quality.md) |
+| Testing DAGs | 5-layer testing strategy | [testing.md](references/testing.md) |
+| Production operations | Versioning, scaling, monitoring | [production.md](references/production.md) |
+| Migrating Airflow 2 DAGs to 3 | Breaking changes, Ruff AIR30 linting | [migration.md](references/migration.md) |
+| API-triggered processing (GenAI) | Inference execution pattern | [dag-authoring.md](references/dag-authoring.md) |
 
 ## Critical Rules
 
@@ -217,15 +217,15 @@ Key patterns in this template:
 | No retries configured | Set `retries` + `retry_delay` in `default_args` |
 | No execution timeout | Set `execution_timeout` per task or in `default_args` |
 | Catching all exceptions | Let tasks fail — Airflow handles retries |
-| Large data in XCom | Use custom XCom backend (S3/GCS) — see [data-passing.md](reference/data-passing.md) |
+| Large data in XCom | Use custom XCom backend (S3/GCS) — see [data-passing.md](references/data-passing.md) |
 | Local filesystem for staging | Use cloud storage (S3/GCS) — tasks may run on different workers |
-| Testing official providers | Only test YOUR custom code — see [testing.md](reference/testing.md) |
+| Testing official providers | Only test YOUR custom code — see [testing.md](references/testing.md) |
 | `pd.Timestamp.now()` in transforms | Pass timestamp from Airflow context for determinism |
 | Missing `dag.test()` block | Add `if __name__: dag.test()` for IDE debugging |
 | Mixing `with DAG()` + `@task` | Use `@dag` decorator consistently with `@task` |
 | Operator inside `@asset`/`@task` body | Use operator as standalone task; connect via `outlets` |
-| No data quality checks | Use temp-table + quality gates — see [data-quality.md](reference/data-quality.md) |
-| Using `schedule_interval=` | Renamed to `schedule=` in Airflow 3 — see [migration.md](reference/migration.md) |
+| No data quality checks | Use temp-table + quality gates — see [data-quality.md](references/data-quality.md) |
+| Using `schedule_interval=` | Renamed to `schedule=` in Airflow 3 — see [migration.md](references/migration.md) |
 | Expecting daily schedule by default | Airflow 3 defaults to `schedule=None` (manual only) — set explicitly |
 | Using `execution_date` in templates | Use `logical_date` — `execution_date` removed in Airflow 3 |
 
@@ -233,15 +233,15 @@ Key patterns in this template:
 
 Deep-dive documentation organized by topic. Claude loads these on-demand:
 
-- **[DAG Authoring](reference/dag-authoring.md)** — TaskFlow API, Traditional syntax, Asset-oriented approach, when to use each
-- **[Scheduling](reference/scheduling.md)** — Cron, assets, event-driven, timetables, catchup, backfill
-- **[Dependencies](reference/dependencies.md)** — chain(), >>, trigger rules, branching, task groups
-- **[Dynamic Tasks](reference/dynamic-tasks.md)** — .expand(), .partial(), dynamic task groups, dag-factory
-- **[Data Passing](reference/data-passing.md)** — XCom, custom backends, Object Storage backend
-- **[Operators](reference/operators.md)** — Operators, sensors, deferrable operators, hooks, providers
-- **[Connections](reference/connections.md)** — Connection types, secrets backends, env vars
-- **[ETL/ELT Patterns](reference/etl-elt-patterns.md)** — 11 practical DAG examples: classic ETL, ELT, incremental, asset-oriented, dynamic, fan-in, dbt, CDC, factory, ETLT hybrid, asset-sequence
-- **[Data Quality](reference/data-quality.md)** — Quality gates, temp-table swap, SQLTableCheckOperator, stopping vs warning checks
-- **[Testing](reference/testing.md)** — 5-layer testing: dag.test(), validation, unit, integration, policies
-- **[Production](reference/production.md)** — DAG versioning, bundles, scaling, callbacks, debugging
-- **[Migration](reference/migration.md)** — Airflow 2→3 breaking changes, parameter renames, Ruff AIR30 linting
+- **[DAG Authoring](references/dag-authoring.md)** — TaskFlow API, Traditional syntax, Asset-oriented approach, when to use each
+- **[Scheduling](references/scheduling.md)** — Cron, assets, event-driven, timetables, catchup, backfill
+- **[Dependencies](references/dependencies.md)** — chain(), >>, trigger rules, branching, task groups
+- **[Dynamic Tasks](references/dynamic-tasks.md)** — .expand(), .partial(), dynamic task groups, dag-factory
+- **[Data Passing](references/data-passing.md)** — XCom, custom backends, Object Storage backend
+- **[Operators](references/operators.md)** — Operators, sensors, deferrable operators, hooks, providers
+- **[Connections](references/connections.md)** — Connection types, secrets backends, env vars
+- **[ETL/ELT Patterns](references/etl-elt-patterns.md)** — 11 practical DAG examples: classic ETL, ELT, incremental, asset-oriented, dynamic, fan-in, dbt, CDC, factory, ETLT hybrid, asset-sequence
+- **[Data Quality](references/data-quality.md)** — Quality gates, temp-table swap, SQLTableCheckOperator, stopping vs warning checks
+- **[Testing](references/testing.md)** — 5-layer testing: dag.test(), validation, unit, integration, policies
+- **[Production](references/production.md)** — DAG versioning, bundles, scaling, callbacks, debugging
+- **[Migration](references/migration.md)** — Airflow 2→3 breaking changes, parameter renames, Ruff AIR30 linting
