@@ -118,6 +118,8 @@ node tests/test-okf-maintain.mjs         # okf-maintain acceptance matrix (okf.m
 node tests/test-okf-coverage.mjs         # okf.mjs coverage — needs a real git work tree
 node tests/test-okf-index-regen.mjs      # the index-regeneration hook — needs a real git work tree
 node tests/test-no-shell-invocation.mjs  # no .mjs in the tree reaches a shell
+node tests/test-tessl-score-parse.mjs    # how a tessl review score is read (no account needed)
+node tests/test-eval-scenarios.mjs       # eval scenario shape + the `tessl eval lint` fail-open guard
 node doc-this/hooks/run-all.mjs          # the doc-this gate harnesses
 node tests/test-publication-safety.mjs  # repo-wide scan for credential-shaped material
 ```
@@ -127,42 +129,67 @@ what a PR should say.
 
 ### Skill quality review (optional)
 
-Skills here are scored with the `tessl` CLI's `skill review` (npm package `tessl`), which grades a skill's
-description and body on triggering, specificity, actionability, conciseness and progressive
-disclosure. It is **optional** — no pull request is blocked on a score, and you never need an
-account to contribute.
+Skills here are scored with **Tessl Review** (`tessl review run quality`, npm package `tessl`),
+which grades a skill's description and body on triggering, specificity, actionability,
+conciseness and progressive disclosure. It is **optional** — no pull request is blocked on a
+score, and you never need an account to contribute.
 
-> **It uploads the skill to a hosted third-party service.** `tessl skill review` sends
-> `SKILL.md` (and, in remote mode, the pushed bundle) to tessl for grading. Never run it on a
-> skill containing anything confidential — client names, internal systems, private URLs. This is
-> the only command in this repository that sends your content off your machine.
+> **It uploads the whole skill directory to a hosted third-party service.** The review is
+> bundle-aware: `SKILL.md` *and* `references/`, `scripts/` and `assets/` are sent to tessl for
+> grading. Never run it on a skill containing anything confidential — client names, internal
+> systems, private URLs. This is the only command in this repository that sends your content off
+> your machine.
+
+The review runs server-side against a workspace, so it needs a login and a workspace name. There
+is no default workspace: the harness takes one from `--workspace` or `$TESSL_WORKSPACE`, and skips
+(77) rather than guessing.
 
 ```bash
-npx tessl login                                   # once
+tessl login                                        # once
+tessl workspace list                               # names your workspaces
+export TESSL_WORKSPACE=<your-workspace>
 
 # Score a skill on disk:
-npx tessl skill review ./skills/postmortem --json
+tessl review run quality ./skills/postmortem --workspace "$TESSL_WORKSPACE"
 
 # Or with a floor, via the harness (exit 0 pass · 1 below floor · 77 skipped):
 node tests/test-tessl-quality-gate.mjs ./skills/postmortem 90
 ```
 
-Local review does not bundle `reference/` subdirectories, so the judges see broken links and dock
-`progressive_disclosure` and `actionability`. To score what a reader actually gets, push first and
-review the published copy — the harness derives the repo from your `origin`, so a fork reviews
-itself:
-
-```bash
-node tests/test-tessl-quality-gate.mjs ./skills/postmortem 90 remote
-# ...or name the repo explicitly if origin isn't a GitHub URL:
-TESSL_REPO=github:<owner>/<repo> node tests/test-tessl-quality-gate.mjs ./skills/postmortem 90 remote
-```
+The harness runs a free `tessl review list` preflight first, so a logged-out or misnamed-workspace
+run skips before it submits (and pays for) anything. A quality review costs 10 credits; re-running
+it on an unchanged skill reuses the cached result and costs nothing, so avoid `--force` unless you
+mean it. `tessl org usage --json` reports what you have left.
 
 Aim for 3/3 on every criterion. Two known scores are **deliberate** and should not be chased:
 `conciseness` sometimes sits at 2 where restated discipline rules are load-bearing for
 actionability, and `trigger_term_quality` is not meaningful for the doc-this pipeline workers —
 they are dispatched by exact name, never by user phrasing, and adding trigger keywords to lift the
 score would let them run outside their pipeline.
+
+### Skill evals (optional)
+
+`evals/<plugin>/<skill>/<scenario>/` holds eval scenarios: a `task.md` (the only thing the agent
+sees), a `criteria.json` weighted rubric, and optionally `resources/` and a `scenario.json`
+fixture declaration. `tessl eval run` solves each scenario twice — once without the skill and once
+with it — and scores the difference, which is what the skill is actually worth.
+
+Writing and checking a scenario is **free and needs no account**:
+
+```bash
+tessl eval lint ./evals                  # shape check, local
+node tests/test-eval-scenarios.mjs       # runs in the default suite, no account required
+```
+
+Run that second one. `tessl eval lint` recognises a scenario only by the presence of `task.md` and
+**silently skips** any directory without one, so a renamed or mistyped brief removes a scenario
+from every future run while the linter still reports green. `tests/test-eval-scenarios.mjs` exists
+to catch exactly that, and reproduces the fail-open as a canary so the guard is never quietly lost.
+
+*Running* an eval costs credits and needs a Tessl project link (`tessl project create`), which
+writes a maintainer-local `tessl.json` — deliberately gitignored, since the link points at a
+workspace a contributor would not have. Contributing a scenario is welcome; running one is a
+maintainer step.
 
 `CLAUDE.md` is the maintainer's architecture reference — plugin conventions, the full hook
 table, and the reasoning behind the pipeline's design.

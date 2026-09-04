@@ -194,6 +194,48 @@ All four guards are mutation-tested: reverting the root resolution to cwd, dropp
 refusal, unscoping the dangling-row check, removing the byte-diff write, and removing the import
 guard each flip at least one canary.
 
+### FR-TESSL-1 · A skill's score is read, never guessed; a scenario is counted, never assumed
+
+Owned by `tests/lib/tessl.mjs` and the two harnesses beside it. Four parts, each named by an
+acceptance test:
+
+1. **Tessl Review replaces `tessl skill review`.** The deprecated command reviewed a single
+   `SKILL.md` in one pass; `tessl review run quality` runs an agent over the whole bundle. The
+   harness's `remote` mode, its `TESSL_REPO` variable and its origin-URL rewriting existed *only*
+   because the old local review could not see `references/` — all three are deleted, not ported.
+   A workspace is now required and has **no default**: `--workspace`, then `$TESSL_WORKSPACE`,
+   then SKIP 77. Hardcoding one would put an account name in a public repository.
+2. **A score is a finite number in 0..100, and 0 is one of them.** Three commands return three
+   different envelopes (`review.reviewScore`, `attributes.score`, `data[].attributes.score`), so
+   `reviewScoreFrom` reads whichever is present rather than guessing one. The string `"93"` is not
+   a score; neither is `null`, `NaN` or `105`. `tests/test-tessl-score-parse.mjs` AC-3 pins that
+   `reviewScore: 0` returns `0` — the defect an `if (!score)` refactor introduces — and AC-7
+   mutation-checks AC-3 by running the truthy variant beside the real one. The fixtures are **real**
+   0.105.0 envelopes with ids replaced and judge prose elided: one generated from the
+   implementation would be the projection-checked-against-itself fail-open in a new costume.
+3. **The free preflight comes before the paid call.** `tessl review list --limit 1` proves auth and
+   workspace resolution at zero credits. Without it, the first thing a logged-out run discovers is a
+   review it has already submitted. `--threshold 0` is passed on purpose so tessl's own gating is
+   off and a validation *warning* can never arrive as a non-zero exit to be misread as
+   "below floor".
+4. **`tessl eval lint` fails open, so it may not be the only check.** Its own help states that a
+   directory without `task.md` is "silently skipped and recursed into"; verified, a folder holding
+   only `criteria.json` lints `✔ 0 scenarios valid`, exit 0. A renamed brief therefore deletes a
+   scenario from every future run while every signal stays green — the same shape as the
+   projection-checked-against-itself defect FR-OKF-3 fixed, in someone else's tool.
+   `tests/test-eval-scenarios.mjs` pairs the two files (AC-1), compares its own walk against
+   lint's count (AC-5), and **reproduces the fail-open as a canary** (AC-6b) so a future
+   simplification cannot quietly remove the guard without also removing its proof.
+
+Both harnesses run in `tests/run-all.mjs` and are green on a bare clone with **no tessl installed
+at all** — `resolveTessl({ allowNpx: false })` refuses the registry fallback in the default suite,
+because npx would turn a local structural check into a network call on a cold CI machine. Only
+`test-tessl-quality-gate.mjs` stays excluded, and only because it cannot assert anything without an
+account.
+
+Deliberately **not** done: no `.tessl-plugin/plugin.json` anywhere. Tessl's documented layout is
+plugin-rooted, and `--context <path>` reaches the same result without a fifth hand-synced semver.
+
 ### BUG-006 · A published example may not borrow authority from what the reader cannot see
 
 Two rules, both found by a confidentiality audit of the public tree and both about the same mistake
@@ -275,7 +317,9 @@ hooks/                   # The wagner-skills plugin's hooks (auto-loaded via hoo
                          #   indexes, unadopted repos, .okfignore hits (FR-OKF-6)
 tests/                   # Repo-level harnesses owned by neither plugin
   run-all.mjs            # THE runner — every suite in the repo; 77 = INCOMPLETE, never a pass.
-                         #   Excludes test-tessl-quality-gate.mjs (77 without auth = permanent red)
+                         #   Excludes test-tessl-quality-gate.mjs (77 without auth = permanent red).
+                         #   test-tessl-score-parse.mjs and test-eval-scenarios.mjs are NOT
+                         #   excluded — both are green on a bare clone with no tessl at all
   test-publication-safety.mjs  # repo-wide credential scan; structural rules + canaries both ways
   test-fr-bundle-3.mjs    # tree/closure AC matrix — the expected skill dirs of each plugin
   test-fr-proto-1.mjs     # prototype-spike AC matrix (AC-7 is the secret-shaped-token scan)
@@ -289,6 +333,13 @@ tests/                   # Repo-level harnesses owned by neither plugin
                          #   profile: spellings declaredProfile accepts (FR-OKF-6)
   test-no-shell-invocation.mjs  # the viewer launcher opens a URL on darwin/linux/win32 without
                          #   a shell, plus a repo-wide scan: no .mjs reaches one
+  lib/tessl.mjs           # reviewScoreFrom / reviewIdFrom / resolveTessl / workspaceFrom — the
+                         #   parsing and resolution rules the tessl harnesses share
+  test-tessl-score-parse.mjs # those rules, asserted with no account and no credits. AC-3 pins
+                         #   that reviewScore 0 is a score; AC-7 mutation-checks it
+  test-eval-scenarios.mjs # eval scenario shape + AC-6b, which REPRODUCES `tessl eval lint`'s
+                         #   fail-open (a dir without task.md lints green) so the guard can't be lost
+  fixtures/tessl/         # real 0.105.0 review envelopes, ids replaced, judge prose elided
   test-tessl-quality-gate.mjs
 .github/                 # CI (test.yml: ubuntu + macOS, both blocking) + templates
 CONTRIBUTING.md          # Contributor entry point: prereqs, version-bump rules, skill conventions
@@ -314,7 +365,9 @@ skills/                  # One folder per skill — the 8 wagner-skills members
   prototype-spike/       # Requirement prototypes that double as design spikes — one self-contained HTML file, high-fidelity rebuild from the app's own source, controls = the open questions (FR-PROTO-1)
     SKILL.md             # Thesis + 3 fidelity axes (UI/token/data) + ANCHOR->HARVEST->FRAME->BUILD->DRIVE->CLOSE + 13 hard rules
     references/          # anatomy, ui-fidelity, harvest-playbook, control-derivation, fidelity-tiers, verification, exemplar walkthrough
-    evals/               # evals.json — 2 prompts x 19 assertions (with-skill 18/19 vs no-skill 7/19)
+    evals/               # evals.json — 2 prompts x 19 assertions (with-skill 18/19 vs no-skill 7/19).
+                         #   LEGACY format, not convertible: every assertion cites source facts of a
+                         #   fictional app, so a runnable tessl scenario would need that app built
   okf-maintain/          # Adopt and maintain an Open Knowledge Format v0.2 doc bundle — frontmatter, chained
                          #   root indexes, no log.md / no in-doc history (git owns it), agent-entry wiring (FR-OKF-1)
     SKILL.md             # Profile-manifest reading + the two workflows (adopt / maintain)
@@ -437,11 +490,13 @@ The doc-this pipeline is enforced by the hooks below (wired in `doc-this/hooks/h
 
 ## Testing Skills
 
-Follow `skill-creator:skill-creator` methodology:
-1. Create test prompts in `evals/evals.json`
-2. Run with/without skill in parallel subagents
-3. Evaluate qualitatively with `generate_review.py`
-4. Draft assertions and iterate
+Author and iterate through `skill-creator:skill-creator`. **Measure** with Tessl evals — write a
+scenario under `evals/<plugin>/<skill>/<scenario>/` and run it against the skill as `--context`.
+See **Evals** below for the layout, the `eval lint` fail-open, and the budget.
+
+The older method — prompts in `skills/<name>/evals/evals.json`, run with and without the skill in
+parallel subagents, judged by eye — is superseded: it is unrepeatable and produces no comparable
+number. Two files remain in that format and are documented in place; do not add a third.
 
 ## Writing a scanning check
 
@@ -463,67 +518,167 @@ PASS, so treat the scan itself as the thing under test:
 ## Quality Gate
 
 **Optional, not a contributor requirement** — it needs a tessl account, and the review
-**uploads the skill body to tessl's service**. Never run it on anything confidential. A PR is not
-blocked on a tessl score. Contributor-facing instructions live in README.md ("Skill quality
-review"); this section is the maintainer's shorthand.
+**uploads the whole skill directory to tessl's service** (`SKILL.md` plus `references/`,
+`scripts/`, `assets/`). Never run it on anything confidential. A PR is not blocked on a tessl
+score. Contributor-facing instructions live in README.md ("Skill quality review"); this section is
+the maintainer's shorthand.
 
-After writing or modifying any skill, review it through the **`tessl` MCP server**. Enable it for
-this repo first — `.claude/` is gitignored, so a fresh clone carries no MCP configuration and you
-must add the server to your own `.claude/settings.local.json` before the tools below resolve:
+The CLI and the MCP server now drive **the same** server-side pipeline: `tessl review run quality`
+≡ `mcp__tessl__review_run`, `tessl review view` ≡ `mcp__tessl__review_view`. The deprecated
+single-pass `tessl skill review` is superseded (it still exists in 0.105.0 and prints no warning —
+do not write that it was removed). Both paths are bundle-aware, which is why the harness's old
+`remote` mode is gone: it existed only because the old local review did not read `references/`.
 
-1. `mcp__tessl__status` — confirm `authenticated: true`. A `blockers: ["no-project"]` reply is
-   expected and harmless: this repo has no `tessl.json`, and a review does not need one.
-2. `mcp__tessl__review_run` — `path: ./skills/<skill-name>`, `kind: "quality"`. **Async**, unlike
-   the CLI it replaces: it returns a run ID immediately. One run per user request, never
-   speculative.
+### The MCP path
+
+Enable the server for this repo first — `.claude/` is gitignored, so a fresh clone carries no MCP
+configuration and you must add it to your own `.claude/settings.local.json`:
+
+1. `mcp__tessl__status` — confirm `authenticated: true`.
+2. `mcp__tessl__review_run` — `path: ./skills/<skill-name>`, `kind: "quality"`. Async: returns a
+   run ID immediately. One run per user request, never speculative.
 3. `mcp__tessl__review_view` — poll that `runId` until `status` is `completed` (or `failed` /
    `cancelled`). Budget a couple of minutes, not seconds.
 
-`kind: "security"` is free. `quality` costs credits — `metadata.tier: "authed_free"` is a label,
-not a price; read `creditsUsed` on the completed run (10 for a single skill, 2026-08-23).
-
-**The MCP run bundles the whole skill directory** — its `validation.checks` report
-`references_directory` / `scripts_directory` / `assets_directory` file counts, and the content
-judge cites the reference files by name. This is the one thing the CLI's local review does *not*
-do, and the only reason the harness grew a `remote` mode; that workaround is unnecessary here.
-Caveat: the check is named for `references/` **plural**, while `agent-cli`, `human-cli` and
-`airflow-dags` use `reference/` **singular** — before trusting a low `progressive_disclosure` on
-those three, confirm the run's validation block actually counted their files.
-
 **`review_fix` is report-only here.** Start it, read `summaryOfChanges` through `review_view`, then
 apply the parts you agree with by hand. **Never call `review_view` with `apply: true`** — it writes
-the judge's preferences straight to disk, and the judge has no idea the tradeoffs listed below are
+the judge's preferences straight to disk, and the judge has no idea the tradeoffs below are
 deliberate. It will revert them: a single pass on okf-maintain proposed trimming exactly the
-rationale paragraphs that carry the *why*, alongside one genuinely missing reference link.
+rationale paragraphs that carry the *why*, alongside one genuinely missing reference link. The
+CLI's `tessl review fix` replaces the old `--optimize` and inherits the same report-only rule.
 
-Price it before starting one: `maxIterations: 1` cost **100 credits** against 10 for a plain review
-(2026-08-23, 89 → 96 proposed). A completed run reports `appliedToLocalFile: false` — starting it
-never touches the working tree, verified.
-
-The harness stays on the CLI and is **not** migrating: a shell script cannot call an MCP tool. Use
-it when you want an exit code instead of a report.
+### The CLI path
 
 ```bash
-# Exit 0 pass · 1 below floor · 77 skipped (no npx / not logged in).
-# 'remote' derives the repo from origin; override with TESSL_REPO=github:<owner>/<repo>.
-node tests/test-tessl-quality-gate.mjs ./skills/<skill-name> 90 [remote]
+export TESSL_WORKSPACE=wagneripjr        # no default; the harness SKIPs rather than guess
+node tests/test-tessl-quality-gate.mjs ./skills/<skill-name> 90
+# exit 0 pass · 1 below floor · 77 skipped (no CLI / no workspace / preflight failed / no score)
 ```
 
-The harness **skips (77), never fails**, when tessl is unavailable or unauthenticated — a review
-that could not run is not a pass. It is deliberately absent from README's default test list.
+The harness runs a **free** `tessl review list` preflight first, so a logged-out or misnamed
+workspace skips *before* submitting a review rather than after paying for one. It passes
+`--threshold 0` on purpose: tessl's own gating is disabled so a validation *warning* can never
+arrive as a non-zero exit and be misreported as "below floor". Score extraction lives in
+`tests/lib/tessl.mjs` and is asserted by `tests/test-tessl-score-parse.mjs` — 0 is a score, `"93"`
+is not.
 
-**MCP and CLI scores are not one scale.** Same skill, same commit, minutes apart: MCP 89, harness
-93 (okf-maintain, 2026-08-23). The judges are LLMs, and the MCP run sees a bundle the CLI does not
-— seeing it can *lower* `progressive_disclosure` by exposing inline duplication of the very
-reference files it read. Compare a score only against another from the same path, and never read
-the switch itself as a regression.
+The harness **skips (77), never fails**, when tessl is unavailable or unauthenticated — a review
+that could not run is not a pass. It stays excluded from `run-all.mjs` for that reason.
+
+### Prices, measured 2026-09-04 on the Free plan
+
+| Thing | Credits |
+|---|---|
+| `review run quality` | **10** |
+| `review run quality`, cached (no `--force`, unchanged skill) | **0** — `credits: null`, `metadata.reusedFromReviewRunId` |
+| `review run security` (Snyk) | **0** |
+| `review fix --max-iterations 1` | **100** (2026-08-23) |
+
+`tessl org usage --json` reports `credits.{limit,used,remaining,resetsAt,overageAllowed}` for free.
+Free plan: 1000/month, **overage not allowed** — work simply stops. Read it before and after
+anything paid; the delta is the real price. `--review-plugin` (custom rubric) requires a **paid
+plan**: do not plan around custom rubrics.
+
+Caveat that survives the migration: the validation check is named for `references/` **plural**,
+while `agent-cli`, `human-cli` and `airflow-dags` use `reference/` **singular** — before trusting a
+low `progressive_disclosure` on those three, confirm the run's validation block actually counted
+their files. Worth a separate `fix:` commit to rename.
+
+**"MCP and CLI scores are not one scale" is under re-verification.** The recorded gap (MCP 89 vs
+harness 93, okf-maintain, 2026-08-23) was MCP-bundle vs CLI-*local*. Both paths now run the same
+bundle-aware pipeline, so the gap should be gone — but that is a hypothesis until a paired run
+says so, and the 2026-08-23 measurement was real. Do not delete it; settle it.
 
 Fix any criterion scoring below 3/3 unless it's an intentional design tradeoff (document why).
 
 **Known structural tradeoffs (do not chase):**
-- `descriptionJudge.trigger_term_quality` is **N/A-by-design for orchestrator-dispatched workers** (see "Description classes" above) — they are invoked by exact name, not by user phrasing; expected score 1–2. Never add user-intent keywords to lift it: that creates unanchored-run risk (the 2026-06-10 architect episode — keywords added to chase the judge had to be reverted).
+- `descriptionJudge.trigger_term_quality` is **low-by-design for orchestrator-dispatched workers** (see "Description classes" above) — they are invoked by exact name, not by user phrasing; expected score 1–2. Never add user-intent keywords to lift it: that creates unanchored-run risk (the 2026-06-10 architect episode — keywords added to chase the judge had to be reverted). This is no longer an assertion to take on faith: see **Evals → non-activation proof** below, which makes it measurable.
 - `contentJudge.conciseness` may stay 2 (or 1 for doc-this-code-analyst) where inline commands and restated discipline rules are load-bearing for actionability=3. Verify judge claims before reacting (e.g., judge line-count assertions have been wrong).
 - `validation.relative_links` on **okf-maintain** flags a missing `index.md`. It is a false positive and must not be "fixed": the link sits inside a fenced block quoting `okf.mjs`'s `ENTRY_BLOCK` verbatim, `tests/test-okf-maintain.mjs` AC-17 pins that quote byte-identical to what the script writes, and the link is relative to the *target* repo — it can never resolve from the skill directory. Editing it breaks AC-17 and makes the doc lie about what `wire` emits. The same block is quoted in `references/adoption.md` and carries the same warning.
+
+## Evals
+
+A review grades the skill; an **eval** grades its *effect*. `tessl eval run` solves each scenario
+twice — baseline and with the skill injected — and scores the difference against a per-scenario
+rubric. That delta is what the skill is worth, and it replaces the old
+`evals/evals.json` + parallel-subagents + eyeball method as the measurement of record.
+
+### Layout — repo root, not inside the skill
+
+```
+evals/<plugin>/<skill>/<scenario>/
+  task.md        # the ONLY thing the agent sees
+  criteria.json  # {context, type:"weighted_checklist", checklist:[{name,description,max_score}]}
+  resources/     # optional, auto-copied into the working dir
+  scenario.json  # optional; fixtures: directory | commit, plus include[] / setup[]
+```
+
+Root, **not** `skills/<name>/evals/`, and the first reason is decisive: a quality review bundles
+the whole skill directory, so an in-skill `evals/` is uploaded to the judges as part of the thing
+it grades. It also lets one free `tessl eval lint ./evals` cover everything, and keeps fixture
+`resources/` out of a shipped plugin.
+
+`criteria.json` items are `{name, description, max_score}` **only**. The `category` enum
+(INTENT/MUST_NOT/…) in the published docs is **not** in 0.105.0's schema — it warns
+`⚠ Extra checklist fields: category`. `tests/test-eval-scenarios.mjs` AC-3 rejects it.
+
+### `tessl eval lint` fails open — this is the trap
+
+Its own help says so: a directory is a scenario only if it holds `task.md`, and one without is
+"silently skipped and recursed into". Verified: a folder holding only `criteria.json` lints as
+`✔ 0 scenarios valid`, exit 0. A renamed or mistyped brief therefore deletes a scenario from every
+future run while every signal stays green. `tests/test-eval-scenarios.mjs` pairs the two files
+(AC-1), compares its own walk against lint's count (AC-5), and **reproduces the fail-open as a
+canary** (AC-6b) so the guard cannot be quietly lost. Never rely on `eval lint` alone.
+
+### Running one
+
+An eval — unlike a review — requires a **Tessl project link**: `tessl project create skills
+--workspace wagneripjr`, which writes `tessl.json` at the repo root. That file is **gitignored on
+purpose**: it names a workspace no contributor has, and evals are a maintainer step. Same
+precedent as `.claude/`. `tessl project repair` re-links a broken one.
+
+```bash
+tessl eval run ./evals/wagner-skills/postmortem --context ./skills/postmortem --wait
+```
+
+`--context` takes a local path or glob, so **no `.tessl-plugin/plugin.json` is committed anywhere**
+in this repo. Tessl's documented layout is plugin-rooted (a manifest beside `evals/`, unlocking
+`tessl scenario generate` and the `eval run ./my-plugin` shorthand) and we deliberately do not
+adopt it: each manifest carries its own semver, and four hand-synced version fields is already one
+problem too many. If generated scenarios are ever wanted, do it in a **throwaway copy outside this
+repo** (`tessl skill import` → `scenario generate` → `scenario download --output` → curate → copy
+the good ones in). Never point `scenario download` at the real tree: its default
+`--strategy merge` overwrites `scenario-N/` directories and destroys hand edits.
+
+**There is no dry-run.** `tessl eval run --json` *submits* — by the time it prints
+`estimatedCredits` you have paid. Budget a priori from `tessl org usage --json`, before invoking.
+Cheap levers: `--skip-baseline` (halves it when the baseline is meaningless), `--skip-scoring` (no
+scorer model runs at all), `-n 1` while exploring and `-n 3` only for probabilistic properties.
+
+### The non-activation proof (planned)
+
+`--skip-forced-context-activation --skip-scoring` observes whether an agent reaches for a skill on
+its own. Pointed at scenarios written as the most tempting user phrasing for each doc-this worker,
+with `--context './doc-this/skills/*'` so the agent has a real choice, it turns
+"`trigger_term_quality` is N/A by design" from an excuse into a measurement. Pass condition: across
+every run, **no member of the `WORKERS` set in `doc-this/hooks/doc-this-dispatch-gate.mjs`**
+appears in the Activated-skills column — the orchestrator `doc-this` activating is expected and
+allowed. The assertion must read that set from the gate file, never restate it. Record the result
+in a committed `RESULTS.json` (no run ids, no workspace ids) enforced by a zero-credit harness,
+the same shape as `judgment-fixture/FINDINGS.md`.
+
+### Not worth doing
+
+- **Any tessl step in `.github/workflows/test.yml`.** Fork PRs cannot read secrets, so the job
+  either fails on every fork PR — contradicting "no PR is blocked on a score" — or exits 77, and
+  `run-all.mjs` turns any skip into INCOMPLETE + exit 1, making **every fork PR red**. Keys also
+  expire silently after 30 days, credits are finite and PR volume is not, and `test.yml` currently
+  carries no secrets at all. If a score must ever attach to a commit SHA, use `workflow_dispatch`.
+- **`tessl schedule *`** — unattended burn against a hard cap with no overage.
+- **`tessl skill publish`** — a third version surface, publishing private-by-default plugins out of
+  a public repo, for no benefit. These plugins are consumed from git via the Claude Code
+  marketplace.
 
 ## Versioning
 

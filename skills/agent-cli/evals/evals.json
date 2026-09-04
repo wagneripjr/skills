@@ -1,5 +1,6 @@
 {
   "skill_name": "agent-cli",
+  "status": "LEGACY FORMAT — not a tessl eval scenario. These carry a prose expected_output rather than a weighted checklist, so each must be hand-decomposed into independently-judgeable items before it can be scored. Prompt 3 (scoring the gh CLI) also needs network access to a moving target and should be rewritten against a local fixture. Live measurement lives in evals/ at the repo root; see CLAUDE.md > Evals.",
   "evals": [
     {
       "id": 1,

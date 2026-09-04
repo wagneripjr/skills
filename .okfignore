@@ -4,3 +4,7 @@
 # The frontmatter contract corpus — parser inputs, deliberately including malformed ones.
 # Test data is not knowledge, and half of it would fail `check` on purpose.
 tests/fixtures/
+
+# Eval scenario briefs and rubrics — inputs to `tessl eval run`, addressed to a grading agent,
+# not to a reader of this repository's documentation. Same reasoning as tests/fixtures/ above.
+evals/

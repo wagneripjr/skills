@@ -89,12 +89,19 @@ If you add a check that asserts the *absence* of something, prove it in both dir
 flag a planted canary and must not flag benign text. An absence check that silently reads nothing
 reports success. `tests/test-publication-safety.mjs` shows the pattern.
 
-## Skill quality review (optional)
+## Skill quality review and evals (optional)
 
-Skills can be scored with the `tessl` CLI. It is entirely optional — no PR is blocked on a score and
-you never need an account to contribute.
+Skills can be scored with `tessl review run quality`, and measured against eval scenarios with
+`tessl eval run`. Both are entirely optional — no PR is blocked on a score and you never need an
+account to contribute.
 
-> **It uploads the skill to a hosted third-party service.** Never run it on anything confidential.
+> **A review uploads the whole skill directory to a hosted third-party service** — `SKILL.md`
+> plus `references/`, `scripts/` and `assets/`. Never run it on anything confidential.
+
+A review needs a login and a workspace name (`--workspace`, or `$TESSL_WORKSPACE`); the harness
+skips rather than guessing one. Writing an eval scenario under `evals/` and checking it with
+`tessl eval lint ./evals` or `node tests/test-eval-scenarios.mjs` is free and needs no account —
+contributing one is welcome. *Running* an eval costs credits and is a maintainer step.
 
 See README for usage.
 

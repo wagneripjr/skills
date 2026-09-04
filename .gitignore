@@ -7,3 +7,7 @@ __pycache__/
 .learnings/
 .sdlc/
 *-workspace/
+
+# Tessl project link — maintainer-local. Evals are maintainer-only, and a clone would
+# otherwise carry a link to a workspace the cloner cannot use. `tessl project repair` re-links.
+tessl.json

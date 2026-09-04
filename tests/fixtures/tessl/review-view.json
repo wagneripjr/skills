@@ -1,0 +1,107 @@
+{
+  "reviewRunId": "00000000-0000-7000-8000-000000000001",
+  "review-plugin": "tessl/default-skill-review@0.2.0",
+  "validation": {
+    "overallPassed": true,
+    "errorCount": 0,
+    "warningCount": 1,
+    "checks": [
+      {
+        "name": "skill_md_line_count",
+        "status": "passed",
+        "message": "SKILL.md line count is 251 (<= 500)"
+      },
+      {
+        "name": "frontmatter_valid",
+        "status": "passed",
+        "message": "YAML frontmatter is valid"
+      }
+    ]
+  },
+  "judges": {
+    "content": {
+      "scale": {
+        "max": 5,
+        "min": 1
+      },
+      "success": true,
+      "evaluation": {
+        "scores": {
+          "conciseness": {
+            "score": 4,
+            "reasoning": "reasoning elided; this fixture pins the envelope, not the prose."
+          },
+          "actionability": {
+            "score": 5,
+            "reasoning": "reasoning elided; this fixture pins the envelope, not the prose."
+          },
+          "workflow_clarity": {
+            "score": 5,
+            "reasoning": "reasoning elided; this fixture pins the envelope, not the prose."
+          },
+          "progressive_disclosure": {
+            "score": 5,
+            "reasoning": "reasoning elided; this fixture pins the envelope, not the prose."
+          }
+        },
+        "suggestions": [],
+        "overall_assessment": "reasoning elided; this fixture pins the envelope, not the prose."
+      },
+      "weightedScore": 4.7,
+      "normalizedScore": 0.925
+    },
+    "description": {
+      "scale": {
+        "max": 5,
+        "min": 1
+      },
+      "success": true,
+      "evaluation": {
+        "scores": {
+          "specificity": {
+            "score": 5,
+            "reasoning": "reasoning elided; this fixture pins the envelope, not the prose."
+          },
+          "completeness": {
+            "score": 5,
+            "reasoning": "reasoning elided; this fixture pins the envelope, not the prose."
+          },
+          "trigger_term_quality": {
+            "score": 4,
+            "reasoning": "reasoning elided; this fixture pins the envelope, not the prose."
+          },
+          "distinctiveness_conflict_risk": {
+            "score": 5,
+            "reasoning": "reasoning elided; this fixture pins the envelope, not the prose."
+          }
+        },
+        "suggestions": [],
+        "overall_assessment": "reasoning elided; this fixture pins the envelope, not the prose."
+      },
+      "weightedScore": 4.7,
+      "normalizedScore": 0.925
+    }
+  },
+  "scoring": {
+    "components": [
+      {
+        "id": "validation",
+        "weight": 0.19999999999999996,
+        "normalized": 0.96875
+      },
+      {
+        "id": "description",
+        "weight": 0.4,
+        "normalized": 0.925
+      },
+      {
+        "id": "content",
+        "weight": 0.4,
+        "normalized": 0.925
+      }
+    ]
+  },
+  "review": {
+    "reviewScore": 93
+  }
+}

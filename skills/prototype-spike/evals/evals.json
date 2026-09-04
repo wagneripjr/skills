@@ -1,5 +1,6 @@
 {
   "skill_name": "prototype-spike",
+  "status": "LEGACY FORMAT — not a tessl eval scenario, and not convertible into one as written. Every assertion cites specific source facts of the fictional orchard-console app (a named tab array, a named feature flag, an exact polling contract), so a runnable scenario would require building that app as a fixture and maintaining it forever. Kept as the design record of what this skill must do. Live measurement lives in evals/ at the repo root; see CLAUDE.md > Evals.",
   "note": "The orchard-console app in these prompts is fictional — the same invented app used in references/harvest-playbook.md and references/anatomy.md. The repo path, component names, feature flags, timings and endpoints point at nothing real; they illustrate shape only.",
   "evals": [
     {

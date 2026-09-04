@@ -1,0 +1,44 @@
+{
+  "links": {
+    "self": "https://api.tessl.io/experimental/reviews?page[size]=20",
+    "next": null,
+    "prev": null
+  },
+  "meta": {
+    "count": 1
+  },
+  "data": [
+    {
+      "id": "00000000-0000-7000-8000-000000000001",
+      "type": "review",
+      "attributes": {
+        "kind": "quality",
+        "status": "completed",
+        "workflowId": "00000000-0000-7000-8000-000000000004",
+        "workspaceId": "00000000-0000-7000-8000-000000000002",
+        "createdBy": "00000000-0000-7000-8000-000000000003",
+        "score": 93,
+        "results": {
+          "judges": {}
+        },
+        "metadata": {
+          "tier": "authed_free",
+          "subject": {
+            "type": "skill",
+            "name": "okf-maintain",
+            "path": "SKILL.md"
+          }
+        },
+        "config": {
+          "agent": "claude",
+          "model": "glm-5.2",
+          "pluginRef": "tessl/default-skill-review@0.2.0",
+          "reviewPluginName": "tessl/default-skill-review@0.2.0"
+        },
+        "createdAt": "2026-08-24T16:43:17.759Z",
+        "updatedAt": "2026-08-24T16:44:40.776Z",
+        "credits": 10
+      }
+    }
+  ]
+}

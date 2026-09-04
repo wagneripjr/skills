@@ -1,0 +1,71 @@
+{
+  "context": "The author hands over raw, partly contradictory incident notes and asks for a writeup. The notes deliberately contain: mixed UTC and GMT-3 timestamps, a restart presented as the resolution, two hypotheses the author already killed with evidence, a named deployer, two unrelated findings, and one claim telemetry can no longer support. A good postmortem is machine-parseable at the header, separates the palliative from the root fix, keeps the discarded hypotheses, and does not invent what the retention window destroyed.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "frontmatter_contract",
+      "description": "The document opens with a YAML frontmatter block (--- fenced, first thing in the file) carrying at least a title, a description, and a severity whose value is one of exactly critical, high, medium, low. A severity written as SEV-2, High, or a prose sentence does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "path_and_date",
+      "description": "The file is written to a postmortems directory as YYYY-MM-DD-<slug>.md, and the date in the filename is the incident date, not the date of writing (the notes say the writeup is happening two days later).",
+      "max_score": 2
+    },
+    {
+      "name": "single_declared_timezone",
+      "description": "One timezone is declared once and every timestamp in the document is expressed in it. The source notes mix 02:14 UTC with 03:00 GMT-3; a correct writeup converts and says that it converted, rather than carrying both conventions into the timeline.",
+      "max_score": 3
+    },
+    {
+      "name": "mechanism_not_symptom",
+      "description": "The root cause names the mechanism, not the symptom. 'Connections exhausted' or 'slow query' alone is the symptom; the cause is that an unindexed join let each request hold a pooled connection for seconds while nothing bounded the hold - no statement timeout, no connectionTimeoutMillis, and a pool ceiling (4 tasks x 50) equal to the database max_connections, so saturation was reachable by design.",
+      "max_score": 4
+    },
+    {
+      "name": "discarded_hypotheses_kept",
+      "description": "Both hypotheses the author eliminated - the v4.18.2 deploy and a traffic spike - appear in the document as discarded, each with the specific evidence that killed it (four flat hours after the deploy; RequestCount below the prior Tuesday). Silently dropping them because they were wrong loses half the investigation.",
+      "max_score": 3
+    },
+    {
+      "name": "palliative_vs_root_fix_split",
+      "description": "The ECS service restart is labelled explicitly as the immediate palliative that restored service, and is distinguished from a root fix (an index on order_items.order_id, a statement timeout, a pool ceiling below max_connections). The document must not read as 'resolved' on the strength of the restart alone.",
+      "max_score": 4
+    },
+    {
+      "name": "blast_radius_includes_negatives",
+      "description": "The impact section records the services that were NOT affected (inventory-api, pricing-api, search-api) and why, treating the boundary as evidence about the mechanism rather than listing only the damage.",
+      "max_score": 3
+    },
+    {
+      "name": "evidence_gap_declared",
+      "description": "The missing APM traces are stated explicitly as a limit on what can be claimed, and any per-endpoint or per-trace assertion is marked a hypothesis rather than asserted. Inventing a trace breakdown, or quietly omitting that the data is gone, both fail this.",
+      "max_score": 3
+    },
+    {
+      "name": "no_invented_numbers",
+      "description": "Every figure in the document traces to one the author supplied (240ms, 9s, 200 connections, 4.1k 5XX, 8.4s vs 40ms, max 50 x 4 tasks) or is clearly derived from them. No extra percentages, request counts, error rates, or revenue figures appear that the notes do not support.",
+      "max_score": 3
+    },
+    {
+      "name": "blameless_framing",
+      "description": "The deploy is described as a condition ('v4.18.2 shipped at 21:40') rather than attributing it to a person, and no individual is identified as at fault anywhere in the document.",
+      "max_score": 2
+    },
+    {
+      "name": "correlated_findings_separated",
+      "description": "The payments-worker ECONNRESET warnings and the 1-day RDS backup retention are recorded as findings correlated with the investigation but NOT as causes of this incident, kept out of the root-cause section.",
+      "max_score": 2
+    },
+    {
+      "name": "action_items_owned",
+      "description": "Action items are presented as a table or list where each item carries an owner and a due date (a placeholder such as TBD or an explicit note that the owner must be assigned is acceptable; an item with no owner field at all is not).",
+      "max_score": 2
+    },
+    {
+      "name": "detection_gap_addressed",
+      "description": "The document addresses detection: the alarm fired at 23:19 and the first customer report came at 23:31, so monitoring beat the customer. The writeup states this rather than leaving the two timestamps unreconciled, and the author's own moment of confusion about the ordering is resolved, not reproduced.",
+      "max_score": 2
+    }
+  ]
+}
