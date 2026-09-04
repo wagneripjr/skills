@@ -157,9 +157,19 @@ node tests/test-tessl-quality-gate.mjs ./skills/postmortem 90
 ```
 
 The harness runs a free `tessl review list` preflight first, so a logged-out or misnamed-workspace
-run skips before it submits (and pays for) anything. A quality review costs 10 credits; re-running
-it on an unchanged skill reuses the cached result and costs nothing, so avoid `--force` unless you
-mean it. `tessl org usage --json` reports what you have left.
+run skips before it submits (and pays for) anything. A quality review costs 10 credits.
+`tessl org usage --json` reports what you have left.
+
+**A re-review after an edit needs `--force`.** The cache is not content-addressed: three skills
+were re-reviewed here immediately after their `SKILL.md` bodies were rewritten and all three came
+back reused, free, and scored identically to the old bundle. A result carrying
+`metadata.reusedFromReviewRunId` measured nothing.
+
+**One run is not a measurement.** Identical bytes on one rubric scored 87, 91 and 91, with
+individual dimensions moving ±1. Treat a gap under about 5 points as noise, and confirm a low
+dimension with a second run before changing anything. The current scores are in
+[`tests/tessl-scores.json`](tests/tessl-scores.json) — generated, never hand-written, one row per
+skill per rubric.
 
 Aim for 3/3 on every criterion. Two known scores are **deliberate** and should not be chased:
 `conciseness` sometimes sits at 2 where restated discipline rules are load-bearing for

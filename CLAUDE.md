@@ -249,6 +249,42 @@ no harness checks is exactly the drift this repo has already been bitten by, so 
 under **Versioning** stay four. `private: true` in both manifests is what keeps an accidental
 `publish` private.
 
+### FR-TESSL-2 · A published score names its rubric and its run, or it is not a score
+
+Owned by `tests/tessl-scores.mjs` and `tests/test-tessl-scores.mjs`. The score record used to be
+hand-written prose in `CLAUDE.md` and in the memory index, and by 2026-09-04 it had drifted up to
+**10 points in both directions** — `postmortem` recorded 100 against an actual 90, `doc-this-viewer`
+99 against 93, `doc-this-reviewer` 79 against 89 — while `platform-sre-kubernetes` had fallen from
+89 to **80** with no entry at all. A number written by hand is never re-derived, so the record
+decayed silently in exactly the direction that flatters it. Four parts:
+
+1. **Nothing hand-writes a score.** `tests/tessl-scores.mjs` rebuilds `tests/tessl-scores.json`
+   from `tessl review list --limit 100 --json`, which is **free** — it reads reviews already paid
+   for and submits nothing. `--check` diffs instead of writing. It reuses `reviewScoreFrom` and
+   `resolveTessl` from `tests/lib/tessl.mjs` rather than reimplementing the envelope rules that
+   `test-tessl-score-parse.mjs` already pins. Prose may carry *why* a dimension sits where it does;
+   it may not carry the number.
+2. **Every row names its rubric**, because two are now in play and they are not one scale. The same
+   `okf-maintain` bytes scored **87** on `tessl/default-skill-review@0.2.0` and **95** on the local
+   `review-plugin/` — which adds a fifth judge, `quoted_output_fidelity` — forty minutes apart. An
+   unlabelled number cannot be compared to anything, which is how a custom-rubric run silently
+   became the recorded score for a skill.
+3. **Coverage is checked by a foreign enumerator.** `test-tessl-scores.mjs` walks the working tree
+   for `SKILL.md` under `skills/` and `doc-this/skills/` and requires a row for each. Regenerating
+   the file and diffing it cannot do this: a skill the API never returned is absent from both sides
+   and compares equal — the projection-checked-against-itself fail-open FR-OKF-3 already fixed
+   once. The suite is green on a bare clone with no tessl and no account, so it runs in
+   `run-all.mjs`; the generator does not.
+4. **No run ids, no workspace ids** in the committed file, the rule CLAUDE.md already states for the
+   evals `RESULTS.json`, asserted by AC-4 with a planted-UUID canary. The price is that a row cannot
+   be traced to one run from the file alone. The rubric plus the date is what makes two numbers
+   comparable, and that is the property that was actually missing.
+
+The API identifies a subject by repo-relative path, so a review of `skills/postmortem/SKILL.md` run
+from a *different* repository is indistinguishable from one run here. Rows are filtered to paths
+that exist in this tree, latest-per-rubric wins, and that is the best discrimination available —
+stated here because it is a real limit, not a bug to chase.
+
 ### BUG-006 · A published example may not borrow authority from what the reader cannot see
 
 Two rules, both found by a confidentiality audit of the public tree and both about the same mistake
@@ -354,6 +390,13 @@ tests/                   # Repo-level harnesses owned by neither plugin
                          #   fail-open (a dir without task.md lints green) so the guard can't be lost
   fixtures/tessl/         # real 0.105.0 review envelopes, ids replaced, judge prose elided
   test-tessl-quality-gate.mjs
+  tessl-scores.mjs        # generator (FR-TESSL-2) — rebuilds tessl-scores.json from the FREE
+                         #   `tessl review list`; needs a login, so excluded from run-all.mjs
+  tessl-scores.json       # THE score record. Generated, one row per skill PER RUBRIC, no run or
+                         #   workspace ids. Nothing hand-writes a score any more
+  test-tessl-scores.mjs   # that file's AC matrix, green on a bare clone with no tessl. AC-2 is
+                         #   the foreign enumerator: it walks the TREE for SKILL.md, because
+                         #   regenerate-and-diff cannot see a skill the API never returned
 .github/                 # CI (test.yml: ubuntu + macOS, both blocking) + templates
 CONTRIBUTING.md          # Contributor entry point: prereqs, version-bump rules, skill conventions
 LICENSE                  # MIT — matches the "license" field in both plugin.json files
@@ -578,19 +621,27 @@ is not.
 The harness **skips (77), never fails**, when tessl is unavailable or unauthenticated — a review
 that could not run is not a pass. It stays excluded from `run-all.mjs` for that reason.
 
-### Prices, measured 2026-09-04 on the Free plan
+### Prices, measured 2026-09-04 on the Team plan
 
 | Thing | Credits |
 |---|---|
 | `review run quality` | **10** |
-| `review run quality`, cached (no `--force`, unchanged skill) | **0** — `credits: null`, `metadata.reusedFromReviewRunId` |
+| `review run quality`, served from cache | **0** — `credits: null`, `metadata.reusedFromReviewRunId` |
 | `review run security` (Snyk) | **0** |
 | `review fix --max-iterations 1` | **100** (2026-08-23) |
 
-`tessl org usage --json` reports `credits.{limit,used,remaining,resetsAt,overageAllowed}` for free.
-Free plan: 1000/month, **overage not allowed** — work simply stops. Read it before and after
-anything paid; the delta is the real price. `--review-plugin` (custom rubric) requires a **paid
-plan**: do not plan around custom rubrics.
+**The cache is not content-addressed — a re-review after an edit needs `--force`.** Measured
+2026-09-04: `agent-cli`, `human-cli` and `airflow-dags` were re-reviewed straight after commit
+`8160b4e` rewrote their SKILL.md bodies (126 insertions, 95 deletions) and renamed their
+`reference/` directory, and all three came back **reused, 0 credits, byte-identical scores**. The
+earlier wording here said cached-means-unchanged; it does not. A refresh without `--force`
+returns a score for the *old* bundle, at no cost, and looks exactly like a pass.
+
+`tessl org usage --json` reports `credits.{limit,used,remaining,resetsAt,overageAllowed}`, free.
+Team plan: 5000/window, **overage still not allowed** — work simply stops. Read it before and
+after anything paid; the delta is the real price. `--review-plugin` (custom rubric) needs a paid
+plan and is therefore now available; `review-plugin/` in this tree is one, and its numbers are a
+**separate scale** — see FR-TESSL-2.
 
 Every skill now uses `references/` **plural**, the name tessl's packer and the validation check both
 recognise. `agent-cli`, `human-cli` and `airflow-dags` were the last three on `reference/` singular,
@@ -598,12 +649,21 @@ which made their files invisible to the bundle and produced a false-low `progres
 a `progressive_disclosure` score on those three from before the rename is not comparable to one
 after it.
 
-**"MCP and CLI scores are not one scale" is under re-verification.** The recorded gap (MCP 89 vs
-harness 93, okf-maintain, 2026-08-23) was MCP-bundle vs CLI-*local*. Both paths now run the same
-bundle-aware pipeline, so the gap should be gone — but that is a hypothesis until a paired run
-says so, and the 2026-08-23 measurement was real. Do not delete it; settle it.
+**"MCP and CLI scores are not one scale" is settled: they are one scale, and the gap was noise.**
+Measured 2026-09-04 on `okf-maintain`, unchanged bytes, same rubric: **87, 91, 91**, with
+`conciseness` moving 2↔3, `progressive_disclosure` 4↔5 and `specificity` 4↔5 between runs. The
+2026-08-23 MCP-89-vs-CLI-93 gap sits inside that spread, so it never needed two scales to explain
+it. Consequence, and it is the part that matters: **a single run is not a measurement.** Any
+recorded delta smaller than about 5 points — every "regression" and "improvement" the old
+score prose carried — is indistinguishable from judge noise.
 
-Fix any criterion scoring below 3/3 unless it's an intentional design tradeoff (document why).
+Fix any criterion scoring below 3/3 unless it's an intentional design tradeoff (document why) — and
+confirm it with a second run first. Per-dimension scores move ±1 between identical runs, so a single
+low dimension is a hypothesis, not a finding. `airflow-dags` scored `workflow_clarity` **3** on
+2026-09-04 and **4** on the next run; it was never worth chasing.
+
+Current scores live in `tests/tessl-scores.json`, generated (FR-TESSL-2). Nothing below restates a
+number.
 
 **Known structural tradeoffs (do not chase):**
 - `descriptionJudge.trigger_term_quality` is **low-by-design for orchestrator-dispatched workers** (see "Description classes" above) — they are invoked by exact name, not by user phrasing; expected score 1–2. Never add user-intent keywords to lift it: that creates unanchored-run risk (the 2026-06-10 architect episode — keywords added to chase the judge had to be reverted). This is no longer an assertion to take on faith: see **Evals → non-activation proof** below, which makes it measurable.
@@ -775,6 +835,9 @@ node tests/test-publication-safety.mjs
 
 # Run the tree/closure acceptance matrix (asserts only the 8 expected skill dirs exist)
 node tests/test-fr-bundle-3.mjs
+
+# Refresh the score record from the API — FREE, needs `tessl login` (--check to diff instead)
+node tests/tessl-scores.mjs
 ```
 
 <!-- okf:entry -->
@@ -786,3 +849,5 @@ exist" from that index in one read, and open a document only after the index nam
 `docs/` for a document's identity; grep stays correct only for a literal phrase inside a body that
 the index cannot carry.
 <!-- /okf:entry -->
+
+@AGENTS.md

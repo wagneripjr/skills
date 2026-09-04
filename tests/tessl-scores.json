@@ -1,0 +1,511 @@
+{
+  "generator": "tests/tessl-scores.mjs",
+  "rows": [
+    {
+      "skill": "agent-cli",
+      "path": "skills/agent-cli/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 91,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 4,
+          "progressive_disclosure": 5,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 5
+        }
+      }
+    },
+    {
+      "skill": "airflow-dags",
+      "path": "skills/airflow-dags/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 94,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 4,
+          "progressive_disclosure": 5,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 5
+        }
+      }
+    },
+    {
+      "skill": "doc-this",
+      "path": "doc-this/skills/doc-this/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 97,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 4,
+          "progressive_disclosure": 5,
+          "workflow_clarity": 5
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 5
+        }
+      }
+    },
+    {
+      "skill": "doc-this-architect",
+      "path": "doc-this/skills/doc-this-architect/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 89,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 4,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 5
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 3
+        }
+      }
+    },
+    {
+      "skill": "doc-this-architect",
+      "path": "doc-this/skills/doc-this-architect/SKILL.md",
+      "rubric": "wagneripjr/wagner-skills-reviewer",
+      "score": 96,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 5,
+          "progressive_disclosure": 5,
+          "quoted_output_fidelity": 4,
+          "workflow_clarity": 5
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 5
+        }
+      }
+    },
+    {
+      "skill": "doc-this-code-analyst",
+      "path": "doc-this/skills/doc-this-code-analyst/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 85,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 4,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 5
+        },
+        "description": {
+          "completeness": 4,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 3
+        }
+      }
+    },
+    {
+      "skill": "doc-this-data-master",
+      "path": "doc-this/skills/doc-this-data-master/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 87,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 4,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 4
+        }
+      }
+    },
+    {
+      "skill": "doc-this-design-system",
+      "path": "doc-this/skills/doc-this-design-system/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 88,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 4,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 4,
+          "trigger_term_quality": 5
+        }
+      }
+    },
+    {
+      "skill": "doc-this-detective",
+      "path": "doc-this/skills/doc-this-detective/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 86,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 4,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 5
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 3
+        }
+      }
+    },
+    {
+      "skill": "doc-this-help",
+      "path": "doc-this/skills/doc-this-help/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 85,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 4,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 4,
+          "trigger_term_quality": 4
+        }
+      }
+    },
+    {
+      "skill": "doc-this-promote",
+      "path": "doc-this/skills/doc-this-promote/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 94,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 4,
+          "progressive_disclosure": 5,
+          "workflow_clarity": 5
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 4
+        }
+      }
+    },
+    {
+      "skill": "doc-this-reviewer",
+      "path": "doc-this/skills/doc-this-reviewer/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 89,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 3,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 5
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 4
+        }
+      }
+    },
+    {
+      "skill": "doc-this-scout",
+      "path": "doc-this/skills/doc-this-scout/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 90,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 4,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 4
+        }
+      }
+    },
+    {
+      "skill": "doc-this-tracer",
+      "path": "doc-this/skills/doc-this-tracer/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 87,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 4,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 4
+        }
+      }
+    },
+    {
+      "skill": "doc-this-viewer",
+      "path": "doc-this/skills/doc-this-viewer/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 93,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 4,
+          "progressive_disclosure": 5,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 5
+        }
+      }
+    },
+    {
+      "skill": "doc-this-visor",
+      "path": "doc-this/skills/doc-this-visor/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 90,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 4,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 4
+        }
+      }
+    },
+    {
+      "skill": "doc-this-writer",
+      "path": "doc-this/skills/doc-this-writer/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 79,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 3,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 5
+        },
+        "description": {
+          "completeness": 4,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 3
+        }
+      }
+    },
+    {
+      "skill": "human-cli",
+      "path": "skills/human-cli/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 91,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 4,
+          "progressive_disclosure": 5,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 5
+        }
+      }
+    },
+    {
+      "skill": "okf-maintain",
+      "path": "skills/okf-maintain/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 91,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 3,
+          "progressive_disclosure": 5,
+          "workflow_clarity": 5
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 4,
+          "trigger_term_quality": 5
+        }
+      }
+    },
+    {
+      "skill": "okf-maintain",
+      "path": "skills/okf-maintain/SKILL.md",
+      "rubric": "wagneripjr/wagner-skills-reviewer",
+      "score": 95,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 4,
+          "progressive_disclosure": 5,
+          "quoted_output_fidelity": 4,
+          "workflow_clarity": 5
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 5
+        }
+      }
+    },
+    {
+      "skill": "platform-sre-kubernetes",
+      "path": "skills/platform-sre-kubernetes/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 80,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 4,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 4,
+          "distinctiveness_conflict_risk": 4,
+          "specificity": 4,
+          "trigger_term_quality": 4
+        }
+      }
+    },
+    {
+      "skill": "postmortem",
+      "path": "skills/postmortem/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 90,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 4,
+          "progressive_disclosure": 4,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 5
+        }
+      }
+    },
+    {
+      "skill": "prototype-spike",
+      "path": "skills/prototype-spike/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 97,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 5,
+          "conciseness": 4,
+          "progressive_disclosure": 5,
+          "workflow_clarity": 5
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 5
+        }
+      }
+    },
+    {
+      "skill": "requirements-elicitation",
+      "path": "skills/requirements-elicitation/SKILL.md",
+      "rubric": "tessl/default-skill-review@0.2.0",
+      "score": 88,
+      "date": "2026-09-04",
+      "judges": {
+        "content": {
+          "actionability": 4,
+          "conciseness": 3,
+          "progressive_disclosure": 5,
+          "workflow_clarity": 4
+        },
+        "description": {
+          "completeness": 5,
+          "distinctiveness_conflict_risk": 5,
+          "specificity": 5,
+          "trigger_term_quality": 5
+        }
+      }
+    }
+  ]
+}
