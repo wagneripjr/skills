@@ -15,3 +15,10 @@ tessl.json
 # Tessl's own published plugins, installed by `tessl install`. They belong to another
 # workspace, and inside the wagner-skills pack boundary they would ship in our artifact.
 .tessl/plugins/
+
+# Local credentials. Untracked is not enough in a public repo — an untracked-but-unignored file
+# is one `git add -A` from being published, which is why test-publication-safety.mjs scans
+# untracked files too and flags this one.
+.env
+.env.*
+!.env.example
