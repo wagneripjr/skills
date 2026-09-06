@@ -1,0 +1,37 @@
+name: tessl-publish
+
+# Deliberately NOT a step inside test.yml. That workflow runs on pull_request, where a fork
+# cannot read secrets — a tessl step there either fails on every fork PR or skips, and
+# run-all.mjs turns a skip into exit 1, making every fork PR red. This runs only on master.
+#
+# Publishing is also what CLAIMS this repository's skills: per Tessl's docs, publishing through
+# the GitHub Action links the plugins to the repository and hides the separately-indexed copies.
+# A CLI publish instead produces a duplicate in a second workspace, so this must stay the only
+# route that publishes.
+on:
+  push:
+    branches: [master]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    name: tessl registry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - uses: tesslio/setup-tessl@v2
+        with:
+          token: ${{ secrets.TESSL_TOKEN }}
+
+      # Runs on every push; the script asks the registry what is already there and publishes
+      # only what is not. Unconditional pipeline, idempotent publish — no paths: filter.
+      - name: Publish new plugin versions
+        run: node scripts/tessl-publish.mjs
