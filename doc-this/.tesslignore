@@ -1,0 +1,9 @@
+# Maintainer test harnesses for the gates. The gates themselves ship — they are what the
+# plugin does — but their harnesses are only meaningful in this repository, where run-all.mjs
+# can find them.
+hooks/test-*.mjs
+hooks/run-all.mjs
+
+# The judgment fixture is a whole sample app used to grade doc-this's output. Packed, it
+# becomes judge input for the skill it exists to test.
+skills/doc-this/evals/

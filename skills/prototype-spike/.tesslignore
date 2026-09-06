@@ -1,0 +1,3 @@
+# Legacy eval prompts in the pre-tessl format. Packed, they become input to the judge that
+# grades this same skill — the bundle a quality review reads is the whole skill directory.
+evals/
