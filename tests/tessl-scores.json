@@ -86,28 +86,6 @@
       }
     },
     {
-      "skill": "doc-this-architect",
-      "path": "doc-this/skills/doc-this-architect/SKILL.md",
-      "rubric": "wagneripjr/wagner-skills-reviewer",
-      "score": 96,
-      "date": "2026-09-04",
-      "judges": {
-        "content": {
-          "actionability": 4,
-          "conciseness": 5,
-          "progressive_disclosure": 5,
-          "quoted_output_fidelity": 4,
-          "workflow_clarity": 5
-        },
-        "description": {
-          "completeness": 5,
-          "distinctiveness_conflict_risk": 5,
-          "specificity": 5,
-          "trigger_term_quality": 5
-        }
-      }
-    },
-    {
       "skill": "doc-this-code-analyst",
       "path": "doc-this/skills/doc-this-code-analyst/SKILL.md",
       "rubric": "tessl/default-skill-review@0.2.0",
@@ -397,28 +375,6 @@
           "completeness": 5,
           "distinctiveness_conflict_risk": 5,
           "specificity": 4,
-          "trigger_term_quality": 5
-        }
-      }
-    },
-    {
-      "skill": "okf-maintain",
-      "path": "skills/okf-maintain/SKILL.md",
-      "rubric": "wagneripjr/wagner-skills-reviewer",
-      "score": 95,
-      "date": "2026-09-04",
-      "judges": {
-        "content": {
-          "actionability": 5,
-          "conciseness": 4,
-          "progressive_disclosure": 5,
-          "quoted_output_fidelity": 4,
-          "workflow_clarity": 5
-        },
-        "description": {
-          "completeness": 5,
-          "distinctiveness_conflict_risk": 5,
-          "specificity": 5,
           "trigger_term_quality": 5
         }
       }

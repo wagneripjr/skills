@@ -8,3 +8,8 @@ tests/fixtures/
 # Eval scenario briefs and rubrics — inputs to `tessl eval run`, addressed to a grading agent,
 # not to a reader of this repository's documentation. Same reasoning as tests/fixtures/ above.
 evals/
+
+# A vendored tool's own files and its memory, not this repository's knowledge. The walk
+# cannot descend into a dot-directory, so `index` can never list these; naming them here is
+# the remedy `coverage` itself advises.
+.tessl/

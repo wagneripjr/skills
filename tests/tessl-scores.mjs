@@ -56,6 +56,15 @@ const dimsOf = (judge) => {
   return Object.keys(out).length ? out : undefined;
 };
 
+// A rubric earns a row only when a bare clone can obtain it and re-run the score — the rule
+// commit 35787b6 named: a scored rubric a clone cannot reproduce is not a rubric. Stated as an
+// ALLOWLIST on purpose: a denylist would silently record the next local fork, because nobody
+// remembers to add an entry for a rubric that has not been invented yet.
+export const REPRODUCIBLE_RUBRICS = ['tessl/default-skill-review'];
+
+export const isReproducibleRubric = (rubric) =>
+  typeof rubric === 'string' && REPRODUCIBLE_RUBRICS.includes(rubric.split('@')[0]);
+
 // Latest completed quality run per (subject path, rubric), restricted to skills that exist here.
 export function rowsFrom(reviews, { exists = (p) => existsSync(resolve(ROOT, p)) } = {}) {
   const best = new Map();
@@ -67,6 +76,7 @@ export function rowsFrom(reviews, { exists = (p) => existsSync(resolve(ROOT, p))
     if (subject?.type !== 'skill' || typeof subject.path !== 'string') continue;
     if (!exists(subject.path)) continue;
     const rubric = rubricOf(a.config);
+    if (!isReproducibleRubric(rubric)) continue;
     const key = `${subject.path} ${rubric}`;
     const previous = best.get(key);
     if (previous && previous.createdAt >= a.createdAt) continue;
@@ -127,4 +137,6 @@ function main(argv) {
   return 0;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) process.exit(main(process.argv.slice(2)));
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  process.exit(main(process.argv.slice(2)));
+}

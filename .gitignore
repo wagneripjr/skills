@@ -11,3 +11,7 @@ __pycache__/
 # Tessl project link — maintainer-local. Evals are maintainer-only, and a clone would
 # otherwise carry a link to a workspace the cloner cannot use. `tessl project repair` re-links.
 tessl.json
+
+# Tessl's own published plugins, installed by `tessl install`. They belong to another
+# workspace, and inside the wagner-skills pack boundary they would ship in our artifact.
+.tessl/plugins/
