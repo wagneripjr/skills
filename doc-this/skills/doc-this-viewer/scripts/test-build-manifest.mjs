@@ -3,7 +3,7 @@
 // Run: node doc-this/skills/doc-this-viewer/scripts/test-build-manifest.mjs
 //
 // Unit tests need only node. Server smoke tests are skipped when the prebuilt
-// app (assets/dist/index.html) is missing.
+// app (assets/viewer/index.html) is missing.
 //
 // The bash original needed an eval() shim to query the manifest from the shell;
 // here the manifest is just parsed and asserted directly.
@@ -18,7 +18,7 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = resolve(SCRIPT_DIR, '..');
 const BUILDER = join(SCRIPT_DIR, 'build-manifest.mjs');
 const LAUNCH = join(SCRIPT_DIR, 'launch.mjs');
-const DIST = join(SKILL_DIR, 'assets', 'dist', 'index.html');
+const DIST = join(SKILL_DIR, 'assets', 'viewer', 'index.html');
 
 const h = new Harness('Unit Tests: build-manifest.mjs');
 let skipped = 0;

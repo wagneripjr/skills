@@ -4,7 +4,7 @@ Not part of the user flow — for whoever edits this skill.
 
 ## Architecture (three pieces)
 
-- **`app/`** — Svelte 5 + Vite source. Compiled output is committed to `assets/dist/` so
+- **`app/`** — Svelte 5 + Vite source. Compiled output is committed to `assets/viewer/` so
   the **runtime needs no `npm install`**; `launch.mjs` only copies that prebuilt bundle.
 - **`scripts/build-manifest.mjs`** — zero-dep Node. Walks the doc-this output tree(s) and
   emits `.doc-this/viewer/viewer-manifest.json` (the single contract the SPA fetches).
@@ -52,10 +52,10 @@ re-rendered on toggle.
 After changing anything under `app/`:
 
 ```bash
-bash scripts/build.mjs          # npm ci + vite build → refresh assets/dist/
+bash scripts/build.mjs          # npm ci + vite build → refresh assets/viewer/
 ```
 
-Then commit the refreshed `assets/dist/`. Validate Svelte components with the Svelte MCP
+Then commit the refreshed `assets/viewer/`. Validate Svelte components with the Svelte MCP
 autofixer; `{@html}` in `MarkdownPane.svelte` is an intentional, documented exception
 (trusted local content, loopback-only).
 
@@ -67,4 +67,4 @@ node scripts/test-build-manifest.mjs
 
 Unit tests cover the manifest builder (nav groups, confidence counts, surface catalog,
 coverage, idempotency, output_folder honoring, legacy-no-coverage). Server smoke tests
-start `launch.mjs` and assert `200` (skipped if `assets/dist/` or `curl` is missing).
+start `launch.mjs` and assert `200` (skipped if `assets/viewer/` or `curl` is missing).

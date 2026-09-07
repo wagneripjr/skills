@@ -58,6 +58,6 @@ either refresh the browser (if the server is still up) or re-run `launch.mjs`.
 
 Strictly read-only against the user's project: writes only under `.doc-this/viewer/`, binds
 `127.0.0.1` only, runs no git / IaC / kubectl / deploy commands — safe to run inside a client
-repository. Needs no `npm install` (the compiled app ships in `assets/dist/`).
+repository. Needs no `npm install` (the compiled app ships in `assets/viewer/`).
 
 Editing or rebuilding the viewer itself: see `references/maintaining.md`.

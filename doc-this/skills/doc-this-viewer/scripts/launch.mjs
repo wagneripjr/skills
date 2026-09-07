@@ -22,7 +22,7 @@ import { statSync } from 'node:fs';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = resolve(SCRIPT_DIR, '..');
-const DIST_DIR = join(SKILL_DIR, 'assets', 'dist');
+const VIEWER_DIR = join(SKILL_DIR, 'assets', 'viewer');
 const BUILD_MANIFEST = join(SCRIPT_DIR, 'build-manifest.mjs');
 const SERVE_JS = join(SCRIPT_DIR, 'serve.mjs');
 
@@ -98,8 +98,8 @@ async function main() {
     return 0;
   }
 
-  if (!existsSync(join(DIST_DIR, 'index.html'))) {
-    process.stderr.write(`error: prebuilt viewer missing at ${join(DIST_DIR, 'index.html')}\n`);
+  if (!existsSync(join(VIEWER_DIR, 'index.html'))) {
+    process.stderr.write(`error: prebuilt viewer missing at ${join(VIEWER_DIR, 'index.html')}\n`);
     process.stderr.write(`  Run ${join(SCRIPT_DIR, 'build.mjs')} to compile the Svelte app, then retry.\n`);
     return 1;
   }
@@ -118,7 +118,7 @@ async function main() {
 
   // Copy the prebuilt app into the served scratch dir, preserving the manifest just written.
   try {
-    cpSync(DIST_DIR, viewerDir, { recursive: true, force: true });
+    cpSync(VIEWER_DIR, viewerDir, { recursive: true, force: true });
   } catch {
     process.stderr.write(`error: failed to copy viewer assets into ${viewerDir}\n`);
     return 1;

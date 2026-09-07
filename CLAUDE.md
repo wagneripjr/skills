@@ -357,7 +357,7 @@ doc-this/                # SECOND PLUGIN — the doc-this reverse-engineering su
     doc-this-help/         # Analogy-driven guide to all 12 doc-this agents
     doc-this-viewer/       # Optional user-triggered browser viewer for doc-this output (NOT a pipeline worker)
       app/                 # Svelte+Vite SOURCE (committed for maintenance)
-      assets/dist/         # PREBUILT static SPA served at runtime (no npm install for the user)
+      assets/viewer/       # PREBUILT static SPA served at runtime (no npm install for the user)
       scripts/             # build-manifest.mjs, serve.mjs + launch.mjs (localhost server), build.mjs, test harness (all zero-dep Node)
       references/          # manifest-schema.md (viewer-manifest.json contract)
 hooks/                   # The wagner-skills plugin's hooks (auto-loaded via hooks/hooks.json)

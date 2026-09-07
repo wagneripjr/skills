@@ -7,3 +7,12 @@ hooks/run-all.mjs
 # The judgment fixture is a whole sample app used to grade doc-this's output. Packed, it
 # becomes judge input for the skill it exists to test.
 skills/doc-this/evals/
+
+# Maintainer test harnesses for the skills' own scripts — same reasoning as the gate harnesses
+# above: only meaningful in this repository.
+skills/*/scripts/test-*.mjs
+
+# The viewer's Svelte + Vite source. Consumers run the compiled bundle in assets/viewer/; the
+# source is committed for maintenance, which is the development-only material .tesslignore's
+# own documented example excludes. Nothing links into it, so validation stays green.
+skills/doc-this-viewer/app/

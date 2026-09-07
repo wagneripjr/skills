@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Maintenance-only: compile the Svelte viewer into assets/dist/ (the prebuilt bundle
+// Maintenance-only: compile the Svelte viewer into assets/viewer/ (the prebuilt bundle
 // that ships with the skill and is served at runtime — runtime never builds).
 //
-// Requires npm on PATH. After running, commit the refreshed assets/dist/.
+// Requires npm on PATH. After running, commit the refreshed assets/viewer/.
 //
 // Usage: build.mjs
 
@@ -33,9 +33,9 @@ const install = existsSync(join(APP_DIR, 'package-lock.json')) ? ['ci'] : ['inst
 if (run(install).status !== 0) process.exit(1);
 if (run(['run', 'build']).status !== 0) process.exit(1);
 
-if (!existsSync(join(SKILL_DIR, 'assets', 'dist', 'index.html'))) {
-  process.stderr.write('error: build did not produce assets/dist/index.html\n');
+if (!existsSync(join(SKILL_DIR, 'assets', 'viewer', 'index.html'))) {
+  process.stderr.write('error: build did not produce assets/viewer/index.html\n');
   process.exit(1);
 }
 
-process.stdout.write(`built viewer → ${join(SKILL_DIR, 'assets', 'dist')}/\n`);
+process.stdout.write(`built viewer → ${join(SKILL_DIR, 'assets', 'viewer')}/\n`);
