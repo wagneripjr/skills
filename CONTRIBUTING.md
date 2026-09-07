@@ -55,6 +55,15 @@ Four fields must agree:
 Never let `marketplace.json` fall behind `plugin.json`. The marketplace entry is what the client
 compares against; if it advertises a lower version the update is a permanent no-op.
 
+**If you change a skill under `skills/`, bump its Tessl manifest too.** Each of those skills is
+also its own plugin on the Tessl registry, versioned independently in
+`skills/<name>/.tessl-plugin/plugin.json`. So a one-skill fix bumps two numbers: that manifest, and
+the `wagner-skills` Claude Code plugin. `doc-this` keeps its two manifests in step —
+`tests/test-tessl-publish.mjs` fails the build if they drift.
+
+Publishing to Tessl happens automatically on push to `master` and needs a maintainer secret, so
+**a PR is never blocked on it** — `node tests/run-all.mjs` is the bar for contributors.
+
 ## Writing a skill
 
 1. `skills/<name>/SKILL.md` with YAML frontmatter: `name` (must equal the directory name),

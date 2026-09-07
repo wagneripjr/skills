@@ -1,6 +1,15 @@
 # Wagner Skills
 
-Repo hosting **two** Claude Code plugins published from one marketplace (`wagner-skills-marketplace`):
+Repo hosting **two** Claude Code plugins published from one marketplace (`wagner-skills-marketplace`),
+and **nine** Tessl registry plugins published from the same tree (FR-TESSL-3). The two channels
+differ in granularity on purpose: Claude Code gets the bundles, Tessl gets one plugin per
+independent skill so a one-skill fix ships alone.
+
+| Channel | Units | Published by |
+|---|---|---|
+| Claude Code marketplace | 2 bundles (`wagner-skills` 6.5.2, `doc-this` 1.1.6) | `git push` + `claude plugin update` |
+| Tessl registry | 9 plugins — 8 solo skills at 1.0.0 + `doc-this` 1.1.6 | `.github/workflows/tessl-publish.yml`, **never the CLI** |
+
 
 | Plugin | Root | Contents | Default state |
 |---|---|---|---|
@@ -233,21 +242,23 @@ because npx would turn a local structural check into a network call on a cold CI
 `test-tessl-quality-gate.mjs` stays excluded, and only because it cannot assert anything without an
 account.
 
-Two `.tessl-plugin/plugin.json` manifests **are** committed — repo root and `doc-this/` — and they
-exist for one reason: `tessl skill lint` hard-refuses without one (`Not a Tessl plugin: no
-.tessl-plugin/plugin.json or tile.json found in the package root`). Lint is not a quality review
+`.tessl-plugin/plugin.json` manifests **are** committed — **nine of them since FR-TESSL-3**, one
+per `skills/*` plus `doc-this/`; the repo-root one was deleted with the bundle it described. They
+originally existed for one reason: `tessl skill lint` hard-refuses without one (`Not a Tessl
+plugin: no .tessl-plugin/plugin.json or tile.json found in the package root`). They now also carry
+the published plugins. Lint is not a quality review
 and costs nothing: it runs the publisher's pack step offline and reports per-skill context cost,
 orphaned files, skill files outside the spec directories, and credential-denylist exclusions. That
-is worth two files. The earlier position — that `--context <path>` reaches the same result — was
+is worth the manifests. The earlier position — that `--context <path>` reaches the same result — was
 about *evals*, where it still holds; it never covered lint, which has no `--context`.
 
-The refusal's stated price — a fifth and sixth hand-synced semver — is **not** paid: neither
-manifest carries a `version`. Lint only warns (`No version set. Publishing will require --version
-or --bump.`), and that warning states a fact that is permanently true here, since publishing to the
-registry stays refused for the reasons under **Not worth doing**. A version field nothing reads and
-no harness checks is exactly the drift this repo has already been bitten by, so the four fields
-under **Versioning** stay four. `private: true` in both manifests is what keeps an accidental
-`publish` private.
+**Superseded in part by FR-TESSL-3.** The refusal's stated price — extra hand-synced semvers — was
+once avoided by carrying no `version` at all, on the grounds that a field nothing reads and no
+harness checks is exactly the drift this repo has been bitten by. Publishing changed both halves of
+that: `tessl plugin pack` **hard-refuses** a manifest without a version (stricter than lint, which
+only warns `No version set`), and `tests/test-tessl-publish.mjs` now checks every one. A version
+that a packer reads and a harness pins is not the drift the objection was about. There are now nine
+`.tessl-plugin` manifests, each carrying its own — see **Versioning**.
 
 ### FR-TESSL-2 · A published score names its rubric and its run, or it is not a score
 
@@ -264,11 +275,22 @@ decayed silently in exactly the direction that flatters it. Four parts:
    `resolveTessl` from `tests/lib/tessl.mjs` rather than reimplementing the envelope rules that
    `test-tessl-score-parse.mjs` already pins. Prose may carry *why* a dimension sits where it does;
    it may not carry the number.
-2. **Every row names its rubric**, because two are now in play and they are not one scale. The same
-   `okf-maintain` bytes scored **87** on `tessl/default-skill-review@0.2.0` and **95** on the local
-   `review-plugin/` — which adds a fifth judge, `quoted_output_fidelity` — forty minutes apart. An
-   unlabelled number cannot be compared to anything, which is how a custom-rubric run silently
-   became the recorded score for a skill.
+2. **Every row names its rubric, and only reproducible rubrics are recorded.** Two were once in
+   play and they were not one scale: the same `okf-maintain` bytes scored **87** on
+   `tessl/default-skill-review@0.2.0` and **95** on a local `review-plugin/` fork forty minutes
+   apart. An unlabelled number cannot be compared to anything, which is how a custom-rubric run
+   silently became the recorded score for a skill. The fork was **removed** — these plugins are
+   public, and a published registry score is always Tessl's standard rubric, so a custom
+   `--review-plugin` could never influence the number that matters. `rowsFrom` now filters on
+   `isReproducibleRubric`, an **allowlist** (`REPRODUCIBLE_RUBRICS`) rather than a denylist: the
+   API still returns those two custom-rubric runs forever, and re-recording them would label the
+   record against a rubric no clone can obtain — the defect the FR-TESSL-2 commit existed to fix,
+   reintroduced from the other direction. A denylist would silently record the *next* local fork,
+   because nobody adds an entry for a rubric not yet invented.
+   **`rules` are not a substitute.** `configuration.md` calls them *"always-loaded guidance for
+   agents — the plugin.json equivalent of steering"*; they ship context at install time and have
+   no effect on review scoring. There is no documented way to change what a *published* score
+   means. Do not re-propose one.
 3. **Coverage is checked by a foreign enumerator.** `test-tessl-scores.mjs` walks the working tree
    for `SKILL.md` under `skills/` and `doc-this/skills/` and requires a row for each. Regenerating
    the file and diffing it cannot do this: a skill the API never returned is absent from both sides
@@ -284,6 +306,70 @@ The API identifies a subject by repo-relative path, so a review of `skills/postm
 from a *different* repository is indistinguishable from one run here. Rows are filtered to paths
 that exist in this tree, latest-per-rubric wins, and that is the best discrimination available —
 stated here because it is a real limit, not a bug to chase.
+
+### FR-TESSL-3 · A skill is published from the repository that owns it, or it is a duplicate
+
+Owned by `scripts/tessl-publish.mjs`, `.github/workflows/tessl-publish.yml` and
+`tests/test-tessl-publish.mjs`. Tessl had already crawled this public repo and listed all 22 skills
+as unowned `git-skill` rows with null scores. Six parts:
+
+1. **Only the GitHub Action may publish.** `promote-or-claim-a-skill-you-have-created.md`: *"Using
+   the GitHub action will automatically link your plugin to the repository, and all skills we
+   previously indexed in the repository will be hidden and redirected to the plugins."* A CLI
+   publish instead produces *"two versions, in two different workspaces"*, fixable only by
+   contacting support. This was **verified the hard way**: `scripts/tessl-publish.mjs` was run by
+   hand as a "quick check" on 2026-09-06, published `platform-sre-kubernetes` for real, and had to
+   be unpublished inside the 2-day window. The script grew `--dry-run` for exactly that reason — a
+   script whose only mode is the irreversible one will eventually be run by hand. Version `1.0.0`
+   was reusable afterwards, so an unpublish frees the version rather than burning it.
+
+2. **Nine plugins, because release is the coupling — reviews never were.** All reviews carry
+   `metadata.subject.type: "skill"` with a per-skill path; none is `type: "plugin"`. But
+   `publish-and-update.md` has no per-skill versioning, so one `version` covers every skill in its
+   plugin and a one-skill fix republishes the lot. `create-a-plugin.md`: *"Keep a plugin focused on
+   one responsibility; unrelated work belongs in separate plugins"*, and the promote page names the
+   old bundle as the anti-pattern — *"avoid throwing in the kitchen sink!"*. So the eight unrelated
+   `skills/*` are solo plugins at `skills/<name>/.tessl-plugin/plugin.json` with `"skills": ["."]`
+   (lint-verified; the skill registers as `{"<name>": {"path": "SKILL.md"}}`), each starting at
+   `1.0.0` and moving independently. `doc-this` stays **one** plugin: its 14 skills share 9
+   enforcement hooks and a `hooks/lib/`, which are plugin-level and have no per-skill home.
+
+3. **Discovery is anchored on git, not a filesystem walk.** A plain walk for
+   `.tessl-plugin/plugin.json` also finds `.tessl/plugins/<vendor>/…` — a plugin installed by
+   `tessl install`, belonging to another workspace, still on disk because it is gitignored rather
+   than deleted. Publishing that pushes somebody else's plugin out of this one.
+   `git ls-files --cached --others --exclude-standard` is the FR-OKF-3 flag combination for the
+   same two reasons: `--exclude-standard` hides the vendored copy, `--others` still sees a manifest
+   added in the commit being published. AC-7a canaries it. Found by review, not by running.
+
+4. **The publish is idempotent so the pipeline can be unconditional.** The script asks the registry
+   before publishing, so every push runs and only a real bump ships — a runtime check, never a
+   `paths:` filter. Proven in practice: a transient `✘ undefined (status undefined)` on
+   `okf-maintain` was cleared by a bare re-run in which all eight others reported *"already
+   published, nothing to do"*. **A "could not find plugin" exit is the publish signal; any other
+   non-zero exit is an error** — conflating them turns an outage into a spurious publish.
+   `--version` is never passed: the CLI refuses it when the manifest declares one.
+
+5. **Undocumented packer behaviour that silently breaks a plugin: any directory named `dist/` is
+   dropped.** Isolated with a minimal probe — `assets/spa/index.html` packs, `assets/dist/index.html`
+   does not — and `.tesslignore` negation cannot override it. `doc-this` was about to ship 20 files
+   of Svelte source and **zero** runtime bundle, so every install would have hit `launch.mjs`'s own
+   `error: prebuilt viewer missing`. The viewer's output is therefore `assets/viewer/`, and the
+   name is load-bearing. This is why `create-a-plugin.md`'s rule is not optional: *"Confirm what
+   will actually ship by packing it and inspecting the archive, not just linting… Lint alone can
+   pass on a plugin that would drop content when packaged."* Pack and read the archive before every
+   first publish.
+
+6. **What publishing costs and what it exposes.** Publishing triggers a server-side review whose
+   score lands on the registry — and it is **free**: 22 skills published with credits unchanged at
+   1484.46, against 10 credits for a manual `review run`. `"private": false` is **irreversible**
+   (*"you cannot make it private again"*); `unpublish` works only within 2 days, after which only
+   `plugin archive` remains. In-skill `evals/` are packed and become input to the judge grading
+   that same skill, so they are excluded via `.tesslignore` (`skills/agent-cli`,
+   `skills/prototype-spike`, and `doc-this`'s judgment fixture). Unsolved and worth watching: the
+   review cache is not content-addressed (CLAUDE.md's own measurement: three rewritten skills came
+   back *"reused, 0 credits, byte-identical scores"*) and `plugin publish` has no `--force`, so a
+   published score may describe a previous bundle. Splitting does not fix that.
 
 ### BUG-006 · A published example may not borrow authority from what the reader cannot see
 
@@ -328,7 +414,11 @@ reports clean. Pair every sweep with a control term that must match.
 ## Repository Structure
 
 ```
-.claude-plugin/          # Plugin manifest and marketplace config
+.claude-plugin/          # Claude Code plugin manifest + marketplace config (2 bundled plugins)
+.tesslignore             # (per plugin root) what must NOT reach a published Tessl package
+scripts/
+  tessl-publish.mjs      # FR-TESSL-3 — git-anchored plugin discovery + idempotent publish.
+                         #   --dry-run exists because its other mode is irreversible
 doc-this/                # SECOND PLUGIN — the doc-this reverse-engineering suite (FR-DOC-PLUGIN-1)
   .claude-plugin/        # Its own plugin.json; the plugin name IS the Skill-tool prefix
   hooks/                 # All 9 doc-this gates + hooks.json + lib/ + run-all.mjs + gate harnesses
@@ -357,7 +447,8 @@ doc-this/                # SECOND PLUGIN — the doc-this reverse-engineering su
     doc-this-help/         # Analogy-driven guide to all 12 doc-this agents
     doc-this-viewer/       # Optional user-triggered browser viewer for doc-this output (NOT a pipeline worker)
       app/                 # Svelte+Vite SOURCE (committed for maintenance)
-      assets/viewer/       # PREBUILT static SPA served at runtime (no npm install for the user)
+      assets/viewer/       # PREBUILT static SPA served at runtime (no npm install for the user).
+                           #   NOT named dist/ — tessl's packer silently drops that name (FR-TESSL-3)
       scripts/             # build-manifest.mjs, serve.mjs + launch.mjs (localhost server), build.mjs, test harness (all zero-dep Node)
       references/          # manifest-schema.md (viewer-manifest.json contract)
 hooks/                   # The wagner-skills plugin's hooks (auto-loaded via hooks/hooks.json)
@@ -392,18 +483,24 @@ tests/                   # Repo-level harnesses owned by neither plugin
   test-tessl-quality-gate.mjs
   tessl-scores.mjs        # generator (FR-TESSL-2) — rebuilds tessl-scores.json from the FREE
                          #   `tessl review list`; needs a login, so excluded from run-all.mjs
+  test-tessl-publish.mjs  # the publish manifests + discovery AC matrix (FR-TESSL-3). AC-2/AC-7a
+                         #   canary that a gitignored vendored manifest is NEVER discovered
   tessl-scores.json       # THE score record. Generated, one row per skill PER RUBRIC, no run or
                          #   workspace ids. Nothing hand-writes a score any more
   test-tessl-scores.mjs   # that file's AC matrix, green on a bare clone with no tessl. AC-2 is
                          #   the foreign enumerator: it walks the TREE for SKILL.md, because
                          #   regenerate-and-diff cannot see a skill the API never returned
 .github/                 # CI (test.yml: ubuntu + macOS, both blocking) + templates
+                         #   tessl-publish.yml — push-to-master only; the ONLY route that may
+                         #   publish, because a CLI publish makes a duplicate (FR-TESSL-3)
 CONTRIBUTING.md          # Contributor entry point: prereqs, version-bump rules, skill conventions
 LICENSE                  # MIT — matches the "license" field in both plugin.json files
 THIRD-PARTY-NOTICES.md   # MIT notices for Svelte + marked (compiled into the viewer's dist bundle)
 README.md                # Public entry point: install, the two-plugin split, skill tables
 SECURITY.md              # Reporting address + what the hooks and skills do locally vs off-machine
-skills/                  # One folder per skill — the 8 wagner-skills members
+skills/                  # One folder per skill — the 8 wagner-skills members. Each is ALSO its
+                         #   own Tessl plugin: skills/<name>/.tessl-plugin/plugin.json, versioned
+                         #   independently from 1.0.0 (FR-TESSL-3)
   airflow-dags/          # Apache Airflow 3 DAG authoring with 12 reference docs
     SKILL.md             # Main skill file
     references/          # Deep-dive docs (authoring, scheduling, testing, etc.)
@@ -640,8 +737,14 @@ returns a score for the *old* bundle, at no cost, and looks exactly like a pass.
 `tessl org usage --json` reports `credits.{limit,used,remaining,resetsAt,overageAllowed}`, free.
 Team plan: 5000/window, **overage still not allowed** — work simply stops. Read it before and
 after anything paid; the delta is the real price. `--review-plugin` (custom rubric) needs a paid
-plan and is therefore now available; `review-plugin/` in this tree is one, and its numbers are a
-**separate scale** — see FR-TESSL-2.
+plan and is therefore available, but **this tree no longer carries one** — the local fork was
+removed under FR-TESSL-3, because a published registry score is always Tessl's standard rubric and
+a custom one could never move it. There is no local quality bar; the bar is the registry number.
+
+**A publish-time review is free.** `reviewing-skills.md`: *"When you publish a plugin to the
+registry, Tessl lints and reviews it automatically, and the score appears on the registry."*
+Measured 2026-09-07: nine plugins covering 22 skills published with `credits.used` unchanged at
+1484.46. That is the cheap way to get a score — and the only way to get the *published* one.
 
 Every skill now uses `references/` **plural**, the name tessl's packer and the validation check both
 recognise. `agent-cli`, `human-cli` and `airflow-dags` were the last three on `reference/` singular,
@@ -680,7 +783,7 @@ rubric. That delta is what the skill is worth, and it replaces the old
 ### Layout — repo root, not inside the skill
 
 ```
-evals/<plugin>/<skill>/<scenario>/
+evals/<skill>-<scenario>/
   task.md        # the ONLY thing the agent sees
   criteria.json  # {context, type:"weighted_checklist", checklist:[{name,description,max_score}]}
   resources/     # optional, auto-copied into the working dir
@@ -689,8 +792,17 @@ evals/<plugin>/<skill>/<scenario>/
 
 Root, **not** `skills/<name>/evals/`, and the first reason is decisive: a quality review bundles
 the whole skill directory, so an in-skill `evals/` is uploaded to the judges as part of the thing
-it grades. It also lets one free `tessl eval lint ./evals` cover everything, and keeps fixture
-`resources/` out of a shipped plugin.
+it grades — verified, not theoretical: the packs shipped `skills/*/evals/evals.json` and the whole
+`judgment-fixture/` app until `.tesslignore` stopped them. Root placement also lets one free
+`tessl eval lint ./evals` cover everything, and keeps fixture `resources/` out of a shipped plugin.
+
+**Flat, one level, since FR-TESSL-3.** The old `evals/<plugin>/<skill>/<scenario>/` nesting is gone:
+the docs' shape is `<plugin-root>/evals/<scenario-name>/`, and after the split the plugin roots
+moved *into* `skills/<name>/`, which puts the repository root outside all nine pack boundaries —
+the placement that satisfies both the convention and the don't-feed-the-judges rule at once. The
+cost: bare `tessl eval run ./<plugin>` will not auto-discover these, so keep passing an explicit
+path plus `--context`, which is already the practice. Hazard: `tessl scenario download` writes into
+the *plugin* root's `evals/`, now inside a skill directory — never run it against the real tree.
 
 `criteria.json` items are `{name, description, max_score}` **only**. The `category` enum
 (INTENT/MUST_NOT/…) in the published docs is **not** in 0.105.0's schema — it warns
@@ -749,10 +861,18 @@ the same shape as `judgment-fixture/FINDINGS.md`.
   `run-all.mjs` turns any skip into INCOMPLETE + exit 1, making **every fork PR red**. Keys also
   expire silently after 30 days, credits are finite and PR volume is not, and `test.yml` currently
   carries no secrets at all. If a score must ever attach to a commit SHA, use `workflow_dispatch`.
+  That objection is scoped to `test.yml` and its `pull_request` trigger; it does **not** reach
+  `tessl-publish.yml`, which runs only on `master` where secrets exist and no fork can trigger it.
+  The trailing `workflow_dispatch` clause is the one part that does bite, since publishing
+  auto-reviews and that score attaches to a SHA — accepted deliberately: publishing is a *release*
+  whose score is a by-product, and the registry check means a push with no version bump publishes
+  and scores nothing.
 - **`tessl schedule *`** — unattended burn against a hard cap with no overage.
-- **`tessl skill publish`** — a third version surface, publishing private-by-default plugins out of
-  a public repo, for no benefit. These plugins are consumed from git via the Claude Code
-  marketplace.
+- **`tessl skill publish` for a one-off** — still refused. But **`tessl plugin publish` from CI is
+  now how these skills are claimed**; see FR-TESSL-3. The three grounds this bullet used to give
+  are gone: the version is read by the packer and pinned by a harness, the repo and its listings
+  were already public, and the benefit is ownership of 22 rows that were otherwise unowned and
+  unscored. Never publish from a laptop — that is what makes a duplicate.
 
 ## Versioning
 
@@ -770,19 +890,27 @@ in the plugin cache, so a bump is mandatory to ship anything: `update` silently 
 
 ### Version Files
 
-Four fields, all edited by hand, all of which must agree:
+**Two channels, two granularities, on purpose.** The Claude Code marketplace ships two bundled
+plugins; Tessl ships nine. A change to one `skills/*` skill therefore bumps **two** numbers — its
+own solo `.tessl-plugin` manifest and the `wagner-skills` Claude Code plugin. That is the price of
+per-skill release cadence, and it is the deal FR-TESSL-3 took knowingly.
+
+Claude Code channel — four fields, edited by hand, all of which must agree:
 
 | File | Field | Current |
 |---|---|---|
-| `.claude-plugin/plugin.json` | `.version` | 6.5.1 |
-| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.5.1 |
-| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.5.1 / 1.1.5 |
-| `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.5 |
+| `.claude-plugin/plugin.json` | `.version` | 6.5.2 |
+| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.5.2 |
+| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.5.2 / 1.1.6 |
+| `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.6 |
 
-**Still four, not six.** The two `.tessl-plugin/plugin.json` manifests deliberately carry no
-`version` — see FR-TESSL-1. Do not "complete" them by adding one: it would be a fifth and sixth
-field that nothing reads and no harness checks, drifting silently, for a registry this repo does
-not publish to.
+Tessl channel — nine `.tessl-plugin/plugin.json` manifests, one per published plugin:
+`doc-this` (**1.1.6**, kept in step with its Claude Code twin and drift-checked at publish time by
+`resolveVersion`), plus `skills/<name>` for each of the eight, independently versioned from
+`1.0.0`. `version` is **required** here, not optional: `tessl plugin pack` hard-refuses without it.
+`tests/test-tessl-publish.mjs` asserts every manifest carries `name`/`version`/`description` and
+`"private": false`, and mutation-tests each guard — which is what makes these fields safe to add,
+where FR-TESSL-1's objection to an unchecked field still stands for any field nothing pins.
 
 **Never let `marketplace.json` fall behind `plugin.json`.** The marketplace entry is what the
 client compares against; if it advertises a lower version, `claude plugin update` is a permanent

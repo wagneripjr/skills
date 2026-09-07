@@ -20,6 +20,22 @@ claude plugin disable doc-this@wagner-skills-marketplace   # until you need a di
 
 Restart Claude Code to apply.
 
+### On the Tessl registry
+
+The same skills are also published to the [Tessl](https://tessl.io) registry, as **nine plugins**
+rather than two: each of the eight `wagner-skills` skills is its own plugin, versioned
+independently, so a fix to one ships without republishing the rest. `doc-this` stays a single
+plugin because its 14 skills share nine enforcement hooks.
+
+```bash
+tessl install wagneripjr/postmortem      # one skill
+tessl install wagneripjr/doc-this        # the whole pipeline
+```
+
+Publishing is automatic on every push to `master` (`.github/workflows/tessl-publish.yml`) and is a
+maintainer step — it needs a workspace API key stored as the `TESSL_TOKEN` repository secret.
+Contributors never need one.
+
 ### Why `doc-this` ships disabled
 
 It is only useful while reverse-engineering a legacy codebase, and riding inside the main
