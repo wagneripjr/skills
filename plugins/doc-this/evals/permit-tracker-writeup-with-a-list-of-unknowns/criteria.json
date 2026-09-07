@@ -1,0 +1,76 @@
+{
+  "context": "The brief supplies a complete eight-file listing and the full contents of the six first-party files, then asks for a behaviour document plus a list of what the code does not settle. Load-bearing behaviour is deliberately placed in the file types a write-up reaches for last: a cascade and an audit write live only in the SQL trigger, the renewal input format lives only in the template's pattern attribute, the expiry warning threshold lives only in config, and a status that is hidden from the UI is discoverable only in the stylesheet. The two remaining files are a vendored minified library and a build artefact, whose contents were withheld on purpose. The discipline under test is that an entry on the unknowns list records something the repository cannot answer - never something the write-up did not open - and that every file in the listing ends up either described or classified with a reason. An unknown that is answered three lines away in a supplied file is the failure being scored.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "every_listed_file_accounted_for",
+      "description": "All eight paths in the file listing appear in the deliverables with a disposition: described, or named as deliberately not analysed with the reason. A file that appears nowhere - most likely public/css/permit.css or config/defaults.json - fails this, and so does a summary that says 'the source files under src/' without naming them.",
+      "max_score": 4
+    },
+    {
+      "name": "vendored_and_build_files_classified_with_a_reason",
+      "description": "public/vendor/flatpickr.min.js is identified as a committed third-party minified library and build/app.bundle.js as generated output of the files that were read, each named as excluded on that basis. Listing either one on the unknowns list as something to ask the contractor about fails this: their exclusion is a decision the write-up can justify, not an open question.",
+      "max_score": 3
+    },
+    {
+      "name": "trigger_cascade_documented_from_the_sql",
+      "description": "The document states, citing db/migrations/014_permit_status.sql:11-12, that setting a permit to REVOKED from any other status also sets every row in permit_children whose parent_permit_id matches to REVOKED. Omitting the cascade, or listing 'what happens to child permits' as a question for the contractor, fails this - the migration answers it.",
+      "max_score": 4
+    },
+    {
+      "name": "trigger_audit_and_notify_documented",
+      "description": "The audit row written to permit_audit (lines 13-14) and the pg_notify to the 'permits-escalation' channel (line 15) are both recorded with citations, and the reinstatement rule at lines 17-18 - moving from REVOKED back to ACTIVE clears revoked_reason - is recorded too. Describing the trigger only as 'handles status changes' fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "template_input_rule_documented",
+      "description": "The renewal form's holder reference constraint is recorded as two uppercase letters, a hyphen and six digits, cited to the pattern attribute at views/permit-detail.ejs:24, along with the field being required and the hidden originalExpiry field at line 25. A write-up that describes the renew route but never opens the template, or that asks the contractor what format a holder reference takes, fails this.",
+      "max_score": 4
+    },
+    {
+      "name": "warn_threshold_read_from_config",
+      "description": "The 45-day expiry warning is stated as a fact with both of its citations - config/defaults.json:2 for the value and views/permit-detail.ejs:14 for where it is applied - and the same for renewalMonths 12 driving the new expiry date at src/routes/permits.js:43. Asking the contractor how far ahead the warning appears, or writing 'a warning is shown as expiry approaches' without the number, fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "stylesheet_treated_as_source",
+      "description": "The rule .permit--held { display: none } at public/css/permit.css:11 is recorded, together with the fact that permit-detail.ejs:2 builds that class name from the status value, so a permit whose status is HELD renders its status paragraph hidden. A document that never mentions the stylesheet fails this; the CSS is the only place the behaviour appears.",
+      "max_score": 4
+    },
+    {
+      "name": "no_sampling_or_partial_reading_language",
+      "description": "Neither deliverable contains any statement that a file was skimmed, sampled, reviewed in outline, grepped, read in part, or that a representative subset or the main files were examined. Such a phrase fails this outright regardless of how complete the rest of the document is, because it converts a reading decision into a permanent hole in the record.",
+      "max_score": 4
+    },
+    {
+      "name": "no_unknown_that_a_supplied_file_answers",
+      "description": "Every entry in ask-the-contractor.md is unanswerable from the six supplied first-party files. Entries such as what the expiry batch size is (config/defaults.json:5), what status the scheduled scan writes (src/jobs/expiryScan.js:18), what the renew route sets the status to (src/routes/permits.js:43), or what colour an expired permit renders in (public/css/permit.css:3) each fail this individually.",
+      "max_score": 4
+    },
+    {
+      "name": "external_verification_recorded_as_unknown",
+      "description": "The unknowns list records that the request and response of the state verification call at src/routes/permits.js:57-60 are not defined anywhere in the repository - the code reads verified.ok and verified.reason and nothing states the rest of the shape, the failure modes, or what happens when the host is unreachable. Inventing a response schema for it, or asserting a timeout or retry behaviour, fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "unresolved_references_recorded_as_unknown",
+      "description": "The unknowns list names the references the repository does not resolve: what reads the permit_audit table, what listens on the permits-escalation channel that both the trigger (line 15) and config/defaults.json:4 name, and where permit_children rows are created. Asserting a consumer for any of them fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "held_status_absence_stated_precisely",
+      "description": "HELD is identified as a status the stylesheet styles but that no supplied file ever assigns, and that observation is scoped to the supplied source rather than turned into a claim about the system. 'HELD is set by an admin tool' or 'HELD is unused' both fail this; 'no file in this repository writes HELD, and what sets it is a question for the contractor' satisfies it.",
+      "max_score": 3
+    },
+    {
+      "name": "no_recommendations_or_grading",
+      "description": "Neither deliverable proposes a change or grades the code. 'The trigger should also audit reinstatements', 'the batch loop should be a single UPDATE', 'this migration is risky' or a section headed Technical debt all fail this. Recording that expiryScan.js updates one row at a time in a loop, without a verdict, does not.",
+      "max_score": 2
+    },
+    {
+      "name": "citations_resolve_to_supplied_lines",
+      "description": "Every file and line reference in either deliverable points at an excerpt the brief actually supplied. A citation to a line number outside the ranges shown, to build/app.bundle.js, or to a file that is not in the eight-path listing fails this, because an invented citation reads as evidence.",
+      "max_score": 3
+    }
+  ]
+}

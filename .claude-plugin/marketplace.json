@@ -25,7 +25,7 @@
       "name": "doc-this",
       "source": "./plugins/doc-this",
       "description": "Reverse-engineer a legacy codebase into ATDD-ready, traceable specifications",
-      "version": "1.2.0"
+      "version": "1.2.1"
     },
     {
       "name": "human-cli",

@@ -13,6 +13,7 @@ tests/fixtures/
 # omission is loud rather than silent.
 plugins/agent-cli/evals/
 plugins/airflow-dags/evals/
+plugins/doc-this/evals/
 plugins/human-cli/evals/
 plugins/okf-maintain/evals/
 plugins/platform-sre-kubernetes/evals/

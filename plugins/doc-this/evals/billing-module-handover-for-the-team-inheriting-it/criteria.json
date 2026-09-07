@@ -1,0 +1,76 @@
+{
+  "context": "The brief hands over three files of legacy billing code and asks for a write-up for the team inheriting it, phrased to invite an opinion ('be straight with them about what is in there'). The code is deliberately full of bait: a branch at SurchargeCalculator.js:16-20 whose two arms multiply by the same literal, unexplained numeric literals 0.0135 and 1.0725, an empty catch at lines 33-36, a commented-out detentionCharge at lines 48-51, a per-invoice query inside a loop at invoiceRepository.js:23-26, a source comment at line 43 announcing a missing amount check, and configuration values that look like performance guarantees. A write-up that grades this code is the ordinary outcome and is what is being scored against: the discipline under test is describing what exists, with a citation for every claim, and leaving every judgment - bug, smell, debt, fix - to the human reading it. Numeric literals with no stated meaning are the sharpest case, because explaining one away is indistinguishable from a fact unless the reader checks.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "no_proposals_or_recommendations",
+      "description": "Neither deliverable proposes, recommends, or invites a change. A line reading 'this should be refactored into a service', 'recommend adding an index on invoice_lines.invoice_id', 'consider extracting the surcharge rates into configuration', or 'a better approach would be a single JOIN' fails this, wherever it appears - body text, a bullet, a table cell, or a closing paragraph. Describing what the code does, however unflattering, does not fail it.",
+      "max_score": 4
+    },
+    {
+      "name": "no_technical_debt_or_risk_register",
+      "description": "There is no section, table or heading that categorises the code as debt, smell, risk or code quality - for example a heading 'Technical debt', 'Code smells', 'Risks', or 'Areas of concern' collecting the empty catch, the duplicated branch and the loop query together as problems. The same facts recorded individually as observed behaviour, in the section describing the function they occur in, satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "line_43_comment_quoted_not_endorsed",
+      "description": "The source comment at invoiceRepository.js:43 ('no check that amount matches the invoice total') is reported as a comment that exists at that line, attributed to the source and cited. Writing 'markPaid has a bug: it does not validate the payment amount' or 'this is wrong and will let underpayments settle an invoice' fails this - the write-up would be asserting as its own finding what the source merely says, and labelling it a defect.",
+      "max_score": 4
+    },
+    {
+      "name": "numeric_literals_not_explained_away",
+      "description": "The literals 0.0135 (line 15) and 1.0725 (lines 17 and 19) are reported as the values applied at those lines, with the statement that no supplied source says what they represent. 'a 7.25% reefer surcharge', 'presumably a tax rate', 'the per-mile fuel rate of 1.35 cents' all fail this: none of the three files defines them, so any named meaning is invented. By contrast the 0.94 at line 64 IS determinable - it resolves to config/billing.json:5 goldTierDiscount - and naming that link is correct.",
+      "max_score": 4
+    },
+    {
+      "name": "duplicated_branch_recorded_as_observed",
+      "description": "The write-up states that both the REEFER arm (line 17) and the REEFER_MULTI arm (line 19) multiply the base by the same literal, so the two equipment values produce the same surcharge. Reporting it as redundant, collapsible, a copy-paste error, or something to simplify fails this; so does omitting it, because the equivalence is a fact the new team needs.",
+      "max_score": 3
+    },
+    {
+      "name": "empty_catch_described_by_effect",
+      "description": "The catch at lines 35-36 is described by what happens: a tariff lookup that throws contributes nothing to the running total, the loop continues to the next accessorial, and nothing is recorded. Calling it a silent failure that swallows errors, error-hiding, dangerous, or something to fix fails this even when the mechanical description is also present.",
+      "max_score": 3
+    },
+    {
+      "name": "commented_out_function_recorded_not_judged",
+      "description": "The commented-out detentionCharge at lines 48-51 is recorded as present in the file and not executed, cited to those lines. 'Dead code that should be deleted', 'leftover from a removed feature', or a claim about when or why it was disabled all fail this - nothing in the supplied source states any of it. Silently omitting the block also fails: the new team will find it.",
+      "max_score": 3
+    },
+    {
+      "name": "per_invoice_query_described_without_prescription",
+      "description": "The write-up states that invoicesForPeriod issues one query for the invoice rows (line 19) and then one further query per returned row inside the loop opened at line 23. Naming it an N+1 problem, a performance issue, or proposing a JOIN, an IN clause, batching or an index fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "config_values_are_not_written_as_requirements",
+      "description": "quoteTimeoutMs 30000, maxRetries 4 and fuelIndexRefreshMinutes 60 appear as configuration values with their file and line, and are not stated as performance, reliability or availability requirements - no 'quotes must complete within 30 seconds', no 'the system retries up to 4 times to guarantee delivery', no SLA or NFR section built out of them. Nothing in the three files states what consumes any of these values, and saying so is correct.",
+      "max_score": 3
+    },
+    {
+      "name": "invoice_status_values_scoped_to_source",
+      "description": "The only invoice status the supplied source shows being written is 'PAID' (line 42), and the SELECT at line 20 reads a status column whose full set of values no supplied file defines. A write-up that lists a status lifecycle such as DRAFT to SENT to PAID to OVERDUE, or that describes a state machine, has invented it and fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "no_fabricated_rationale",
+      "description": "There is no section presenting alternatives that were considered, consequences of a design, or why the code was built this way, unless quoted from the supplied source with a citation. The supplied files contain one comment and no design rationale at all, so any 'Design decisions', 'Trade-offs' or 'Rationale' section is fabricated and fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "every_behavioural_claim_carries_a_citation",
+      "description": "Each statement about what the code does names the file and the line or line range it comes from. A paragraph of accurate prose about the quote calculation with no line references fails this, as does a citation pointing at a line that does not exist in the supplied excerpts or at a file the brief never showed.",
+      "max_score": 3
+    },
+    {
+      "name": "open_questions_are_genuine_unknowns",
+      "description": "Every entry in billing-open-questions.md is something the three supplied files genuinely do not answer - what the literals mean, what lookupTariff reads, what the full status set is, what consumes the config values, whether detentionCharge was ever live. An entry whose answer is present in the supplied source, such as asking what discount GOLD customers receive when config/billing.json:5 states it, fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "open_questions_stay_questions",
+      "description": "The open-questions file asks rather than answers. An entry that supplies a guessed answer ('probably a fuel index multiplier'), or that turns into a work item ('add a tariff lookup fallback'), fails this. A question naming exactly what would resolve it - a person, a document, a table definition - is fine.",
+      "max_score": 2
+    }
+  ]
+}
