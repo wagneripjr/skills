@@ -1,0 +1,9 @@
+{
+  "name": "wagneripjr/agent-cli",
+  "version": "1.0.0",
+  "description": "Build and evaluate command-line tools for AI agent consumption: machine-readable output, semantic exit codes, hardened input, and a 0-21 agent-friendliness rubric",
+  "private": false,
+  "skills": [
+    "."
+  ]
+}

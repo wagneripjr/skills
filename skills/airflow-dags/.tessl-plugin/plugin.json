@@ -1,0 +1,9 @@
+{
+  "name": "wagneripjr/airflow-dags",
+  "version": "1.0.0",
+  "description": "Author, debug and configure Apache Airflow 3 DAGs: TaskFlow API, scheduling and assets, XCom, sensors, dynamic task mapping, and multi-layer test suites",
+  "private": false,
+  "skills": [
+    "."
+  ]
+}
