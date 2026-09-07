@@ -1,0 +1,61 @@
+{
+  "context": "The author reports three symptoms of a generated listing and asks for the YAML headers to be repaired, not the generator. The headers deliberately contain: one kind of document spelled three ways (Runbook, Playbook, runbook), two descriptions of 300 and 253 characters where a listing carries at most about 160 and drops rather than truncates a longer one, a lifecycle value outside the permitted set, a date-only expiry that names a different instant in every timezone, a human sign-off credited to an agent, repo-specific keys that are not the tool's to remove, an unterminated quoted string that breaks parsing, and a document whose body never states its purpose. A correct result rewrites the long summaries by hand rather than cutting them, keeps the superseded document reachable, declines to guess at the expiry, and leaves the undescribable document undescribed. Judge only the produced files.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "one_spelling_for_one_kind",
+      "description": "deploy-gantry.md, restart-controller.md and swap-encoder.md end up carrying one identical type value between them (Runbook, Playbook or runbook - which one does not matter, sameness does), and docs/index.md therefore shows one section for them rather than three. Leaving 'Playbook' beside 'Runbook' as a deliberate distinction fails: the task states the three sections all mean the same thing.",
+      "max_score": 4
+    },
+    {
+      "name": "long_summaries_rewritten_not_cut",
+      "description": "The 300-character description on deploy-gantry.md and the 253-character one on swap-encoder.md are replaced by newly written single sentences comfortably inside about 160 characters. A machine cut fails - anything ending in an ellipsis, a mid-word or mid-clause stop, or a sentence that is the original's opening truncated at a fixed length. Deleting the description outright rather than rewriting it also fails: both files have something to say.",
+      "max_score": 4
+    },
+    {
+      "name": "rewritten_summaries_still_say_what_the_document_is",
+      "description": "Each rewritten sentence is drawn from its own document and still identifies it - deploying gantry-control to the cells, and replacing a failed axis encoder. A generic filler such as 'Deployment documentation.' that could have been written from the filename alone fails, as does one asserting anything the original description and body do not.",
+      "max_score": 3
+    },
+    {
+      "name": "unparseable_header_fixed",
+      "description": "torque-curves.md's title is a valid quoted string (the missing closing quote supplied) with the same wording, and the whole header parses. Deleting the title, dropping the quotes in a way that changes the text, or leaving the file for a human to fix all fail - this is the file that stopped the generator.",
+      "max_score": 3
+    },
+    {
+      "name": "lifecycle_value_is_one_of_the_permitted_three",
+      "description": "axis-limits.md's status is 'deprecated' - the value meaning kept for links and history, no longer current. 'archived' is not one of the three permitted values (draft, stable, deprecated) and a consumer that does not recognise it learns nothing. The file itself must still exist, because the task says the wiki still links to it; deleting it fails.",
+      "max_score": 3
+    },
+    {
+      "name": "date_only_expiry_not_guessed",
+      "description": "The date-only stale_after on axis-limits.md is removed, and NOTES.md records that it was removed because a bare date names a different instant in every timezone and the intent is unknown. Silently rewriting it as a full timestamp - 2026-12-31T00:00:00Z or any other offset - fails: it invents a fact the author explicitly said nobody remembers. Leaving it as a bare date also fails.",
+      "max_score": 3
+    },
+    {
+      "name": "human_sign_off_credited_to_a_human",
+      "description": "safety-interlocks.md's verified entry names Priya with an explicit human prefix on the actor - 'human:pnair' - dated 2 April 2026 with an explicit UTC offset. Leaving 'gantry-doc-agent', or writing a bare 'pnair' with no prefix, fails: the prefix is what distinguishes a human review from a machine one, and without it a human sign-off is silently downgraded.",
+      "max_score": 3
+    },
+    {
+      "name": "repo_specific_keys_preserved",
+      "description": "owner: controls-team survives on deploy-gantry.md, and owner: safety with jira: GC-412 survive on safety-interlocks.md. Removing them as unrecognised or non-standard fails - they belong to whoever put them there, and nothing in the task asked for them to go.",
+      "max_score": 3
+    },
+    {
+      "name": "undescribable_document_left_undescribed",
+      "description": "spares.md is given no description key, and its row in docs/index.md is a linked title with no summary and no dangling separator. Its body is a parts list that never states what the list is for, so a confident summary such as 'Recommended spare parts inventory for the B-series gantry' is a claim the file does not make. NOTES.md says it was left undescribed and why.",
+      "max_score": 4
+    },
+    {
+      "name": "listing_reflects_the_repaired_headers",
+      "description": "docs/index.md groups rows under one heading per distinct kind with headings ordered alphabetically, sorts rows by title within each section, uses one row form throughout (bullet, linked title, separator, summary), and carries no YAML header of its own beyond an optional format-version stamp. A listing that still shows three procedure sections, or that reproduces a dropped 300-character summary, fails.",
+      "max_score": 3
+    },
+    {
+      "name": "notes_report_is_honest",
+      "description": "NOTES.md names both summaries that were rewritten with roughly the original lengths, the expiry that was removed rather than guessed, and spares.md as left undescribed. A NOTES.md that narrates the edits without naming these specific residues fails.",
+      "max_score": 2
+    }
+  ]
+}

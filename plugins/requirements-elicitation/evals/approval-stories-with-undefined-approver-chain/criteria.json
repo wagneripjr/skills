@@ -1,0 +1,71 @@
+{
+  "context": "A tech lead must prepare questions ahead of a refinement session on a set of user stories that are individually well formed. The gaps are deliberately placed between the stories rather than inside any one of them: SP-105 lets an employee edit an amount that SP-103 uses as an approval threshold; SP-107 lets one person hold approvals that SP-103 assumes are two people; the approver rule assumes every submitter has a manager in a feed that is a night stale; and the thresholds 25 and 5,000 carry no currency although the context mentions London and Berlin. The auditor sentence in the context is the only hint of a records obligation. A weak answer asks broad clarifying questions per story and files them in one pile. A strong one names the cross-story collisions, proposes answerable choices, and puts each question in front of whoever can actually decide it.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "threshold_currency_and_fx_moment",
+      "description": "The output points out that the 25 and 5,000 thresholds carry no currency while the context mentions London and Berlin teams, and asks both halves: whether thresholds are defined per currency or by conversion to one, and if converted, at which moment the rate is fixed - submission or approval - since an expense can cross the 5,000 second-approval line between those two moments. Asking only 'is this multi-currency?' or 'which currency?' does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "edit_invalidates_prior_approvals",
+      "description": "The output connects SP-105 to SP-102 and SP-103 and asks what happens to approvals already collected when the expense is edited, naming the specific case where an edit moves the amount across the 5,000 threshold in either direction and so changes how many approvals are required. Flagging SP-105 as underspecified, or asking generally what can be edited, does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "approver_chain_edge_cases",
+      "description": "At least two of these named cases appear as questions: a submitter with no manager in the feed, a submitter whose manager has left or whose manager slot is vacant, the person at the top of the reporting line who has no manager to approve them, and whether anyone can end up approving their own expense. Asking 'who are the approvers?' or 'what roles exist?' does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "delegation_collides_with_second_approval",
+      "description": "The output asks whether a delegate under SP-107 can supply the second of the two approvals SP-103 requires - that is, whether one human can end up holding both - and whether the approval record shows the delegate or the person delegated to. Asking only how long a delegation lasts or how it is turned on does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "stale_reporting_line",
+      "description": "The output names the nightly Peoplebase sync as a source of staleness and asks what happens to approvals already in flight when the reporting line changes - whether the pending item moves to the new manager, stays with the old one, or is re-derived. Noting the existence of the integration, or asking how the sync works mechanically, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "waiting_time_has_no_rule",
+      "description": "The output observes that SP-102 displays how long an item has been waiting but no story defines what a long wait triggers, and asks for the concrete rule: a reminder, an escalation, an auto-approval, or nothing at all, with a number attached. Asking 'what are the SLAs?' with no proposed threshold or behavior does not satisfy this.",
+      "max_score": 2
+    },
+    {
+      "name": "export_idempotency",
+      "description": "The output asks what SP-106 does on a second run for the same month, and what happens to expenses approved after that month's export has already been taken, naming the risk of the same expense reaching the accounting system twice or never. Asking about the export file format or which fields it contains does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "audit_obligation_pulled_out_of_the_context",
+      "description": "The auditor sentence in the Context is treated as an unstated requirement rather than as background: the output asks what must be retained about each approval decision, for how long, and whether an approval record can be altered or deleted once made. An answer that never revisits the auditor line does not satisfy this.",
+      "max_score": 2
+    },
+    {
+      "name": "rejection_path_undefined",
+      "description": "The output asks what a rejected expense becomes: whether it can be edited under SP-105 and re-submitted, whether it returns to the same approver, and whether the rejection reason is shown to the submitter. Noting only that rejection requires a reason does not satisfy this.",
+      "max_score": 2
+    },
+    {
+      "name": "questions_routed_to_who_can_answer",
+      "description": "The split between the two files is correct: policy and product decisions (currency and threshold policy, whether self-approval is ever permitted, what delegation is allowed to cover, the retention obligation, what a long wait should trigger) sit in questions-for-pm.md, and questions the squad must resolve or investigate (sync staleness handling, export re-run behavior, notification mechanism, concurrency of two approvers acting at once) sit in questions-for-engineering.md. Duplicating the same questions into both files, or filing policy decisions as engineering questions, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "questions_are_closed_and_answerable",
+      "description": "Questions are posed so they can be answered with a decision, a value or a yes/no - typically by offering the alternatives - so the session produces answers rather than discussion. Open-ended forms such as 'can you clarify SP-103?', 'what are the requirements for approvals?' or 'how should errors be handled?' do not satisfy this; a small minority of open questions is tolerable, a majority is not.",
+      "max_score": 3
+    },
+    {
+      "name": "impact_stated_per_question",
+      "description": "Each question says what it changes - which story it blocks, what the squad would otherwise have to assume, or what has to be rebuilt if the answer arrives late. A bare bulleted list of well-formed questions with no stated consequence does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "no_invented_solution",
+      "description": "Neither file asserts an implementation the stories do not contain: no chosen state-machine or workflow library, queue, FX rate provider, notification vendor, database schema or table design, and no currency silently adopted as the answer to the threshold question. Naming candidate options inside a question that asks someone to pick is acceptable and expected.",
+      "max_score": 3
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "context": "FICTIONAL. The agent is handed an Airflow 2.7 DAG and asked to make it work on Airflow 3.0. The brief describes only symptoms - an import error, lost replay-on-deploy, a collapsed processing window, test files suddenly being parsed - and never names the parameters, renames, or removals that cause them. The traps are the 2-to-3 changes that a competent agent working from Airflow 2 habits will miss: the cron timetable no longer produces a data interval, SubDAGs and the sla parameter are gone rather than renamed, two trigger rules were renamed, the catchup default flipped, and the standard operators moved into a provider package. Everything is checkable by reading the four produced files.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "data_interval_preserved",
+      "description": "The migrated DAG keeps a real 24-hour processing window. This requires an explicit interval-producing timetable passed to schedule - CronDataIntervalTimetable(\"0 3 * * *\") or an equivalent DeltaDataIntervalTimetable - or, if the AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS setting is used instead, UPGRADE-NOTES.md must name that setting. Leaving schedule=\"0 3 * * *\" as a bare cron string does not satisfy this: it produces a point-in-time trigger whose interval start and end are the same instant, which is the zero-width window the brief complains about.",
+      "max_score": 5
+    },
+    {
+      "name": "subdag_replaced_by_task_group",
+      "description": "The nested workflow is expressed as a task group inside the single DAG file (an @task_group decorator or a TaskGroup context manager) containing normalize_carrier_codes, dedupe_shipments and score_on_time in that order. A second DAG object, a TriggerDagRunOperator, an ExternalTaskSensor, or any surviving reference to SubDagOperator does not satisfy this.",
+      "max_score": 5
+    },
+    {
+      "name": "sla_replaced_not_renamed",
+      "description": "The sla entry in default_args is gone and the timeout intent is carried by dagrun_timeout on the DAG, paired with an on_failure_callback (or an equivalent notifier). Keeping sla=timedelta(hours=3), or silently deleting it with no replacement and no note, does not satisfy this - SLA callbacks were removed, not renamed.",
+      "max_score": 4
+    },
+    {
+      "name": "trigger_rules_renamed",
+      "description": "load_rollup uses trigger_rule=\"none_failed_min_one_success\" and notify_ops uses trigger_rule=\"always\". The Airflow 2 spellings none_failed_or_skipped and dummy must not appear anywhere in the DAG file. Substituting a different rule with different semantics (for example all_done in place of always) does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "catchup_explicit_and_true",
+      "description": "The DAG sets catchup=True explicitly, because the brief asks for the replay-on-deploy behaviour to be kept and the default flipped to False. Omitting catchup entirely, or setting it to False, does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "standard_provider_import_paths",
+      "description": "Any surviving PythonOperator or BashOperator is imported from airflow.providers.standard.operators.* (or the tasks are rewritten as @task / @task.bash, in which case this item is satisfied by the absence of the old paths). The Airflow 2 paths airflow.operators.python and airflow.operators.bash must not appear.",
+      "max_score": 3
+    },
+    {
+      "name": "context_variables_renamed",
+      "description": "Inside load_rollup, execution_date is replaced by logical_date or data_interval_start and next_execution_date by data_interval_end, and the templated bash command no longer uses {{ execution_date }}. Any remaining occurrence of execution_date or next_execution_date in dags/freight_daily_rollup.py fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "conf_no_longer_from_context",
+      "description": "The warehouse_schema lookup no longer reads context[\"conf\"]; the configuration object is imported directly (from airflow.configuration import conf) or the value is sourced another way. Leaving context[\"conf\"] in place does not satisfy this.",
+      "max_score": 2
+    },
+    {
+      "name": "backfill_detection_updated",
+      "description": "dag_run.is_backfill is replaced by an inspection of dag_run.run_type (compared against a backfill run type). Keeping .is_backfill does not satisfy this.",
+      "max_score": 2
+    },
+    {
+      "name": "fixed_start_date",
+      "description": "start_date is a literal past datetime such as datetime(2024, 1, 1). days_ago( must not appear anywhere, and neither datetime.now() nor pendulum.now() may be used, since a moving start_date makes scheduling non-deterministic.",
+      "max_score": 3
+    },
+    {
+      "name": "renamed_dag_parameters",
+      "description": "schedule_interval= is gone in favour of schedule=, and fail_stop=True is now fail_fast=True. Either old spelling surviving in the DAG file fails this item.",
+      "max_score": 3
+    },
+    {
+      "name": "requirements_names_standard_provider",
+      "description": "requirements.txt lists apache-airflow-providers-standard, which is what makes PythonOperator and BashOperator importable at all on 3.0. A requirements.txt that names only apache-airflow, or omits this provider, does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "airflowignore_glob_syntax",
+      "description": "The produced .airflowignore uses glob syntax - test_*.py - rather than the regexp form test_.*\\.py, and UPGRADE-NOTES.md states that the default .airflowignore syntax changed from regexp to glob. Keeping the regexp pattern, or explaining the failure as anything other than a syntax-default change, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "notes_table_is_reviewable",
+      "description": "UPGRADE-NOTES.md contains a table whose rows each give a before value, an after value, and the reason, and that table covers at minimum the schedule parameter, the timetable/data-interval change, the SubDAG removal, the sla removal, both trigger-rule renames, and the catchup default flip. Prose paragraphs with no before/after pairing, or a table missing any of those six subjects, does not satisfy this.",
+      "max_score": 4
+    }
+  ]
+}

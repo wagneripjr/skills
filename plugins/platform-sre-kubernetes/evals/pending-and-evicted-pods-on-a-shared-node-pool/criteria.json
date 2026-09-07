@@ -1,0 +1,71 @@
+{
+  "context": "Three workloads on one node pool fail in three different ways, and the engineer arrives with a wrong conclusion already formed - that the nodes are too small and the pool should be replaced with larger instances. Every symptom is explained by the relationship between requests, limits and allocatable capacity, and none of the three is fixed by a bigger node. A pod with no requests at all is BestEffort and is evicted under node memory pressure while using 612Mi; a pod requesting 4 CPUs can never schedule on a node whose allocatable CPU is 3860m, and its measured usage is 900m; a Node.js worker is OOMKilled against a 256Mi limit while spiking to 400Mi, and the team already raised the request rather than the limit and saw no change. A weak answer adds resources to every manifest. A strong answer separates what requests do from what limits do, refutes the instance-type theory per workload, and sizes each value against the measurements supplied.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "requests_and_limits_do_different_jobs",
+      "description": "The diagnosis states the distinction explicitly and uses it: requests are what the scheduler adds up to decide placement and what eviction ranking is judged against, limits are the ceiling the kernel enforces at runtime through throttling or an OOM kill. An answer that treats the two as one knob, or that reaches the right numbers without ever separating the two roles, cannot explain why three symptoms this different came from one root confusion, and scores at most half.",
+      "max_score": 5
+    },
+    {
+      "name": "evicted_pod_is_a_besteffort_ranking_problem",
+      "description": "Workload A is explained as BestEffort: with no requests declared, the pod is in the first QoS class the kubelet evicts under node memory pressure, regardless of how modest its actual 550-700Mi usage is, and the describe output's 'request is 0' is cited as the evidence. The fix is declaring requests near the measured usage so it becomes Burstable or Guaranteed and is no longer first in line. Saying only 'it used too much memory' or 'the node ran out' inverts the causation and fails.",
+      "max_score": 5
+    },
+    {
+      "name": "pending_pod_is_request_arithmetic_not_capacity",
+      "description": "Workload B is explained as a request that cannot fit: a request of 4 CPUs exceeds the node's allocatable 3860m, so no node can ever admit it and it stays Pending forever - 'Insufficient cpu' counts the sum of requests, not measured usage, and the node has no free 4 CPUs even when idle. The answer must say that capacity and allocatable are not the same number and that the difference is reserved for the kubelet and system daemons. Treating this as the node being busy, or as evidence for larger instances, fails.",
+      "max_score": 5
+    },
+    {
+      "name": "metrics_rollup_request_is_resized_to_measurement",
+      "description": "The corrected metrics-rollup manifest sets a CPU request in the region of the measured 900m sustained (with reasonable headroom), not 4, and a memory request near the measured 2.1Gi. Merely lowering the request to something that fits, with no connection to the measurement supplied, scores at most half. Keeping 4 CPUs and proposing bigger nodes to accommodate it scores zero.",
+      "max_score": 4
+    },
+    {
+      "name": "oomkill_is_governed_by_the_limit",
+      "description": "Workload C's diagnosis states that raising the memory request from 64Mi to 128Mi could not have stopped an OOM kill because the request plays no part in the kernel's decision - only the 256Mi limit does, and the worker spikes to 400Mi. The corrected manifest raises the limit above the observed spike. An answer that raises the limit without explaining why the team's earlier request change was inert leaves the engineer able to repeat the mistake, and scores at most half.",
+      "max_score": 5
+    },
+    {
+      "name": "node_runtime_heap_versus_the_container_limit",
+      "description": "The answer notes that a Node.js process does not size its heap from the container's memory limit by default, so a raised limit alone can leave the runtime either still hitting the ceiling or growing past it - and gives the concrete remedy, an explicit heap ceiling below the container limit (for example NODE_OPTIONS with --max-old-space-size set under the limit). This is the item that separates an answer that knows containers from one that only knows YAML.",
+      "max_score": 4
+    },
+    {
+      "name": "qos_class_named_per_workload",
+      "description": "The diagnosis names the resulting QoS class for each of the three workloads after the correction (Guaranteed when requests equal limits, Burstable otherwise) and says what that class means for eviction order on a shared pool. Naming classes without connecting them to eviction ordering scores at most half.",
+      "max_score": 3
+    },
+    {
+      "name": "refutes_the_larger_instance_type",
+      "description": "The document answers the question the director asked: the instance-type change is not justified by any of these three symptoms, and it says so per workload - a bigger node does not stop a BestEffort pod being evicted first, and a larger node makes the 4-CPU request schedulable while leaving a request that overstates real usage by a factor of four. Ducking the recommendation, or recommending the upgrade, fails this item. A conditional case for more capacity based on the corrected requests summed across replicas is acceptable if it is stated as a separate finding.",
+      "max_score": 5
+    },
+    {
+      "name": "cpu_limit_consequence_is_throttling_not_killing",
+      "description": "Where CPU limits are discussed, the answer says a CPU limit throttles the container rather than terminating it - so ingest-worker's 200m limit against measured 190m spikes is a latency and backlog problem, not the cause of the exit-code-137 restarts. Attributing any part of the OOM kills to CPU fails this item.",
+      "max_score": 3
+    },
+    {
+      "name": "every_corrected_container_declares_both",
+      "description": "All three corrected manifests declare requests and limits for both CPU and memory on every container, with values that are internally consistent - no limit below its own request, and no value contradicting the diagnosis text. A manifest left with a bare container spec, or with memory but no CPU, fails.",
+      "max_score": 4
+    },
+    {
+      "name": "conclusions_cite_the_supplied_evidence",
+      "description": "Each workload's conclusion points at the specific artefact that supports it - the eviction message and its 'request is 0', the FailedScheduling 'Insufficient cpu' line, exit code 137 with OOMKilled and the restart count, the allocatable figures, the measured usage ranges. Generic Kubernetes advice with no reference back to the pasted output scores at most half.",
+      "max_score": 3
+    },
+    {
+      "name": "verification_after_applying",
+      "description": "The document says how to confirm each fix worked - for example that report-renderer's pods survive a period of node pressure, that metrics-rollup reaches Running rather than Pending, that ingest-worker's restart count stops climbing - and names the commands or signals to check. Ending at the corrected manifests does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "no_invented_measurements",
+      "description": "No usage figures, node counts, utilisation percentages or cost numbers appear beyond those the brief supplies or values plainly derived from them, and the document does not claim to have run any command against the cluster.",
+      "max_score": 3
+    }
+  ]
+}

@@ -110,8 +110,12 @@ export function evalsIgnored(skillDir, root = ROOT) {
   return null;
 }
 
-h.section('AC-5 in-skill evals are excluded from the pack');
-for (const dir of skills) {
+// Both places an evals/ can sit. Tessl's documented home is the PLUGIN root, which is where every
+// scenario now lives; the in-skill spelling predates that and still exists. Checking only the
+// second silently stopped proving anything the moment scenarios moved up a level — the pack was
+// still protected by each plugin's bare `evals/` line, but nothing asserted it.
+h.section('AC-5 evals are excluded from the pack, at either level');
+for (const dir of [...pluginRoots(), ...skills]) {
   if (!existsSync(resolve(ROOT, dir, 'evals'))) continue;
   const owner = evalsIgnored(dir);
   h.check(`${dir}: evals/ is named in a .tesslignore (at ${owner ?? 'nowhere'})`, owner !== null,

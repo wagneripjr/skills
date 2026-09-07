@@ -1,0 +1,71 @@
+{
+  "context": "The author hands over an unindexed docs tree and asks for it to be made findable. The tree deliberately contains: a hand-maintained log.md, two in-document history sections and two 'Last updated:' lines, a file whose body never states what it is for, a file rewritten nightly by a generator in another repository, and root-level project furniture (README, CONTRIBUTING) with no metadata. Git history is explicitly stated to be intact. A correct result stamps metadata on the concept documents, deletes the duplicated history because git already holds it losslessly, generates one listing per directory chained from the repo root, lists every markdown file that exists rather than only the ones that look like knowledge, invents no summary, and leaves the generated file alone. Judge only the produced files.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "log_md_deleted",
+      "description": "docs/log.md does not exist in the final tree. Keeping it, moving it, renaming it, or merging its bullets into another document all fail: it is a hand-maintained copy of what git already stores, the task states history is intact, and the two disagree the first time someone commits without updating it.",
+      "max_score": 4
+    },
+    {
+      "name": "in_document_history_stripped",
+      "description": "The '## Changelog' table in docs/deploy.md, the '## Revision history' list in docs/oncall.md, and BOTH 'Last updated:' lines (docs/deploy.md, docs/adr/0002-retry-budget.md) are gone from the document bodies. Rewriting them into a metadata field, or preserving them under a different heading, fails. The surrounding prose must survive unchanged.",
+      "max_score": 4
+    },
+    {
+      "name": "no_invented_summary",
+      "description": "docs/scratch.md is not given a fabricated one-line summary. Its body is three unexplained bullets and never says what the document is for, so the correct outcomes are a listing row with a title and link but no summary text, or the file being deleted as not a document at all - and either way NOTES.md says which. A confident description such as 'Working notes and open questions for the platform team' is a claim the file does not support and fails this item.",
+      "max_score": 4
+    },
+    {
+      "name": "generated_file_left_alone",
+      "description": "docs/metrics/catalog.md is byte-for-byte as supplied: no YAML block added at the top, no heading changed, no summary line inserted. NOTES.md records that a generator in another repository owns it, and says the durable fix is to make that generator emit the metadata rather than hand-editing a file that is overwritten nightly. Stamping it - even correctly - fails, because the stamp is erased by morning and nothing reports it.",
+      "max_score": 4
+    },
+    {
+      "name": "every_document_listed",
+      "description": "Every markdown file that survives has exactly one row in exactly one listing, including README.md and CONTRIBUTING.md at the root. A listing that carries only the docs/ material, or that omits the root files as 'not documentation', fails: a reader hunting the contributing guide cannot know the corpus filed it as furniture. Duplicate rows for the same file in two listings also fail.",
+      "max_score": 4
+    },
+    {
+      "name": "furniture_not_forced_to_carry_metadata",
+      "description": "README.md and CONTRIBUTING.md are listed whether or not they were given YAML metadata, and are not reported as errors or omitted for lacking it. If the answer treats their missing metadata as a defect that blocks listing them, it fails.",
+      "max_score": 3
+    },
+    {
+      "name": "listings_are_chained",
+      "description": "The root index.md links onward to docs/index.md, and docs/index.md links onward to its subdirectory listings, each under its own heading for subdirectories. A single flat root file that deep-links every leaf document, or per-folder listings that no chain from the root reaches, both fail.",
+      "max_score": 4
+    },
+    {
+      "name": "consistent_type_grouping",
+      "description": "Each document carries a metadata field naming its kind, listing rows are grouped under a heading per distinct kind, and near-synonyms are not used for one kind: the two ADRs share a single value and the two runbooks share a single value. A tree where one runbook is typed 'Runbook' and the other 'Playbook' - splitting one section into two, neither of which reads as complete - fails.",
+      "max_score": 4
+    },
+    {
+      "name": "row_form_is_uniform",
+      "description": "Every row follows one form - a bullet, a linked title, then a separator and the one-line summary, with the row degrading to just the linked title when there is no summary rather than trailing an empty separator. Mixed forms across listings, or a description that runs to a paragraph, fail.",
+      "max_score": 3
+    },
+    {
+      "name": "agent_entry_files_written",
+      "description": "Both CLAUDE.md and AGENTS.md exist at the repo root and each instructs agents to start from the root listing and to answer 'which document covers X' and 'does a document for Y exist' from it before opening any file. Writing only one of the two files, or pointing them at docs/ rather than at the root listing, scores partially at best.",
+      "max_score": 3
+    },
+    {
+      "name": "grep_exception_stated",
+      "description": "The instruction in CLAUDE.md / AGENTS.md names the one case where searching the tree is still correct - a literal phrase or token inside a document body, which no listing can carry - rather than banning search outright. A blanket 'never grep the docs' fails: it reads as overreach, and an agent that classifies the rule as overreach ignores all of it.",
+      "max_score": 2
+    },
+    {
+      "name": "summaries_drawn_from_the_documents",
+      "description": "Each summary that was written traces to its own document's opening lines (for example, deploy.md summarised as tagging a commit and approving the production stage). A summary that could have been written from the filename alone, or that asserts a purpose the body does not state, fails.",
+      "max_score": 3
+    },
+    {
+      "name": "notes_report_is_honest",
+      "description": "NOTES.md names the deletions (log.md and the history sections), the file left untouched and why, and every document left without a summary. A NOTES.md that only narrates the work done, without naming these specific residues, fails - they are exactly the items a reviewer with domain knowledge closes in minutes.",
+      "max_score": 2
+    }
+  ]
+}

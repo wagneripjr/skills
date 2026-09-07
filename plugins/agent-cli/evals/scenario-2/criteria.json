@@ -1,0 +1,71 @@
+{
+  "context": "Tests whether the agent produces the three mandatory agent knowledge packaging files (CONTEXT.md, AGENTS.md, llms.txt) with the structure and content required by the skill. The task provides a full CLI spec; the criteria check that the files meet the skill's specific structural rules, section requirements, size constraints, and content conventions — none of which are disclosed in the task description.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "CONTEXT.md word count",
+      "description": "CONTEXT.md contains 3000 words or fewer (count the words in the file)",
+      "max_score": 6
+    },
+    {
+      "name": "Quick Start placement",
+      "description": "In CONTEXT.md, a 'Quick Start' section (or equivalent heading containing 'Quick Start') appears before any 'Installation' section — or no Installation section is present",
+      "max_score": 8
+    },
+    {
+      "name": "Command reference table",
+      "description": "CONTEXT.md contains a table or structured reference covering all 9 deployctl commands (services list, services create, services update, services delete, logs, status, rollback, config get/set, auth), each with at least one concrete flag combination",
+      "max_score": 10
+    },
+    {
+      "name": "Error codes table with fix actions",
+      "description": "CONTEXT.md contains a table or section listing all 6 error codes (AUTH_EXPIRED, RESOURCE_NOT_FOUND, RATE_LIMITED, QUOTA_EXCEEDED, VALIDATION_ERROR, CONFLICT) with a suggested fix action or remediation note for each",
+      "max_score": 10
+    },
+    {
+      "name": "Agent-Specific Notes section",
+      "description": "CONTEXT.md contains a section whose heading includes the words 'Agent' and 'Notes' (e.g. 'Agent-Specific Notes', 'Notes for Agents') that lists behavioral guardrails for agents (e.g. always use --json, use --dry-run before mutating, never run interactive commands)",
+      "max_score": 9
+    },
+    {
+      "name": "Version compatibility line",
+      "description": "CONTEXT.md contains a line near the top (within the first 20 lines) that states compatibility with 'deployctl v2.1.0' or equivalent (e.g. 'Compatible with deployctl v2.1.0')",
+      "max_score": 6
+    },
+    {
+      "name": "Idempotency flags documented",
+      "description": "CONTEXT.md references both --if-not-exists (for create) and --if-exists (for delete) as idempotency mechanisms",
+      "max_score": 5
+    },
+    {
+      "name": "AGENTS.md numbered rules",
+      "description": "AGENTS.md contains a numbered list of at least 5 rules for agents (e.g. '1. Always use --json', '2. Always --dry-run before mutating', etc.)",
+      "max_score": 9
+    },
+    {
+      "name": "Preferred Patterns with code examples",
+      "description": "AGENTS.md contains a section titled 'Preferred Patterns' (or equivalent) that includes at least one code block or shell command example showing correct usage",
+      "max_score": 8
+    },
+    {
+      "name": "Anti-Patterns section",
+      "description": "AGENTS.md contains a section titled 'Anti-Patterns', 'Do Not', 'Avoid', or equivalent that lists things agents must NOT do",
+      "max_score": 8
+    },
+    {
+      "name": "AGENTS.md links to CONTEXT.md",
+      "description": "AGENTS.md contains a reference or link (e.g. 'See CONTEXT.md', '[CONTEXT.md](./CONTEXT.md)') pointing to CONTEXT.md as the detailed reference",
+      "max_score": 6
+    },
+    {
+      "name": "Signal exit codes documented",
+      "description": "Either AGENTS.md or CONTEXT.md documents signal exit codes: SIGINT → 130, SIGTERM → 143, and/or SIGPIPE → 141 (at least two of the three must be present)",
+      "max_score": 7
+    },
+    {
+      "name": "llms.txt size and orientation",
+      "description": "llms.txt contains 500 words or fewer, and includes references or links to both CONTEXT.md and AGENTS.md",
+      "max_score": 8
+    }
+  ]
+}

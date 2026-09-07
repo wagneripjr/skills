@@ -1,0 +1,71 @@
+{
+  "context": "An engineer asks for a written plan before a scheduled node drain, and states a wrong premise up front: that four replicas plus a rolling update strategy make a drain transparent. The pasted output shows all four pods sitting on two of the three nodes being drained, in two of the three zones. The Deployment has no disruption budget, no spread constraints, no preStop hook and no explicit termination grace period, against an app that needs up to 20 seconds to finish in-flight requests. The traps cut both ways: writing no PodDisruptionBudget leaves the workload unprotected, and writing one whose minAvailable equals the replica count blocks the drain outright. A weak answer produces a generic drain checklist. A strong answer reads the pasted placement, corrects the premise, and sizes the budget and the shutdown path against the numbers given.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "pdb_leaves_room_for_eviction",
+      "description": "manifests/pdb.yaml sets a budget that still permits an eviction against the replica count the plan settles on - for example minAvailable 2 or 3 with 4 or more replicas, or maxUnavailable 1. A PDB with minAvailable equal to the replica count, or maxUnavailable 0, scores zero: it makes every eviction permanently forbidden and the drain hangs. The document must also say what an operator sees when a budget blocks a drain - kubectl drain stalling with a message about the eviction violating the disruption budget - so the failure is recognisable rather than mysterious.",
+      "max_score": 5
+    },
+    {
+      "name": "corrects_the_rolling_update_premise",
+      "description": "The plan states plainly that the engineer's premise is wrong: a drain evicts pods, and the Deployment's rollingUpdate maxSurge/maxUnavailable settings govern rollouts, not evictions. Eviction is bounded by a PodDisruptionBudget, which does not exist here. Producing a correct plan while leaving the stated assumption unchallenged scores at most half - the engineer is about to reply to a thread with it.",
+      "max_score": 4
+    },
+    {
+      "name": "reads_the_actual_pod_placement",
+      "description": "The plan uses the pasted kubectl output: all four pods are on node-a3 and node-b1, both of which are on the drain list, so the drain takes out 100 percent of the replicas rather than a fraction, and the second drain step lands on the pods rescheduled from the first. An answer that gives generic drain guidance without noticing that every replica is on a node scheduled for eviction fails this item outright.",
+      "max_score": 5
+    },
+    {
+      "name": "spread_constraints_are_the_structural_fix",
+      "description": "The corrected Deployment adds topologySpreadConstraints (or pod anti-affinity) keyed on kubernetes.io/hostname, and the plan explains why hostname and not only zone: a drain is per-node, so a zone-only constraint still permits two pods on one node. Adding a zone constraint alone scores at most half. The plan should say that spreading is what makes the budget satisfiable rather than a source of stalls.",
+      "max_score": 4
+    },
+    {
+      "name": "shutdown_path_prevents_dropped_requests",
+      "description": "The corrected Deployment adds a preStop hook that delays before SIGTERM reaches the process, and sets terminationGracePeriodSeconds above the 20-second worst-case in-flight time plus that delay. The plan explains the race: endpoint removal and the SIGTERM are concurrent, so a pod that shuts down promptly can still be receiving traffic from the ingress for a moment and returns errors to real checkouts. Setting a grace period without the preStop delay, or adding a preStop without explaining the endpoint propagation race, scores at most half.",
+      "max_score": 5
+    },
+    {
+      "name": "capacity_headroom_before_the_drain",
+      "description": "The plan addresses serving capacity during the drain, not only pod survival: with pods evicted and rescheduled, running the same replica count means serving peak traffic with fewer healthy pods. Scaling up before the window, or an explicit statement that the remaining replicas carry the load with the numbers to back it, satisfies this. Silence on capacity does not.",
+      "max_score": 3
+    },
+    {
+      "name": "pushes_back_on_the_friday_evening_window",
+      "description": "The plan responds to the timing: Friday 18:00 is outside office hours with nobody watching dashboards, and the platform team explicitly invited a request to move the window. Asking for a different window, or accepting it with a named person watching for a stated period, satisfies this. Ignoring the timing entirely fails.",
+      "max_score": 3
+    },
+    {
+      "name": "sequenced_runbook_with_waits",
+      "description": "The document contains an ordered procedure for the day - cordon and drain one node at a time, with an explicit wait or readiness condition between nodes rather than draining all three back to back. A prose narrative with no executable sequence scores at most half.",
+      "max_score": 3
+    },
+    {
+      "name": "verification_signals_during_the_drain",
+      "description": "The plan names concrete things to watch while the drain runs - pod readiness or rollout status, pending pods, checkout error rate or latency, events - and says what value would mean stop. At least two signals plus a stop condition satisfies this.",
+      "max_score": 3
+    },
+    {
+      "name": "abort_path_is_written_down",
+      "description": "The plan states what to do if the drain goes wrong: uncordon the node so pods can be scheduled back, halt the remaining drains, and who to contact. An abort path that only says 'roll back the deployment' misses that nothing was deployed - the disruption is the drain itself.",
+      "max_score": 4
+    },
+    {
+      "name": "changes_land_before_the_window",
+      "description": "The plan says the PDB and Deployment changes must be applied and verified before Friday, and names how to check they took effect (for example that pods actually redistributed across nodes after the spread constraint was applied, since existing pods are not rescheduled by the constraint alone). Handing over manifests with no statement of when they must be in place does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "no_invented_cluster_observations",
+      "description": "The document does not claim to have run kubectl, queried the cluster, or observed results, and invents no metrics, node capacities or traffic figures beyond what the brief supplies. Commands presented as instructions to run are correct; commands presented as having already been run and produced output are not.",
+      "max_score": 3
+    },
+    {
+      "name": "manifests_are_deployable",
+      "description": "Both YAML files parse, carry namespace checkout, and the PDB's selector matches the Deployment's pod labels (app: checkout-web). A PDB whose selector matches nothing protects nothing while looking correct, and fails this item.",
+      "max_score": 3
+    }
+  ]
+}

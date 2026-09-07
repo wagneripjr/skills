@@ -1,0 +1,71 @@
+{
+  "context": "The brief quotes four real failure outputs from a tool whose every failure becomes a support ticket, plus complaints about a flag rename that broke customer automation, undifferentiated help, no version, and a cron job that never sees failures because stdout is redirected. The brief describes the symptoms only; it never states what a good failure message contains, what a failing command should exit with, which stream diagnostics belong on, or how a rename should be retired. The heaviest items are the ones a competent agent will approximate rather than get right: an error that says how to fix it rather than restating the condition, a failure that must never exit 0, and a renamed flag that keeps working with a warning instead of being deleted.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "each_error_says_what_failed_why_and_how_to_fix_it",
+      "description": "All four failures in failure-transcript.txt carry three things: what the tool was trying to do, why it could not, and a concrete remedy the reader can act on - a runnable command, an exact path to create, a list of accepted values, or a documentation URL. A message that only restates the condition ('config file not found', 'channel atals is invalid') scores nothing for that failure even though it is more readable than the original.",
+      "max_score": 8
+    },
+    {
+      "name": "no_failure_exits_zero",
+      "description": "Every one of the four runs in failure-transcript.txt records a non-zero exit code, the missing-asset case included. A single failure recorded with exit 0 fails this item outright, since the brief names that exact defect as the cause of two incidents.",
+      "max_score": 7
+    },
+    {
+      "name": "renamed_flag_still_works_and_warns",
+      "description": "--dest continues to be accepted and behaves identically to --channel, while emitting a deprecation warning that names --channel as the replacement and says when --dest will be removed. Removing --dest, rejecting it as an unknown flag, or accepting it silently with no warning all fail. The warning must not change the exit code of an otherwise successful publish.",
+      "max_score": 7
+    },
+    {
+      "name": "invalid_choice_error_lists_the_accepted_values",
+      "description": "The --quality error enumerates draft, standard and master in the message itself, and the channel error either lists atlas/beacon/corvid or names the command that lists them. An error that says only 'invalid value' and refers the reader to --help does not satisfy this.",
+      "max_score": 6
+    },
+    {
+      "name": "diagnostics_reach_the_cron_customer",
+      "description": "failure-transcript.txt includes a run with stdout redirected to a file in which the failure message still appears on the terminal, and the source writes errors and warnings to stderr rather than stdout. A tool that prints failures to stdout, or a transcript that omits this run, fails.",
+      "max_score": 6
+    },
+    {
+      "name": "no_interpreter_traceback_survives",
+      "description": "No stack trace, exception class name, KeyError/ValueError text, or source line reference appears anywhere in failure-transcript.txt. Unexpected conditions are caught and reported in the tool's own words.",
+      "max_score": 5
+    },
+    {
+      "name": "usage_errors_are_distinguishable_by_exit_code",
+      "description": "The exit codes in failure-transcript.txt separate a malformed invocation (unknown channel, invalid --quality) from a runtime failure (missing config, missing asset file), and the mapping is stated somewhere in the deliverables. The conventional choice of 2 for usage errors satisfies this; four failures sharing one undifferentiated code, or codes that are never documented, do not.",
+      "max_score": 5
+    },
+    {
+      "name": "help_shows_worked_examples",
+      "description": "help-transcript.txt shows an examples section containing at least two complete, copy-pasteable invocations with real values (for example 'slatecast publish --asset promo.mp4 --channel atlas'). Syntax lines using only angle-bracket placeholders, or a usage line with no examples section, do not satisfy this.",
+      "max_score": 6
+    },
+    {
+      "name": "every_subcommand_has_its_own_help",
+      "description": "help-transcript.txt contains help output for the root command and separately for publish, channels list, and config init - each with its own usage line and flags, not a repeat of the root help.",
+      "max_score": 4
+    },
+    {
+      "name": "flags_show_their_defaults",
+      "description": "In the help output, each optional flag displays the value used when it is omitted (for example --quality showing standard as the default). A flag list with descriptions but no defaults fails.",
+      "max_score": 4
+    },
+    {
+      "name": "version_is_reportable",
+      "description": "help-transcript.txt shows the tool printing its name and a semantic version and exiting 0 in response to a version request. A version buried only inside --help text, or a bare number with no tool name, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "migration_note_is_actionable",
+      "description": "MIGRATION.md names the old and new spelling, the release in which the rename happened, the release in which the old spelling stops working, and a mechanical instruction a customer can apply to their scripts. A prose paragraph that omits the removal release fails.",
+      "max_score": 4
+    },
+    {
+      "name": "transcripts_are_genuinely_captured",
+      "description": "failure-transcript.txt and help-transcript.txt record literal command lines with their unedited output and stated exit codes, and every message they contain also appears as a string in the source file. Narrated summaries, placeholder output, or messages the source cannot produce fail this item.",
+      "max_score": 3
+    }
+  ]
+}

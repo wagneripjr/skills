@@ -1,6 +1,6 @@
 {
   "name": "wagneripjr/postmortem",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Write a production-incident postmortem that reads well for humans and stays parseable by tooling: machine-read frontmatter, a numbered spine, and strict evidence rules",
   "private": false
 }

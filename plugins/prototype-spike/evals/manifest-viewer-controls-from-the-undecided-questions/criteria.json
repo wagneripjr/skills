@@ -1,0 +1,76 @@
+{
+  "context": "The brief carries two audiences at once: an operations lead who must reach every behaviour FR-166 describes, and an engineer who needs one technical unknown answered - whether harbourmaster HTML survives the app's existing iframe isolation. The source supplies exact polling constants, an explicitly chained timeout, an explicit no-automatic-retry comment, a fixed sandbox token list, and a captured payload containing a script tag. Nothing in the brief tells the agent to mirror any of these verbatim, to give every acceptance criterion a way to be reached, or to say anything about the two criteria no pixel can show. A baseline agent produces an attractive loading-to-document demo with round numbers, a setInterval loop, a relaxed sandbox, and controls chosen for what looks good to demo.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "timing_constants_mirrored_exactly",
+      "description": "The prototype uses the three values from useManifestJob.ts:17-19 unchanged: a 3000ms floor, a 20000ms default, and a 90000ms ceiling. Round substitutes that read better in a demo - 5s, 30s, 60s, or a ceiling of two minutes - fail this even when the behaviour is otherwise correct, because the operations lead is being asked to accept these specific bounds.",
+      "max_score": 4
+    },
+    {
+      "name": "chained_timeout_driven_by_the_server",
+      "description": "Each next poll is scheduled by a chained setTimeout whose delay is Math.max(3000, retryAfterSeconds * 1000) taken from the response body, matching useManifestJob.ts:37-38. A setInterval, a fixed delay that ignores retryAfterSeconds, or a hardcoded sequence of steps does not satisfy this - the guarantee under review is that the client follows the server's pace, and a fixed loop demonstrates a different guarantee.",
+      "max_score": 4
+    },
+    {
+      "name": "nothing_retries_by_itself",
+      "description": "The failure state offers an explicit retry the reviewer must press, and no automatic re-attempt happens after a failure, matching the comment at useManifestJob.ts:47. The prototype also states why - each attempt costs a harbour-feed credit - where the reviewer can read it. An automatic backoff retry, however conventional, fails this.",
+      "max_score": 4
+    },
+    {
+      "name": "isolation_posture_reproduced_verbatim",
+      "description": "The manifest is rendered in an iframe carrying the token list from NoticeViewer.tsx:47 character-for-character - sandbox=\"allow-popups allow-downloads\" - with referrerPolicy no-referrer and the content passed as srcdoc rather than a URL. Adding allow-scripts or allow-same-origin, dropping a token, or rendering the manifest as ordinary in-page markup instead of an isolated frame all fail this, because each changes the very thing the run is supposed to test.",
+      "max_score": 4
+    },
+    {
+      "name": "the_unknown_is_actually_exercised",
+      "description": "The captured manifest HTML is rendered through that sandboxed frame in the prototype, so what happens to it is observed rather than asserted. A prototype that reproduces the manifest as hand-written page markup, or that describes the expected outcome in prose without putting the payload through the frame, does not satisfy this. If the run concludes scripts are needed, that is reported as a proposed change awaiting a security decision, never applied silently.",
+      "max_score": 4
+    },
+    {
+      "name": "invisible_criteria_are_stated",
+      "description": "CA-04 (the manifest cannot reach the crew session) and CA-05 (leaving the screen cancels the wait) are each narrated in the prototype - a caption or label naming the guarantee and what enforces it - because neither produces a visible change the reviewer could otherwise agree or disagree with. Omitting both, or implementing the cancellation without ever telling the reviewer it exists, fails this.",
+      "max_score": 4
+    },
+    {
+      "name": "every_control_answers_a_question",
+      "description": "Each control present traces to one of CA-01 through CA-05 or to the sandbox unknown - for instance a failure simulation for CA-03 or a way to reach the ceiling for CA-02 without waiting 90 real seconds. Controls that answer nothing about FR-166 - a theme switcher, a font-size slider, a language picker, a speed slider that exists only to make the demo shorter without being tied to a criterion - fail this.",
+      "max_score": 4
+    },
+    {
+      "name": "every_criterion_is_reachable",
+      "description": "CA-01, CA-02 and CA-03 each reach a state the operations lead can see by clicking, without editing the file or waiting out a real 90-second timeout. A criterion that exists only in the code path but cannot be triggered from the interface does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "the_ceiling_falls_back_to_the_existing_link",
+      "description": "Reaching the 90-second ceiling lands on the existing download affordance labelled 'Download manifest' as it appears at ManifestLink.tsx:27, not on a generic error or a dead end. A timeout state that offers only 'Try again' fails this: CA-02 specifies the fallback.",
+      "max_score": 3
+    },
+    {
+      "name": "captured_payload_used_verbatim",
+      "description": "The manifest rendered is the 2026-08-21 capture as it came back - the same three booking rows B-1042, B-1043 and B-1044 with their exact parties and notes, its own inline style block, and its script tag left in place. Substituting a tidier table, dropping the script tag because it looks unsafe in a source file, or adding rows to make the manifest look fuller all fail this, and removing the script tag specifically destroys the thing the run is testing.",
+      "max_score": 3
+    },
+    {
+      "name": "screen_copy_verbatim",
+      "description": "The strings that already exist appear character-for-character: 'Sailing manifest' (ManifestLink.tsx:19), the subtitle 'FL-2203 - Ardmore Pier to Kilbeg - 08:10' (line 20), and 'Download manifest' (line 27). A heading of 'Manifest', or a button reading 'Download PDF', does not satisfy this.",
+      "max_score": 2
+    },
+    {
+      "name": "app_colours_carry_a_source_citation",
+      "description": "Every colour used for the app surface is one of the eight values in tokens.ts:13-20 and carries a citation of the form path:line beside its declaration; colours the prototype needs that are not in that map sit in a separate, justified group rather than mixed among the cited tokens.",
+      "max_score": 2
+    },
+    {
+      "name": "self_contained_single_file",
+      "description": "FR-166-manifest-viewer.html has zero external subresources: no script or link tag pointing off-origin, no @import, no img src to a remote host, no webfont URL, no fetch at run time. Icons and graphics are inline SVG or CSS. The manifest payload's own inline style block is part of the captured content and does not count against this.",
+      "max_score": 3
+    },
+    {
+      "name": "findings_answers_the_unknown_or_leaves_it_open",
+      "description": "findings.md states what happened when the harbourmaster HTML was rendered under the existing sandbox, says whether that settles the question or not, and names where the answer belongs. An unresolved question stays listed as open rather than being asserted; and the write-up does not draft an architecture decision record or rewrite FR-166 - naming a destination is the deliverable, writing the destination document is not.",
+      "max_score": 3
+    }
+  ]
+}

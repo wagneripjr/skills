@@ -1,0 +1,76 @@
+{
+  "context": "The author hands over notes on a silent data-corruption incident: a batch reconversion rewrote historical invoice amounts, nothing detected it, and a customer found it six days later. The notes deliberately separate the rows the job touched from the rows whose value changed, name the colleague who ran the command, present a 40-row correction as the current state rather than a fix, carry mixed UTC and CEST readings plus a recalled duration the database contradicts, include one guess with nothing behind it, two hypotheses already killed with evidence, one causal link that cannot be proven, and two unrelated findings. The document is worth grading on whether it bounds the blast radius by evidence instead of by estimate, and on whether it stays blameless about a proximate human action.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "touched_rows_not_called_corrupted",
+      "description": "The figure 2,317,884 is presented as the rows the job wrote (evidenced by the updated_at window), and the document states explicitly that the number of rows whose value actually changed is not yet known. Any sentence describing roughly 2.3 million invoices, lines or customers as corrupted, affected or incorrect fails this item, because it asserts as fact the exact conflation the notes warn against.",
+      "max_score": 4
+    },
+    {
+      "name": "changed_set_bounded_by_evidence",
+      "description": "The document explains how the changed set can be bounded - a line changed only where the rate effective on its own invoice date differs from the 2026-07-09 rate, derivable from the daily fx_rates table, with exact prior values recoverable from the restorable 03:00 UTC backup - and notes that the audit trigger being disabled since 2025 is why no in-database before-image exists. A document that states the set is simply unknowable, or that offers no route to bounding it, does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "guessed_figure_not_adopted",
+      "description": "Diego's 'probably only a few thousand' does not appear anywhere in the document as a figure, an estimate, or a range. It may be omitted entirely, or recorded as an unsupported guess; presenting any number of changed rows as if it were measured fails this item.",
+      "max_score": 3
+    },
+    {
+      "name": "partial_correction_not_resolution",
+      "description": "The 40 corrected invoice lines are labelled as a partial, customer-specific mitigation, and the document states that the remaining touched rows are uncorrected and that ledgerctl still behaves identically. A status or summary implying the incident is resolved, or a remediation section that presents the 40-line correction as the fix, fails this item.",
+      "max_score": 4
+    },
+    {
+      "name": "blameless_conditions_not_person",
+      "description": "The mechanism is described in terms of the conditions that allowed it - --from defaulting to the epoch, the conversion using the current rate rather than the rate effective on the invoice date, no dry-run, no confirmation, write credentials usable from a laptop, no audit of commands run against production - and Diego is not named as responsible or at fault anywhere in the document. Both halves are required.",
+      "max_score": 4
+    },
+    {
+      "name": "detection_is_the_finding",
+      "description": "The document treats detection as a primary finding: the corruption ran for six days undetected, every existing signal was green because the job succeeded, and no monitoring examines whether a value is correct. Recording only that a customer reported it, without naming the absence of value-level detection as the gap, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "unproven_link_labelled",
+      "description": "The claim that --from was omitted is presented as inferred from the all-time row span and explicitly not proven, with the reason given (stdout-only logging, laptop session closed, no command audit). Asserting the omitted flag as established fact fails this item; so does dropping the mechanism because it cannot be fully proven.",
+      "max_score": 3
+    },
+    {
+      "name": "telemetry_beats_recollection",
+      "description": "The run duration is stated as the 41-minute window the database shows (14:02:11-14:43:50 UTC), not the ten minutes the operator recalled, and the document does not present the recalled figure as a competing fact.",
+      "max_score": 2
+    },
+    {
+      "name": "single_declared_timezone",
+      "description": "One timezone is declared once and every timestamp in the document is expressed in it. The notes mix UTC database timestamps with CEST recollections ('around four'); a correct writeup converts, says that it converted, and does not carry both conventions into the timeline.",
+      "max_score": 3
+    },
+    {
+      "name": "long_undetected_window_in_timeline",
+      "description": "The timeline spans the corruption event (2026-07-09) through discovery (customer ticket 09:41 UTC, 2026-07-15) and makes the undetected interval visible rather than starting at the moment the team learned about it.",
+      "max_score": 3
+    },
+    {
+      "name": "blast_radius_includes_negatives_and_downstream",
+      "description": "The impact section records both what was spared and why - amount_original untouched, which is why payments-api was unaffected, and EUR-denominated originals being a 1:1 no-op - and that the revenue-report published on 2026-07-13 was derived from the affected column. Listing only the database damage, or omitting the downstream report, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "discarded_hypotheses_with_evidence",
+      "description": "Both eliminated hypotheses appear as discarded with the evidence that killed each: the fx-refresh cron (writes only fx_rates, and its role holds no UPDATE grant on invoice_lines) and the v6.2 release (all writes fall inside one 41-minute window rather than smeared across request traffic). Dropping either, or listing them without the evidence, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "correlated_findings_separated",
+      "description": "The notification-worker duplicate emails and the production customer names in the staging database are recorded as findings from the investigation and kept out of the root-cause, impact and timeline sections of this incident.",
+      "max_score": 2
+    },
+    {
+      "name": "frontmatter_severity_and_filename",
+      "description": "The document opens with a YAML frontmatter block (--- fenced, first thing in the file) whose severity is exactly one of critical, high, medium, low and reflects customer-visible financial data corruption (critical or high; medium or low does not), any human-readable severity label in the body agrees with it, and the file is written to a postmortems directory as YYYY-MM-DD-<slug>.md dated to the incident (2026-07-09) or its discovery (2026-07-15), never to the date of writing.",
+      "max_score": 3
+    }
+  ]
+}

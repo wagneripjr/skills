@@ -1,0 +1,71 @@
+{
+  "context": "A single engineer asks for a manifest review before a first production rollout. The brief never uses reliability vocabulary and never lists what to look for; the deliverables are a review document and corrected YAML. The manifests carry a coherent set of defects whose consequences interact: liveness and readiness both call a health endpoint that touches a database known to stall, on a JVM that needs 40 seconds to boot while liveness starts probing at 5; a mutable :latest tag rebuilt on every CI run; no resource requests; a single replica behind a ticket claiming no downtime; no disruption budget; and a production database password in plaintext in a manifest that has been on the default branch for three weeks. A weak answer lists the defects. A strong answer names what each one causes at runtime, and returns YAML that is actually deployable.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "probe_separation_and_its_consequence",
+      "description": "The review states that liveness and readiness must not share the /health endpoint that queries ledger-db, AND says what the shared endpoint causes: during a 20-30s database stall every replica fails liveness at once and the kubelet restarts healthy pods, when the correct behaviour is readiness failing so the pods are removed from the Service endpoints and return when the database does. Naming the misconfiguration without naming that consequence, or merely saying 'probes should be different', does not satisfy this. The corrected Deployment must give liveness a check that does not reach the database.",
+      "max_score": 5
+    },
+    {
+      "name": "startup_probe_for_the_40_second_boot",
+      "description": "The corrected Deployment adds a startupProbe sized to cover a 40-second JVM boot (failureThreshold x periodSeconds comfortably above 40s), and the review explains that this is what lets liveness keep a short interval afterwards. Only raising livenessProbe.initialDelaySeconds is the weaker fix and scores at most half: it either still kills the pod before it boots or blinds liveness for the whole life of the pod. Saying nothing about the 5-second initialDelaySeconds against a 40-second boot fails outright.",
+      "max_score": 4
+    },
+    {
+      "name": "requests_and_limits_with_qos_named",
+      "description": "The corrected container carries both resource requests and limits, and the review says that with no requests the pod is BestEffort - the scheduler has no signal to place it and it is the first thing evicted when a shared node runs short of memory. Adding limits without saying what the missing requests cost, or not naming the QoS consequence at all, is the generic advice this item is meant to discriminate against.",
+      "max_score": 4
+    },
+    {
+      "name": "image_is_immutable_and_why",
+      "description": "The corrected manifest replaces :latest with a specific version, and the review explains the mechanism, not just the rule: the same tag is overwritten by every CI run, so two replicas started minutes apart can run different bytes and a rollback to a tag is not a rollback to a known image. Pinning by digest (or tag plus digest) is the strongest answer. 'Don't use latest in production' with no consequence stated scores at most half.",
+      "max_score": 4
+    },
+    {
+      "name": "single_replica_refutes_the_ticket",
+      "description": "The review explicitly contradicts the ticket's 'no downtime expected' claim: with replicas: 1 and maxUnavailable: 1 the only pod is terminated before its replacement is ready, so every deploy is an outage. Replica count is raised (2 or more) in the corrected Deployment. Raising replicas silently without connecting it to the stated claim does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "disruption_budget_present_and_not_self_blocking",
+      "description": "A PodDisruptionBudget is added as its own manifest, and its value leaves room for at least one eviction against the chosen replica count (for example minAvailable 1-2 with 3 replicas, or maxUnavailable 1). A PDB whose minAvailable equals the replica count is worse than none - it blocks node drains permanently - and scores zero for this item.",
+      "max_score": 3
+    },
+    {
+      "name": "credential_removed_and_treated_as_compromised",
+      "description": "The password is moved out of the manifest into a Secret referenced by secretKeyRef (or an external secret store), AND the review says the value must be rotated because it has been on the default branch for three weeks and rewriting the manifest does not remove it from git history. Moving it to a Secret without calling for rotation misses the actual exposure and scores at most half.",
+      "max_score": 4
+    },
+    {
+      "name": "security_context_applied",
+      "description": "The corrected Deployment sets a securityContext that at minimum runs as a non-root user and disallows privilege escalation; dropping capabilities, a read-only root filesystem with writable volumes where the JVM needs them, and a seccomp profile strengthen it. A review that only mentions security context in prose without it appearing in the YAML scores at most half.",
+      "max_score": 3
+    },
+    {
+      "name": "spread_across_nodes_or_zones",
+      "description": "The corrected Deployment schedules replicas apart, via topologySpreadConstraints or anti-affinity, and the review connects it to the cluster having 3 zones - otherwise every replica can land on one node and the replica count buys nothing against a node failure.",
+      "max_score": 3
+    },
+    {
+      "name": "validation_before_apply",
+      "description": "The review names concrete commands to run against the corrected files before they reach the cluster - a client or server dry-run apply, a schema validation, or a diff against the live objects. Vague advice to 'test it first' does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "rollback_stated_though_unasked",
+      "description": "The review supplies a rollback path the engineer can execute (for example kubectl rollout undo with the deployment named, or re-applying a pinned previous version), even though the brief never asks for one. This is the item a review written to the letter of the request omits.",
+      "max_score": 4
+    },
+    {
+      "name": "what_to_watch_after_rollout",
+      "description": "The review names what to observe during and after the rollout - rollout status, pod restart counts, events, error rate or latency - rather than ending at 'apply the manifests'. Naming at least two concrete signals satisfies this.",
+      "max_score": 3
+    },
+    {
+      "name": "corrected_yaml_is_deployable",
+      "description": "The files under manifests/ are valid YAML, keep the original names, namespace and label selector so they patch the same objects, and every new object (Secret, PDB, and so on) carries the same namespace and matching labels. A review whose YAML would be rejected by the API server, or whose PDB selector does not match the Deployment's pod labels, fails this.",
+      "max_score": 3
+    }
+  ]
+}

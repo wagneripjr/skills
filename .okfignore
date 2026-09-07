@@ -11,7 +11,14 @@ tests/fixtures/
 # One line per plugin that has scenarios: .okfignore matches a path prefix, not a glob. A plugin
 # that gains scenarios without gaining a line here is reported by `coverage` as unindexed, so the
 # omission is loud rather than silent.
+plugins/agent-cli/evals/
+plugins/airflow-dags/evals/
+plugins/human-cli/evals/
+plugins/okf-maintain/evals/
+plugins/platform-sre-kubernetes/evals/
 plugins/postmortem/evals/
+plugins/prototype-spike/evals/
+plugins/requirements-elicitation/evals/
 
 # A vendored tool's own files and its memory, not this repository's knowledge. The walk
 # cannot descend into a dot-directory, so `index` can never list these; naming them here is

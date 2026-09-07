@@ -1,0 +1,76 @@
+{
+  "context": "The author hands over notes on an incident whose mechanism was never determined, and asks for the writeup. The mitigation (draining two nodes) restored service but its efficacy is unproven, the node-level logs that would have explained the stall were destroyed by the ASG, and the reason they were destroyed is an action item from an earlier postmortem that was never completed and is owned by a named colleague. The notes also carry mixed UTC and CET timestamps, three hypotheses already killed with evidence, one untested thread (a kernel-line difference), one unverifiable rumour of a prior occurrence, a queue-depth figure that cannot be converted into a user count, and two unrelated findings. The document is worth grading on whether it refuses to manufacture a cause it does not have.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "root_cause_declared_undetermined",
+      "description": "The root cause section states plainly that the mechanism was not determined and explains why the evidence needed to determine it no longer exists. Any confident causal mechanism - a kernel bug, a deadlock, a resource exhaustion, a driver hang - stated as the cause of this incident fails this item, because nothing in the notes supports one. Describing the observable state (processes alive, not consuming, no restarts, no OOM) is correct; naming a reason for it is not.",
+      "max_score": 4
+    },
+    {
+      "name": "mitigation_efficacy_not_claimed",
+      "description": "The document says that service recovered after the drain without asserting that the drain caused the recovery, and states that the counterfactual cannot be tested. A sentence of the form 'draining the nodes resolved the issue' or 'the fix was to replace the nodes' fails this item. Correct treatment presents the drain as the action taken and its effect as correlated but unproven.",
+      "max_score": 4
+    },
+    {
+      "name": "status_reflects_unknown_cause",
+      "description": "The document's status or equivalent state field makes clear the incident is mitigated with the cause unresolved - for example 'Resolved (mitigated - root cause not identified)' - and the summary carries a recurrence warning. A bare 'Resolved', or a summary that reads as closed, fails this item even if a later section admits the cause is unknown.",
+      "max_score": 3
+    },
+    {
+      "name": "kernel_difference_kept_as_hypothesis",
+      "description": "The AMI generation / kernel-line difference between the stalled nodes and the healthy one appears as an explicitly unproven lead, not as the cause and not as a discarded hypothesis. Both failure directions count against this item: promoting it to the mechanism, and dropping it from the document so the next responder has to rediscover it.",
+      "max_score": 3
+    },
+    {
+      "name": "evidence_gap_and_its_origin",
+      "description": "The document records that the kubelet and containerd logs were lost when the ASG terminated the drained instances, and connects that loss to what can no longer be claimed. Merely noting 'limited logging' without saying which evidence was destroyed and what it would have answered does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "prior_action_item_recorded_blamelessly",
+      "description": "The uncompleted action item from INC-037 (ship node-level logs, due 2026-05-02) is recorded as a condition that shaped this incident's investigability, and Marta is not named as responsible or at fault anywhere in the document. Both halves are required: silently omitting the prior item fails, and so does attributing it to an individual, however gently.",
+      "max_score": 4
+    },
+    {
+      "name": "discarded_hypotheses_with_evidence",
+      "description": "All three eliminated hypotheses - the v2.9.0 release, a poison message, and EBS throttling - appear as discarded, each paired with the specific evidence that killed it (version does not separate stalled from healthy pods; the 4 in-flight messages replayed successfully in about 50s; VolumeQueueLength flat below 1). Listing them without the evidence, or dropping any of the three, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "single_declared_timezone",
+      "description": "One timezone is declared once and every timestamp is expressed in it. The notes mix 08:47/09:12/11:31 UTC with a CET reading of the same page, and the author says outright that the two conventions confuse him; a correct writeup converts, says it converted, and does not carry both conventions into the timeline.",
+      "max_score": 3
+    },
+    {
+      "name": "detection_lag_quantified",
+      "description": "The document identifies that the first telemetry signal (queue age climbing, 08:47 UTC) preceded the alarm (09:12 UTC) by about 25 minutes and treats that as a detection finding. Reproducing both timestamps without reconciling them, or presenting the alarm as the start of the incident, fails this item.",
+      "max_score": 3
+    },
+    {
+      "name": "queue_depth_not_converted_to_users",
+      "description": "The peak queue depth of 1,880 messages is reported as messages, and the document states that the number of affected uploads or users cannot be derived from it because the job-to-upload ratio is not measured. Any figure presented as a count of affected users, uploads, or customers fails this item outright.",
+      "max_score": 4
+    },
+    {
+      "name": "blast_radius_includes_negatives",
+      "description": "The impact section records what was not affected and treats it as evidence: live-ingest on its own node group and queue stayed healthy, and the three working pods were all on the third node. A section that lists only the damage does not satisfy this.",
+      "max_score": 2
+    },
+    {
+      "name": "unverifiable_recurrence_marked",
+      "description": "The February rumour is either omitted, or included and explicitly marked as unverified with the note that a search of alerts and channel history found nothing. Stating or implying that the incident has happened before fails this item.",
+      "max_score": 2
+    },
+    {
+      "name": "correlated_findings_separated",
+      "description": "The thumbnail-api health check returning 200 with Redis down, and the 112 untriaged DLQ messages from March, are recorded as findings from the investigation and kept out of the root-cause, impact and timeline sections of this incident.",
+      "max_score": 2
+    },
+    {
+      "name": "frontmatter_and_filename_contract",
+      "description": "The document opens with a YAML frontmatter block (--- fenced, first thing in the file) carrying at least a title, a description and a severity whose value is exactly one of critical, high, medium, low, and the file is written to a postmortems directory as YYYY-MM-DD-<slug>.md. A severity spelled SEV-2, High, or as prose does not satisfy this; neither does a document with no frontmatter.",
+      "max_score": 3
+    }
+  ]
+}

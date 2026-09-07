@@ -127,14 +127,35 @@ if (!canaryFlagged) {
   else h.bad(`${hits.length} secret-shaped token hits`, hits.join('\n        '));
 }
 
-h.section('AC-8  evals are committed with assertions');
-const evalsPath = join(SKILL, 'evals', 'evals.json');
-h.check('evals/evals.json exists', nonEmpty(evalsPath));
-let assertionCount = 0;
-try {
-  const d = JSON.parse(readFileSync(evalsPath, 'utf8'));
-  assertionCount = d.evals.reduce((n, e) => n + (e.assertions || []).length, 0);
-} catch { /* leave at 0 */ }
-h.check('evals carry assertions', assertionCount >= 15, `found ${assertionCount} assertions, want >= 15`);
+// AC-8 used to assert a hand-rolled evals/evals.json inside the skill directory, counting its
+// prose `assertions`. That file was deleted once real Tessl scenarios existed: it was judged by
+// eye, produced no comparable number, and — unlike a scenario — contributed nothing to the eval
+// coverage the registry scores. Three is not a round number: a skill with no coverage is shown at
+// 80% of its review score, ramping to full weight at three or more scenarios, so the threshold is
+// the thing worth pinning.
+h.section('AC-8  the plugin carries real eval scenarios, at the coverage threshold');
+const EVALS = join(ROOT, 'plugins', 'prototype-spike', 'evals');
+const scenarioDirs = existsSync(EVALS)
+  ? readdirSync(EVALS, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
+    .map((e) => join(EVALS, e.name))
+    .filter((d) => nonEmpty(join(d, 'task.md')) && nonEmpty(join(d, 'criteria.json')))
+  : [];
+h.check(`>= 3 complete scenarios at the plugin root (found ${scenarioDirs.length})`,
+  scenarioDirs.length >= 3,
+  'below three, the registry shows an adjusted score: 80% of the review score at zero evals');
+h.check('the legacy in-skill evals.json is gone', !existsSync(join(SKILL, 'evals', 'evals.json')),
+  'superseded by the scenarios above; two records of the same thing drift apart');
+// A rubric with no discriminating weight measures nothing, so require real checklists rather than
+// merely well-formed JSON. Shape itself is asserted by tests/test-eval-scenarios.mjs.
+let thinnest = Infinity;
+for (const d of scenarioDirs) {
+  try {
+    const c = JSON.parse(readFileSync(join(d, 'criteria.json'), 'utf8'));
+    thinnest = Math.min(thinnest, (c.checklist || []).length);
+  } catch { thinnest = 0; }
+}
+h.check(`every rubric carries >= 8 checklist items (thinnest has ${thinnest})`, thinnest >= 8,
+  'a short rubric scores the obvious and leaves the discriminating behaviour unmeasured');
 
 h.done();

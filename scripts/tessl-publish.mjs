@@ -129,10 +129,15 @@ function main(argv = []) {
     process.stdout.write(`${ref}: publishing\n`);
     // No --version: the CLI refuses the flag when the manifest declares one, and it always does
     // here — `tessl plugin pack` hard-refuses a manifest without a version.
+    // Evals upload on purpose, so no --skip-evals. A skill with no eval coverage is shown at 80%
+    // of its review score on the registry, ramping to full weight at three or more scenarios, and
+    // search ranking is docked with it (Tessl web changelog, 2026-05-13). Publish reads evals/
+    // through the same scenario reader `tessl eval lint` uses, NOT through the pack, so the
+    // `evals/` line in each .tesslignore still keeps them out of the review bundle, where they
+    // would otherwise be handed to the judge grading the skill they belong to.
     const published = runTessl([
       'plugin', 'publish', pluginPath,
       '--workspace', WORKSPACE,
-      '--skip-evals',
     ]);
     process.stdout.write(published.stdout || '');
     if (published.status !== 0) {

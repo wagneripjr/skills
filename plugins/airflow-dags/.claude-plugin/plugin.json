@@ -1,7 +1,7 @@
 {
   "name": "airflow-dags",
   "description": "Author, debug and configure Apache Airflow 3 DAGs: TaskFlow API, scheduling and assets, XCom, sensors, dynamic task mapping, and multi-layer test suites",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Wagner Ignacio Pinto Junior",
     "email": "wagneripjr@adustio.com.br"

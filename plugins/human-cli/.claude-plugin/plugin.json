@@ -1,7 +1,7 @@
 {
   "name": "human-cli",
   "description": "Design and evaluate command-line tools for human users: naming and grammar, interactive prompts, colour and progress output, error messages, and a 0-21 usability rubric",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Wagner Ignacio Pinto Junior",
     "email": "wagneripjr@adustio.com.br"

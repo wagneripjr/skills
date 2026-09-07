@@ -1,0 +1,66 @@
+{
+  "context": "Tests whether the agent implements comprehensive input hardening and machine-readable schema introspection in an agent-facing CLI. The agent must build a file-generation tool called filegen that safely handles adversarially-constructed inputs, exposes structured help via --help-json, avoids credential leakage through flags, and self-evaluates against the 7-axis Agent-DX rubric.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "Identifier regex enforcement",
+      "description": "Source code validates resource names against a strict allowlist pattern (e.g. ^[a-zA-Z0-9][a-zA-Z0-9._-]*$) and rejects names that do not match — evidenced in source code or in hardening-demo.txt showing rejection of an invalid identifier like 'web app' or '--injection'",
+      "max_score": 10
+    },
+    {
+      "name": "Path traversal rejection",
+      "description": "hardening-demo.txt shows that passing a resource name containing '..' (e.g. '../../etc/passwd') is rejected with an error",
+      "max_score": 8
+    },
+    {
+      "name": "Control character rejection",
+      "description": "hardening-demo.txt shows that a resource name containing ASCII control characters (null byte, or chars 0x00–0x08 / 0x0B–0x1F) is rejected with an error",
+      "max_score": 8
+    },
+    {
+      "name": "Double URL-encoding detection",
+      "description": "hardening-demo.txt shows that a double-encoded value (e.g. 'web%252fapp' or 'web%2fapp' interpreted as double-encoded slash) is rejected with an error",
+      "max_score": 8
+    },
+    {
+      "name": "Query/fragment character rejection",
+      "description": "hardening-demo.txt shows that a resource name containing '?' or '#' (e.g. 'web-app?admin=true') is rejected with an error",
+      "max_score": 8
+    },
+    {
+      "name": "Absolute output path rejection",
+      "description": "hardening-demo.txt shows that supplying an absolute path (e.g. '/tmp/escape') as the output filename is rejected with an error",
+      "max_score": 8
+    },
+    {
+      "name": "No secret flags",
+      "description": "The filegen source code does NOT define any --password, --api-key, --token, or --secret command-line flags",
+      "max_score": 8
+    },
+    {
+      "name": "--help-json output exists",
+      "description": "A file is present (e.g. help-schema.json, schema-discovery.json, or captured in hardening-demo.txt) containing valid JSON from running 'filegen create --help-json'",
+      "max_score": 10
+    },
+    {
+      "name": "--help-json schema completeness",
+      "description": "The --help-json output includes all of: a flags section (with types or type fields), an examples section, and an exit_codes section",
+      "max_score": 8
+    },
+    {
+      "name": "Enum error lists valid values",
+      "description": "hardening-demo.txt (or other output file) shows that passing an invalid --template value produces an error message that lists all valid template names",
+      "max_score": 8
+    },
+    {
+      "name": "7-axis evaluation report",
+      "description": "evaluation-report.json exists and contains per-axis scores for all 7 axes (Machine-Readable Output, Raw Payload Input, Schema Introspection, Context Window Discipline, Input Hardening, Safety Rails, Agent Knowledge Packaging) plus a total score",
+      "max_score": 8
+    },
+    {
+      "name": "Hardening demo coverage",
+      "description": "hardening-demo.txt exists and shows at least 4 distinct rejected inputs (covering different attack categories) alongside at least 1 successful command execution",
+      "max_score": 8
+    }
+  ]
+}

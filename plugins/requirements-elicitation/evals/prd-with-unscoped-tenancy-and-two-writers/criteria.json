@@ -1,0 +1,71 @@
+{
+  "context": "An engineer must estimate a feature from a PRD that reads as finished. The document is deliberately confident and complete-looking: it names four alert types, states what is out of scope, and lists its own open items (copy and icons) so it appears to have already been audited. The decisions it silently omits are the ones that set the data model, the authorization check and the blast radius of the first hour after launch: it never says whose data a broker sees, never says which of its two writers wins when they disagree, never quantifies 'real time' or 'in a while', names an Account Manager role exactly once, and never says what happens at go-live to shipments that are already off-plan. A weak answer summarizes the PRD back and asks broad clarifying questions. A strong one names each specific undecided thing and says what breaks if it is assumed wrong.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "broker_scoping_named",
+      "description": "The single line 'Brokers get the broker view' is picked out and turned into a scoping question: which shipments a broker can see alerts for, whether alert data is scoped per shipper or per broker-shipper relationship, and what happens when one broker acts for competing shippers. Satisfying this requires treating it as a data-scoping and authorization decision. Asking what the broker view looks like, or listing 'broker' under undefined UI, does not satisfy it.",
+      "max_score": 4
+    },
+    {
+      "name": "two_writers_authority_rule",
+      "description": "The output asks which source is authoritative when the carrier feed and the hand-entered Ops Console status disagree about the same shipment, and notes the consequence: an alert that is raised by one writer and cleared by the other flaps, and each flap can fire an email. Merely observing that there are two data sources, or asking how the two feeds are integrated, does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "real_time_quantified",
+      "description": "The phrase 'in real time' is quoted from the document and converted into a number to confirm - a proposed latency budget or a push-versus-poll interval offered as a concrete option to accept or correct - together with what that choice changes. Asking 'what are the performance requirements?' or 'how real-time does this need to be?' with no proposed number does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "stalled_threshold_undefined",
+      "description": "The 'no tracking update has been received in a while' definition of the Stalled alert is named as unimplementable as written: a threshold value is requested, with the observation that one number cannot be right for every carrier, mode or lane. Listing Stalled among the alert types, or noting that alert rules need detail, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "account_manager_role_undefined",
+      "description": "The output flags that 'Account Managers' appears once and is never defined, and asks who holds that role, what override does that dismiss does not, and whether the effect is visible to the customer or only internally. A general remark that permissions or roles are unclear, without naming this role and the override-versus-dismiss distinction, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "carrier_feed_outage_couples_to_stalled",
+      "description": "The output names the specific coupling between the dependency and the alert rules: if the carrier integration stops delivering events, every affected shipment satisfies the Stalled condition at once, producing a mass of false alerts and, for opted-in users, a mass of emails. A generic 'what happens if an integration fails?' or 'we need error handling' does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "launch_backfill_of_already_late_shipments",
+      "description": "The output asks what happens at go-live to shipments that are already off-plan - whether they generate alerts and notification emails on day one, or whether alerting starts only from events received after launch. Any question about historical or existing data that does not reach the go-live behavior of in-flight shipments does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "retention_and_deletion",
+      "description": "The output ties the reporting requirement ('we keep alerts' for quarterly review and CSV export) to an unstated retention period, and also asks what happens to retained alerts when a customer leaves or asks for deletion. Asking only how long data is kept, with nothing about deletion or offboarding, earns partial credit at most.",
+      "max_score": 2
+    },
+    {
+      "name": "dismissal_semantics",
+      "description": "The output asks whether dismissing an alert hides it for that one user or for everyone on the account, and whether an alert re-raises if the underlying condition is still true the next time it is evaluated. Restating that users can dismiss alerts does not satisfy this.",
+      "max_score": 2
+    },
+    {
+      "name": "consequence_stated_per_gap",
+      "description": "Each significant gap carries an explicit statement of what breaks, or what has to be rebuilt, if the answer goes the other way - for example that scoping alerts per shipper and later learning brokers span shippers means changing the authorization path and re-testing every query. A list of questions with no consequence attached to them does not satisfy this, however specific the questions are.",
+      "max_score": 4
+    },
+    {
+      "name": "no_invented_technical_decisions",
+      "description": "Neither file states a technical decision the document does not contain as though it were settled: no chosen transport, storage engine, queue, cache, framework, schema, table or endpoint design, and no email vendor. Naming candidates inside a question that asks someone to choose is acceptable and expected; writing 'we will push alerts over WebSockets and store them in a new alerts table' is not.",
+      "max_score": 3
+    },
+    {
+      "name": "what_is_settled_is_recorded",
+      "description": "The review records what the document does decide - the four alert types and their triggers, outbound-only, SMS and push excluded, the two success metrics, the fields each alert row shows - rather than presenting the PRD as uniformly vague. A document that is all gaps and no settled ground does not satisfy this.",
+      "max_score": 2
+    },
+    {
+      "name": "questions_grouped_by_answerer",
+      "description": "open-questions.md groups questions by who can answer them, and the grouping is correct: policy and product-intent questions (broker scoping, retention policy, what Account Manager override means to a customer) are addressed to product or ops, and implementation questions (delivery mechanism, evaluation cadence, backfill mechanics) to engineering. A single flat list, or business-rule questions filed as engineering questions, does not satisfy this.",
+      "max_score": 2
+    }
+  ]
+}

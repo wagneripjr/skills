@@ -1,0 +1,76 @@
+{
+  "context": "The brief asks for a clickable prototype over a screen that already exists, and pastes that screen's real source inline: a six-entry filter array, a state-label map whose values differ from the state keys, exact heading and button copy, a token file, a theme resolver that returns light before it ever reads the media query, a feature-flag key read at two sites, and one captured feed response containing an awkward null. Nothing in the brief tells the agent to reproduce any of it faithfully, to cite where borrowed values came from, or to mark what the requirement adds. A baseline agent produces a plausible generic ferry mockup with invented labels and tidy invented data; the discipline under test is that everything on screen except the requirement's own delta traces to the supplied source, and the delta is visibly marked as such.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "filter_strip_reproduced_whole_and_in_order",
+      "description": "The board's filter chips are exactly the six entries of FILTERS at SailingsBoard.tsx:41 - All, Boarding, Departed, Delayed, Cancelled, Berthed - in that order. Adding a chip the array does not contain (Arrivals, Departures, Today, Favourites) fails this, and so does dropping one because the captured data has no sailing in that state.",
+      "max_score": 4
+    },
+    {
+      "name": "state_labels_taken_from_the_map",
+      "description": "Row state text comes from STATE_LABEL at SailingsBoard.tsx:52-58, not from the state keys in the captured JSON. A sailing whose state is 'berthed' must render as 'Alongside' and a 'boarding' sailing as 'Boarding now'. Rendering 'Berthed' or 'Boarding' - the plausible reading of the data field - does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "copy_strings_verbatim",
+      "description": "Every user-visible string that exists in the supplied source appears character-for-character: 'Today's sailings' (line 78), 'Live from the harbour feed' (line 79), 'Open sailing' (line 116), 'No sailings match this filter.' (line 129). A heading of 'Sailings today', a button labelled 'View sailing', or an empty state reading 'No sailings found' does not satisfy this, however reasonable it reads.",
+      "max_score": 4
+    },
+    {
+      "name": "app_colours_carry_a_source_citation",
+      "description": "Every colour used for the app surface is one of the eight values in tokens.ts:13-20 and carries a citation of the form path:line next to its declaration (for example a CSS custom property commented src/styles/tokens.ts:13). A hex with no citation, or an app-surface colour that is not in the supplied token map, fails this.",
+      "max_score": 4
+    },
+    {
+      "name": "prototype_only_colours_kept_separate",
+      "description": "Any colour the prototype needs that is not in the app's token map - the highlight for what is new, the reviewer chrome - is declared in a separate group with a written justification, and is visibly not one of the eight token values. Mixing an invented colour in among the cited app tokens fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "no_dark_mode_for_the_app_frame",
+      "description": "The app frame is rendered light-only, because resolveTheme.ts:10 returns 'light' before the matchMedia branch is ever reached. A prefers-color-scheme rule that restyles the app surface fails this. A prototype that mentions the constraint should cite resolveTheme.ts:10; styling the reviewer's own page chrome for dark mode is not a failure.",
+      "max_score": 3
+    },
+    {
+      "name": "flag_identifier_exact_and_both_sites_stated",
+      "description": "The control that turns the feature on and off is labelled with the key exactly as registered - ferrylink.delayReason - and its description or caption states that the key gates two things: the inline row in SailingsBoard.tsx:115 and the /sailings/:code/delay route in routes.tsx:63. A control labelled 'Show delay reason', SHOW_DELAY_REASON, or enableDelayReason does not satisfy this, and neither does describing the flag as gating only the row.",
+      "max_score": 4
+    },
+    {
+      "name": "captured_response_used_verbatim",
+      "description": "The board renders the four sailings from the 2026-08-14 capture with their exact codes, routes, times, states and delay values - FL-2201, FL-2203, FL-2204, FL-2206 - and no others. Inventing a fifth sailing, adding a cancelled row so the Cancelled chip has something to show, renaming a route, or changing a departure time all fail this, as does silently filling in FL-2204's null reasonText.",
+      "max_score": 4
+    },
+    {
+      "name": "null_reason_case_is_observable",
+      "description": "CA-02 can actually be seen: FL-2204 carries delay minutes with reasonText null, and its row shows the 25-minute delay with no empty reason line or placeholder text. A prototype where every delayed row has a reason cannot demonstrate CA-02 and does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "what_the_requirement_adds_is_marked",
+      "description": "The prototype distinguishes what FR-141 introduces (the reason on the row, the detail sheet, its entry point) from the board that already exists, through a mechanism the reviewer can turn on and off rather than permanent decoration. Nothing that already exists in the supplied source is marked as new, and nothing new is left unmarked.",
+      "max_score": 4
+    },
+    {
+      "name": "both_placements_are_comparable",
+      "description": "The undecided question - reason inline on the row versus only inside the sheet - is reachable as two states the reviewer can switch between and compare, not settled unilaterally by building one of them. A prototype that simply picks the inline placement does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "capture_provenance_travels_with_the_data",
+      "description": "The file records where its data came from: the curl command and the 2026-08-14 capture date appear beside the inlined payload, so a later reader can tell live data from a stale capture. Inlining the bytes with no provenance note fails this.",
+      "max_score": 2
+    },
+    {
+      "name": "self_contained_single_file",
+      "description": "FR-141-delay-reason.html has zero external subresources: no script or link tag pointing off-origin, no @import, no img src to a remote host, no webfont URL, no fetch at run time. Icons and graphics are inline SVG or CSS. A Tailwind or font CDN tag fails this even if the page still renders without it.",
+      "max_score": 3
+    },
+    {
+      "name": "findings_separates_settled_from_open",
+      "description": "findings.md states what the exercise established and what is still undecided, and routes each answer to where it belongs. It does not present the placement question as decided, and it does not draft an architecture decision record or rewrite FR-141's text - naming a destination is the deliverable, writing the destination document is not.",
+      "max_score": 2
+    }
+  ]
+}

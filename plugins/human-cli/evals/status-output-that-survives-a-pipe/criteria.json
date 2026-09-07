@@ -1,0 +1,76 @@
+{
+  "context": "The brief describes one command serving a person at a terminal and a shell one-liner, and lists the symptoms of the second case being ignored: escape sequences reaching grep, progress text landing in a redirected file, an interpreter traceback when a downstream reader closes the pipe, a colour-disabling environment variable that other tools honour, colour as the sole carrier of status, an empty result that reads as a crash, and an unhandled interrupt during a slow fetch. The conventions that fix these are never named in the brief. The heaviest items are the ones a competent agent who has only ever written for a terminal will miss: escape codes surviving a pipe, progress on the wrong stream, and an unhandled broken pipe.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "no_escape_sequences_in_piped_output",
+      "description": "demo-piped.txt contains no ANSI escape sequences (no ESC[ / \\x1b[ / \\033[ bytes or their literal representations) anywhere, including in the dumped snapshot.txt contents, and the source suppresses colour when stdout is not a terminal rather than always emitting it. Colour present in the piped capture fails, even if a --no-color flag also exists.",
+      "max_score": 8
+    },
+    {
+      "name": "progress_indicator_does_not_pollute_redirected_data",
+      "description": "The dumped contents of snapshot.txt in demo-piped.txt contain only the table rows and no fetch/progress text, and the source writes the progress indicator to stderr. A tool that solves this by removing the progress indicator entirely fails, because demo-terminal.txt must still show something during the three-second wait.",
+      "max_score": 7
+    },
+    {
+      "name": "closed_pipe_exits_quietly",
+      "description": "The `head -1` run in demo-piped.txt produces the requested line and then stops with no traceback, no BrokenPipeError, no EPIPE text and no error message, and the source handles this case explicitly (SIGPIPE restored to default, BrokenPipeError caught, or the equivalent EPIPE handling). A traceback anywhere in that capture fails this item.",
+      "max_score": 8
+    },
+    {
+      "name": "conventional_colour_disabling_variable_is_honoured",
+      "description": "The source checks the widely-adopted NO_COLOR environment variable (any value, including empty, disables colour) and demo-piped.txt shows a run with it set producing uncoloured output. Honouring only a bespoke variable such as SWARMWATCH_NO_COLOR, or only the flag, fails.",
+      "max_score": 6
+    },
+    {
+      "name": "status_is_readable_without_colour",
+      "description": "Every row carries the status as a word, and any symbol or colour is an addition to that word rather than a replacement for it, so a colourblind reader and a grep pattern both work. A design where the status column is a coloured dot, a bare glyph, or where the only difference between a failing and a healthy row is the colour, fails.",
+      "max_score": 5
+    },
+    {
+      "name": "empty_result_says_what_to_do_next",
+      "description": "The zero-match run in demo-piped.txt prints a sentence naming that nothing matched and suggesting a concrete next command or the valid status values, and exits 0. Printing only column headings, printing nothing at all, or treating an empty result as an error exit all fail.",
+      "max_score": 6
+    },
+    {
+      "name": "interrupt_is_handled_during_the_slow_fetch",
+      "description": "The source installs an interrupt handler so Ctrl-C during the fetch prints a short message and exits with the conventional 130 rather than raising KeyboardInterrupt or dumping a traceback, and README.md documents that code. Leaving the default interrupt behaviour fails.",
+      "max_score": 6
+    },
+    {
+      "name": "piped_rows_are_machine_readable",
+      "description": "In demo-piped.txt each robot occupies exactly one line with a consistent, stable separator and no box-drawing borders or decorative rules, so `grep Offline | wc -l` returns the number of offline robots. Multi-line records, borders, or a trailing summary line that grep would also match fail this item.",
+      "max_score": 5
+    },
+    {
+      "name": "narrow_terminal_truncates_rather_than_wraps",
+      "description": "The source detects terminal width and responds by truncating values with a marker or dropping lower-priority columns; no row is allowed to wrap onto a second line. A fixed-width layout with no width detection fails, as does one that wraps.",
+      "max_score": 4
+    },
+    {
+      "name": "one_off_colour_switch_exists_alongside_the_variable",
+      "description": "A --no-color flag (or equivalently named switch) is implemented and demonstrated separately from the environment variable run in demo-piped.txt, and both routes are listed in --help.",
+      "max_score": 3
+    },
+    {
+      "name": "numeric_columns_are_aligned_for_scanning",
+      "description": "In demo-terminal.txt the battery percentages and uptimes are right-aligned or decimal-aligned in their columns while text columns are left-aligned, so values can be compared down the column. Ragged numeric columns fail.",
+      "max_score": 3
+    },
+    {
+      "name": "exit_codes_are_documented_and_used",
+      "description": "README.md states what each exit code means, covering at least success, a usage error such as an invalid --status value, and the interrupt code, and the codes recorded in demo-piped.txt match what README.md claims.",
+      "max_score": 4
+    },
+    {
+      "name": "help_lists_flags_with_defaults_and_an_example",
+      "description": "--help shows --status and the colour switch with their default values and includes at least one complete copy-pasteable example invocation. A bare flag list, or examples written only as angle-bracket syntax, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "piped_demo_is_genuinely_captured",
+      "description": "demo-piped.txt records all six required runs with their literal command lines, unedited output and a stated exit code each. A missing run, a narrated description in place of output, or output containing strings that appear nowhere in the source fails this item.",
+      "max_score": 3
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "context": "FICTIONAL. 41 hand-copied Airflow 3 tenant pipelines, each with one task that loops over a runtime-variable list of regions, and no tests. The brief describes only consequences - a fix applied to 11 of 41 files, a typo nobody caught, one red box in the UI, a rerun that redoes work that succeeded, a rate limit that used to be hidden - and never names dynamic DAG generation, dynamic task mapping, or any test layer. The traps are the ones a competent agent gets wrong from ordinary Python instincts: capturing the loop variable by reference so all 41 pipelines end up on the last tenant's config, trying to iterate a value that does not exist until the pipeline runs, writing tests for Airflow's own operators, and keeping the exception swallow. Everything is checkable by reading the five produced files.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "per_region_work_is_dynamically_mapped",
+      "description": "The per-region work is created with dynamic task mapping - a task with .expand(...) fed by the output of the task that fetches the enabled regions - so the number of units of work is decided at run time. A Python for loop over regions inside a single task, or a top-level loop that tries to iterate the region list while the DAG file is being parsed (which cannot work, the list does not exist yet), fails this item.",
+      "max_score": 5
+    },
+    {
+      "name": "tenant_config_captured_by_value",
+      "description": "The per-tenant DAG factory binds each tenant's configuration by value - a default argument such as def build(cfg=tenant_cfg):, a functools.partial, or a factory function taking the config as a parameter. A decorated function whose body closes over the loop variable directly fails this item: every generated pipeline would then read the last tenant's configuration, which is the silent-wrong-output failure and not a crash.",
+      "max_score": 5
+    },
+    {
+      "name": "one_dag_per_tenant_not_one_mapped_dag",
+      "description": "The file produces a separate DAG object per tenant, each with its own dag_id, its own schedule string from the table and its own owner, so a single tenant can be paused alone. One DAG that maps over tenants, or a shared schedule with tenant selection inside the tasks, does not satisfy this - mapped tasks cannot have separate schedules and cannot be paused independently.",
+      "max_score": 5
+    },
+    {
+      "name": "constant_arguments_use_partial",
+      "description": "Arguments that are the same for every mapped instance - the tenant id, the bucket, the extract format - are passed with .partial(...), and only the varying region goes into .expand(...). Passing the constants by rebuilding them inside the mapped task body is acceptable; passing a repeated list of identical values into .expand() is not.",
+      "max_score": 3
+    },
+    {
+      "name": "mapped_concurrency_is_capped",
+      "description": "The mapped task limits how many instances run at once, to respect the documented 5-concurrent-call rate limit - for example max_active_tis_per_dagrun=5 or max_active_tis_per_dag=5 on the mapped task. A DAG-level max_active_runs, or a note acknowledging the rate limit with no parameter enforcing it, does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "mapped_instances_are_labelled",
+      "description": "The mapped task sets map_index_template so the Airflow UI shows the region name instead of a numeric index, which is what the brief asks for when it says the box should say which region it is. Absence of map_index_template fails this item.",
+      "max_score": 3
+    },
+    {
+      "name": "region_discovery_happens_at_run_time",
+      "description": "fetch_enabled_regions is called inside a task body, never at the top level of the DAG file. Any call to it (or any other network or I/O call) at module scope fails this item, because DAG files are re-parsed continuously and the tenancy API would be called on every parse.",
+      "max_score": 4
+    },
+    {
+      "name": "no_exception_swallowing",
+      "description": "The per-region export does not catch a broad exception and continue. A failing region must fail its own mapped task instance so it can be retried on its own. Any try/except around the push that logs and proceeds fails this item, including one that collects errors and returns them as data.",
+      "max_score": 4
+    },
+    {
+      "name": "dagbag_validation_tests",
+      "description": "tests/dag_validation/test_dag_structure.py builds a DagBag and asserts there are no import errors, parametrized over the discovered DAGs or errors rather than asserting on a single hardcoded dag_id. A test that imports the DAG module directly, or that checks only one tenant, does not satisfy this - the point is that a typo in any generated pipeline is caught.",
+      "max_score": 4
+    },
+    {
+      "name": "validation_covers_tags_and_timeouts",
+      "description": "The same validation file asserts, across every DAG in the DagBag, that each DAG has at least one tag and that every task has a non-null execution_timeout. Missing either assertion, or applying it to only one DAG, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "no_tests_against_airflow_provided_code",
+      "description": "No test asserts the behaviour of Airflow itself or of an official provider - no test of what S3Hook, PythonOperator, or the mapping machinery does internally. Tests target only the code in this repository: the filename rule and the structure of the generated DAGs. A test named for or exercising a provider class fails this item.",
+      "max_score": 4
+    },
+    {
+      "name": "unit_tests_cover_happy_edge_and_error",
+      "description": "tests/unit_tests/test_export_rules.py covers all three behaviours the brief specifies: a normal filename, the normalisation edge case (a region with uppercase letters and a space becomes lowercase and hyphenated), and the error case (an empty region raises). Only a happy-path assertion, or an error case asserted with a bare truthiness check rather than pytest.raises or an equivalent, does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "empty_region_list_is_a_no_op",
+      "description": "A tenant with zero enabled regions produces zero mapped instances and a successful run, and this is either asserted in a test or is a direct consequence of expanding over an empty list. Code that raises, warns as an error, or short-circuits the pipeline into a failure when the region list is empty fails this item.",
+      "max_score": 3
+    },
+    {
+      "name": "local_debug_entry_point",
+      "description": "dags/tenant_exports.py ends with an if __name__ == \"__main__\": block that calls .test() on a DAG object, so a developer can step through one tenant's pipeline in an IDE without the scheduler. Absence of such a block fails this item.",
+      "max_score": 3
+    }
+  ]
+}

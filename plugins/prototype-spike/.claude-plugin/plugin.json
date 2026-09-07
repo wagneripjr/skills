@@ -1,7 +1,7 @@
 {
   "name": "prototype-spike",
   "description": "Turn a requirement or an unproven technique into a single self-contained HTML prototype that doubles as a design spike, rebuilt at high fidelity from the app's own source",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Wagner Ignacio Pinto Junior",
     "email": "wagneripjr@adustio.com.br"

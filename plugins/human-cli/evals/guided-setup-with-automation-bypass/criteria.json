@@ -1,0 +1,71 @@
+{
+  "context": "The brief asks for a first-run setup command and hands over five real support tickets: it hangs when no human is present, it hides a restricted choice instead of explaining it, a secret was passed as a flag value, config lands in a home-directory dotfile, and re-running destroys a working config. None of the conventions that resolve these are stated in the brief - the agent must supply them. The most discriminating item is the restricted choice: the correct design keeps the option selectable and names the missing prerequisite when it is chosen, because an option that is hidden or greyed out cannot say why, which is exactly what the ticket volume in the brief demonstrates.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "restricted_choice_stays_available_and_explains",
+      "description": "production remains visible and selectable in the environment choice even for an org with no approval id, and choosing it produces a message that names the approval id as the specific missing prerequisite and says how to supply it (a flag, an env var, or who issues it). Omitting production from the list, rendering it greyed out or unselectable, or refusing with a bare 'not permitted' / 'invalid environment' all fail this item, because none of them tells the person what the brief says nobody could work out.",
+      "max_score": 8
+    },
+    {
+      "name": "never_prompts_when_stdin_is_not_a_terminal",
+      "description": "The source detects that stdin is not a terminal and takes a non-interactive path; transcript-ci.txt shows runs that complete or fail immediately, with no prompt text awaiting an answer. A tool that calls input()/readline unconditionally, or that reads an empty pipe and proceeds, fails this.",
+      "max_score": 6
+    },
+    {
+      "name": "refusal_names_the_missing_input",
+      "description": "In transcript-ci.txt, each refused run states which specific value was missing and the exact flag or environment variable that supplies it (for example 'region is required when stdin is not a terminal; pass --region ap-south'). A generic 'missing arguments', a bare usage dump, or a stack trace does not satisfy this.",
+      "max_score": 5
+    },
+    {
+      "name": "every_prompted_value_has_a_non_interactive_route",
+      "description": "All four values (workspace, environment, region, token) can be supplied without any prompting, and the routes are visible in --help. A tool that can be driven for three of the four, leaving one that can only be typed at a prompt, fails.",
+      "max_score": 5
+    },
+    {
+      "name": "token_is_never_a_command_line_flag_value",
+      "description": "The source defines no flag that takes the token as its value (--token SECRET, --api-key SECRET or equivalent). The token arrives via an environment variable, a file path flag such as --token-file, or standard input. A --token flag that merely warns still fails, because the value is already in the shell history by then.",
+      "max_score": 6
+    },
+    {
+      "name": "token_value_never_appears_in_the_deliverables",
+      "description": "No plaintext token value appears in transcript-interactive.txt, transcript-ci.txt, or the config dump in config-location.txt: the prompt does not echo it, the confirmation output does not repeat it, and the config dump masks it or shows a reference to where it is stored. A file that prints the secret back verbatim fails even if it was never passed as a flag.",
+      "max_score": 4
+    },
+    {
+      "name": "config_path_follows_the_platform_convention",
+      "description": "config-location.txt shows the config under the platform's conventional user-configuration directory (on Linux/macOS, ~/.config/dockhand/ or the equivalent honoured override environment variable), and the source reads that override variable rather than hardcoding a path. Writing to ~/.dockhand/, ~/.dockhandrc, or the current working directory fails.",
+      "max_score": 5
+    },
+    {
+      "name": "existing_config_is_not_silently_overwritten",
+      "description": "Re-running init when a config already exists asks for confirmation in an interactive session and refuses in a non-interactive one unless an explicit override flag (--force, --overwrite or equivalent) is passed. Silently overwriting, or overwriting whenever the file exists without any acknowledgement, fails.",
+      "max_score": 4
+    },
+    {
+      "name": "prompts_and_diagnostics_go_to_stderr",
+      "description": "The source writes prompts, warnings and errors to stderr rather than stdout, so a person who redirects stdout still sees the questions and the failures. Evidenced by the write calls in the source (sys.stderr / process.stderr / err=True).",
+      "max_score": 4
+    },
+    {
+      "name": "distinct_exit_codes_for_success_and_refusal",
+      "description": "transcript-ci.txt shows exit code 0 for the successful run and a documented non-zero code for each refusal, with usage or missing-input refusals using a consistent code (2 is the conventional choice). Every run exiting 0, or refusals sharing an undifferentiated 1 with no documentation, fails.",
+      "max_score": 4
+    },
+    {
+      "name": "help_shows_defaults_and_worked_examples",
+      "description": "--help lists each flag with its default value and contains at least two complete, copy-pasteable example invocations - including one non-interactive invocation. A flag list with no defaults, or examples written only as angle-bracket syntax such as 'dockhand init --region <region>', does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "no_silent_defaulting_without_a_human",
+      "description": "When stdin is not a terminal and a value was not supplied, the tool refuses rather than quietly choosing one (for example defaulting the environment to development or the region to the first in the list). Any transcript-ci.txt run that succeeds without every value having been supplied fails this item.",
+      "max_score": 5
+    },
+    {
+      "name": "ci_transcript_is_genuinely_captured",
+      "description": "transcript-ci.txt contains the literal command lines, their unedited output, and a stated exit code for each run. Narrated summaries ('this run fails with a helpful message'), placeholder output, or output whose text does not match the strings present in the source fail this item.",
+      "max_score": 3
+    }
+  ]
+}

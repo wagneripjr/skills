@@ -1,0 +1,61 @@
+{
+  "context": "A hand-maintained listing has drifted in both directions and the author asks for it to be repaired under a documentation freeze that forbids touching the documents themselves. The tree deliberately contains: a listing row for a document deleted in February, an entire subfolder no listing reaches, two documents with no metadata (one whose first heading is a level-1 heading, one whose only headings are level-2), root-level project furniture, and a markdown file inside .github/ that a generated listing structurally cannot reach. The freeze makes this a pure enumeration exercise: the correct answer lists every document that exists, drops the row for the one that does not, derives each title from what the file actually carries, invents no summary, and reports rather than fixes the file it cannot place. Judge only the produced files.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "documents_are_unmodified",
+      "description": "All eight supplied documents (README.md, CONTRIBUTING.md, docs/alignment.md, docs/sensor-bus.md, docs/troubleshooting.md, docs/field-log-format.md, docs/onboarding/day-one.md, docs/onboarding/bench-safety.md) are byte-for-byte as given: no YAML block added to the three that lack one, no heading altered, no summary line inserted. Any edit fails this item outright - the freeze was stated and the collision it prevents is real.",
+      "max_score": 4
+    },
+    {
+      "name": "every_document_has_exactly_one_row",
+      "description": "Each of those eight documents appears in exactly one listing: README.md and CONTRIBUTING.md in the root listing, the four docs/ files in docs/index.md, the two onboarding files in docs/onboarding/index.md. Omitting the metadata-less documents, omitting the root files as 'not documentation', or listing the same file in two places all fail.",
+      "max_score": 4
+    },
+    {
+      "name": "deleted_document_row_removed",
+      "description": "No listing carries a row for docs/calibration.md. A row marked '(removed)', a strikethrough, or a note redirecting to alignment.md all fail: a tombstone is a link a reader follows to nothing, and the deletion is already in git.",
+      "max_score": 4
+    },
+    {
+      "name": "title_falls_back_to_the_first_heading",
+      "description": "docs/troubleshooting.md is listed as 'When the rig will not arm' and docs/onboarding/bench-safety.md as 'Bench safety rules' - the level-1 heading each file carries, since neither has metadata to take a title from. A title invented from the filename when a heading was available, such as 'Troubleshooting', fails.",
+      "max_score": 3
+    },
+    {
+      "name": "title_falls_back_to_the_filename",
+      "description": "docs/field-log-format.md is listed under a title derived from its filename ('field-log-format', or the same words unhyphenated). It has no metadata and no level-1 heading, so there is nothing else to take. Using its first level-2 heading ('Columns') fails - that is a section name, not the document's name - and so does an invented title such as 'Field log format specification' that reads the body and asserts more than the file states.",
+      "max_score": 4
+    },
+    {
+      "name": "no_invented_summaries",
+      "description": "The three documents with no metadata (troubleshooting.md, field-log-format.md, bench-safety.md) and the two root files get rows carrying a title and link and no summary text - and no trailing separator left dangling where a summary would have gone. A summary written by reading the body, however accurate, is a claim in the field a reader trusts most that no author wrote, and fails.",
+      "max_score": 4
+    },
+    {
+      "name": "summaries_projected_verbatim",
+      "description": "The rows for alignment.md, sensor-bus.md and day-one.md carry exactly the description text from each file's own metadata, not a paraphrase and not a reworded shortening.",
+      "max_score": 3
+    },
+    {
+      "name": "listings_are_chained_from_the_root",
+      "description": "The root index.md reaches docs/index.md, and docs/index.md reaches docs/onboarding/index.md, each through a link under a heading for subdirectories. A root listing that deep-links every leaf document, or an onboarding listing that exists but that nothing links to, fails - a listing nothing reaches vouches for documents no reader can arrive at.",
+      "max_score": 4
+    },
+    {
+      "name": "dot_directory_not_hand_indexed",
+      "description": "No .github/index.md was created, and .github/PULL_REQUEST_TEMPLATE.md is not given a row inside a listing for a directory it does not live in. Instead NOTES.md accounts for it: GitHub owns that path, it must stay where GitHub expects it, and a listing hand-written inside a dot-directory would be refreshed by nothing and rot unseen. Silently ignoring it without saying so also fails - the whole complaint was invisible documents.",
+      "max_score": 4
+    },
+    {
+      "name": "grouping_and_row_form",
+      "description": "Within each listing, documents carrying a kind in their metadata are grouped under a heading naming that kind, documents with none are grouped separately, and every row uses one form - a bullet, a linked title, then a separator and the summary where one exists. Sections and rows are ordered predictably (alphabetically) rather than in discovery order.",
+      "max_score": 3
+    },
+    {
+      "name": "notes_report_is_honest",
+      "description": "NOTES.md names the calibration.md row that was dropped and why, the .github file and what was done about it, and each document left without a summary. A NOTES.md that narrates the work without naming these specific residues fails.",
+      "max_score": 2
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "context": "FICTIONAL. Three chained Airflow 3 pipelines are wired together with cron offsets and a six-hour polling sensor. The brief describes the symptoms - late upstream produces wrong downstream, a task that sits for four hours, a 400 MB hand-off, mystery failures, silent empty results - and asks for the chain to be driven by data readiness. It never names the mechanism. The traps are the ones a competent agent working from general Python and Airflow-2-era habits gets wrong: it keeps a sensor and merely shortens the poll, it passes the DataFrame through the task return value, it derives the business date from the run's own timestamp, and it preserves the blanket except that hides the outage. Everything is checkable by reading the four produced files.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "chain_driven_by_data_readiness",
+      "description": "The two downstream pipelines are scheduled on the upstream data itself: build_basket_features declares schedule=[Asset(...)] (or an asset expression) naming the POS events asset, publish_dashboards does the same for the feature-table asset, and the producing tasks declare that asset in outlets=[...]. Any cron string, timedelta or fixed clock time left as the schedule of build_basket_features or publish_dashboards fails this item, as does declaring assets while still triggering on a clock.",
+      "max_score": 5
+    },
+    {
+      "name": "long_wait_no_longer_holds_a_worker",
+      "description": "The six-hour polling wait is gone from build_basket_features. Satisfied when no sensor remains at all because the asset schedule replaced it. If any wait survives anywhere in the three files, it must be deferrable (deferrable=True) or mode=\"reschedule\"; a sensor left in the default poke mode, or one whose only change is a shorter poke_interval or a longer timeout, fails this item.",
+      "max_score": 5
+    },
+    {
+      "name": "business_date_travels_with_the_event",
+      "description": "The downstream pipelines read the business date out of the triggering asset event - the producer attaches it (for example by yielding Metadata(asset, {...}) or by setting extra on the outlet event) and the consumer reads it from context[\"triggering_asset_events\"]. Deriving the business date from the consuming run's own logical_date, ds, or datetime.now() fails this item, because an asset-triggered run's logical_date reflects when the event landed, not which day's data it covers.",
+      "max_score": 5
+    },
+    {
+      "name": "cycle_anchor_named",
+      "description": "DESIGN-NOTES.md states that at least one pipeline in the chain stays on a time-based trigger to anchor it, and identifies ingest_pos_events as that anchor, explaining that a chain of purely asset-triggered pipelines can trigger itself without Airflow raising an error. A note that only describes the wiring, with no statement about what prevents a loop, does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "large_payload_not_returned_from_a_task",
+      "description": "The 400 MB of records is not returned from a task or otherwise pushed through XCom. Tasks hand each other a path or URI string into object storage. A task whose return annotation or return statement yields a DataFrame, a list of records, or any bulk collection fails this item.",
+      "max_score": 4
+    },
+    {
+      "name": "no_local_filesystem_staging",
+      "description": "No intermediate data is written to or read from a local path such as /tmp/marrowfield/ - staging goes to object storage (an s3:// URI, ObjectStoragePath, or an S3 hook call), because two tasks are not guaranteed to run on the same worker. Any local absolute path used for hand-off between tasks fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "hooks_instead_of_raw_clients",
+      "description": "External systems are reached through Airflow hooks bound to the named connection ids - S3Hook(aws_conn_id=\"aws_default\") and HttpHook(http_conn_id=\"fx_internal\") or equivalents. Any surviving boto3.client(, requests.get(, or read of an AWS_ACCESS_KEY_ID environment variable fails this item.",
+      "max_score": 4
+    },
+    {
+      "name": "no_top_level_config_fetch",
+      "description": "The category-weighting configuration is fetched inside a task body, never at module import. Any network call, file read, or database query at the top level of a DAG file fails this item - DAG files are re-parsed continuously, so top-level work runs on every parse. Module-level constants, imports and datetime literals are fine.",
+      "max_score": 4
+    },
+    {
+      "name": "fx_failure_is_not_swallowed",
+      "description": "The FX call no longer catches a broad exception and returns an empty or default value. The failure must propagate so the task fails and is retried. A try/except that logs and still returns [] or a fallback rate table fails this item, since it reproduces the green-run-empty-features behaviour the brief is complaining about.",
+      "max_score": 4
+    },
+    {
+      "name": "idempotent_partitioned_writes",
+      "description": "Outputs are keyed by the business date carried along the chain and are overwritten rather than appended - for example an S3 key containing the date and replace=True, or a partition overwrite. A write whose destination does not vary with the business date, or that appends, fails this item, because rerunning it for the same date would not reproduce the same result.",
+      "max_score": 4
+    },
+    {
+      "name": "one_task_split_into_atomic_steps",
+      "description": "The single build function of build_basket_features becomes separate extract, transform and load tasks, so a failed load can be rerun without redoing the extract. One task that still performs all three, or a split that merely calls three helper functions from inside one task, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "retries_and_timeouts_on_all_three",
+      "description": "Every one of the three DAG files configures retries with a retry_delay and an execution_timeout (per task or via default_args). A file that sets retries but no execution timeout, or that configures them on only some of the three pipelines, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "fixed_start_date_and_explicit_schedule",
+      "description": "Every DAG declares start_date as a literal past datetime and declares schedule explicitly (a cron or timetable for the anchor, assets for the two consumers). datetime.now(), pendulum.now() or days_ago( as a start_date fails this, and so does omitting schedule on any DAG, since an omitted schedule means the pipeline never runs on its own.",
+      "max_score": 3
+    },
+    {
+      "name": "anchor_keeps_its_vendor_window",
+      "description": "ingest_pos_events still runs on a time-based schedule at 01:00, because the brief says the vendor export window opens then. Converting all three pipelines to asset triggers, or moving the ingest to a different hour, does not satisfy this.",
+      "max_score": 2
+    }
+  ]
+}

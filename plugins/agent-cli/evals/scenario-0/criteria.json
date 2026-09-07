@@ -1,0 +1,106 @@
+{
+  "context": "Tests whether the agent builds a CLI that implements the agent-friendly output contract: machine-parseable stdout, consistent JSON envelope, semantic exit codes, dry-run on mutating commands, TTY-aware ANSI suppression, and proper stderr/stdout separation. The agent is not told what these conventions are — it must apply them from skill knowledge.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "stdout is JSON only",
+      "description": "In demo-output.txt, stdout lines from commands contain only JSON (no prose, progress text, or mixed output lines) when --json flag is used",
+      "max_score": 8
+    },
+    {
+      "name": "Consistent envelope shape",
+      "description": "JSON output uses the envelope: { status, data, meta } on success and { status, error } on failure — all three top-level keys present in success responses",
+      "max_score": 8
+    },
+    {
+      "name": "status field values",
+      "description": "status field is exactly 'ok' on success and exactly 'error' on failure (no other values used)",
+      "max_score": 5
+    },
+    {
+      "name": "meta.next_steps present",
+      "description": "Success responses include meta.next_steps as an array (even if empty) in the JSON envelope",
+      "max_score": 5
+    },
+    {
+      "name": "warnings array",
+      "description": "JSON envelope includes a warnings field that is always an array (present even when empty)",
+      "max_score": 5
+    },
+    {
+      "name": "Semantic exit codes",
+      "description": "help output or README documents exit codes including at minimum: 0=success, 2=usage error, 3=not-found",
+      "max_score": 5
+    },
+    {
+      "name": "error.fix field",
+      "description": "Error responses include an error.fix field containing a directly executable remediation command string",
+      "max_score": 5
+    },
+    {
+      "name": "error.transient field",
+      "description": "Error responses include error.transient boolean field indicating whether the error is retryable",
+      "max_score": 5
+    },
+    {
+      "name": "dry-run on add",
+      "description": "tasks add supports --dry-run flag; dry-run output includes dry_run: true at top level",
+      "max_score": 6
+    },
+    {
+      "name": "dry-run changes array",
+      "description": "Dry-run response includes a changes array where each entry has at minimum an action and resource field",
+      "max_score": 5
+    },
+    {
+      "name": "dry-run on delete",
+      "description": "tasks delete supports --dry-run flag",
+      "max_score": 4
+    },
+    {
+      "name": "No ANSI in piped output",
+      "description": "demo-output.txt contains no ANSI escape sequences (no \\x1b[ or \\033[ sequences in the captured output)",
+      "max_score": 6
+    },
+    {
+      "name": "snake_case JSON fields",
+      "description": "All JSON output field names use snake_case (e.g. created_at, next_steps, duration_ms) — no camelCase or kebab-case field names",
+      "max_score": 4
+    },
+    {
+      "name": "SCREAMING_SNAKE_CASE error codes",
+      "description": "Error responses include an error.code field using SCREAMING_SNAKE_CASE (e.g. TASK_NOT_FOUND, INVALID_PRIORITY)",
+      "max_score": 5
+    },
+    {
+      "name": "ISO 8601 timestamps",
+      "description": "Timestamp fields in JSON output use ISO 8601 format with timezone (e.g. 2026-03-07T10:30:00Z), not Unix epoch or relative strings",
+      "max_score": 4
+    },
+    {
+      "name": "IDs are strings",
+      "description": "Task IDs are serialized as JSON strings, not numbers",
+      "max_score": 3
+    },
+    {
+      "name": "Quiet mode output",
+      "description": "tasks add -q or --quiet prints only the task ID to stdout with no other text",
+      "max_score": 5
+    },
+    {
+      "name": "--fields flag support",
+      "description": "tasks list supports --fields flag accepting comma-separated field names; invalid field names produce a warning in the warnings array rather than an error",
+      "max_score": 5
+    },
+    {
+      "name": "Global --json flag on all commands",
+      "description": "All subcommands (list, add, done, delete) accept --json flag and switch to JSON envelope output when it is present",
+      "max_score": 4
+    },
+    {
+      "name": "--help on every subcommand",
+      "description": "Every subcommand (list, add, done, delete) responds to --help and shows flags with their types and defaults",
+      "max_score": 3
+    }
+  ]
+}

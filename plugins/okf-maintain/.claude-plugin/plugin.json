@@ -1,7 +1,7 @@
 {
   "name": "okf-maintain",
   "description": "Adopt and maintain an Open Knowledge Format v0.2 documentation bundle: frontmatter, generated indexes, a fail-closed conformance check, and coverage that names every unindexed document",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Wagner Ignacio Pinto Junior",
     "email": "wagneripjr@adustio.com.br"

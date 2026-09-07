@@ -383,9 +383,14 @@ as unowned `git-skill` rows with null scores. Six parts:
    and nothing else: it does not appear in `tessl review list --mine`, so it cannot feed any local
    record (FR-TESSL-2). `"private": false` is **irreversible**
    (*"you cannot make it private again"*); `unpublish` works only within 2 days, after which only
-   `plugin archive` remains. In-skill `evals/` are packed and become input to the judge grading
-   that same skill, so they are excluded via `.tesslignore` (`plugins/agent-cli`,
-   `plugins/prototype-spike`, and `doc-this`'s judgment fixture). Unsolved and worth watching: the
+   `plugin archive` remains. An `evals/` inside the pack becomes input to the judge grading that
+   same skill, so every plugin root's `.tesslignore` names it — and since 2026-09-07 that is the
+   only thing the ignore line does, because publish also **uploads** those scenarios through a
+   separate reader that never consults the pack. Both facts are load-bearing at once; see **Evals**.
+   The measurement above was taken with `--skip-evals`, which `scripts/tessl-publish.mjs` no longer
+   passes, so "publishing is free" is now the cost of a review **plus** a publish-time eval run
+   over the uploaded scenarios — re-measure the delta rather than quoting 1484.46 forward.
+   Unsolved and worth watching: the
    review cache is not content-addressed (CLAUDE.md's own measurement: three rewritten skills came
    back *"reused, 0 credits, byte-identical scores"*) and `plugin publish` has no `--force`, so a
    published score may describe a previous bundle. Splitting does not fix that.
@@ -439,7 +444,11 @@ scripts/
   tessl-publish.mjs      # FR-TESSL-3 — git-anchored plugin discovery + idempotent publish.
                          #   --dry-run exists because its other mode is irreversible
 plugins/                 # ONE DIRECTORY PER PLUGIN (FR-LAYOUT-1). Each holds .tessl-plugin/,
-                         #   .claude-plugin/, skills/, .tesslignore, and evals/ when it has any
+                         #   .claude-plugin/, skills/, .tesslignore, and evals/.
+                         #   EVERY solo plugin carries evals/ with exactly THREE scenario dirs —
+                         #   the coverage threshold that lifts the registry's 80% no-eval discount.
+                         #   Named by slug, never scenario-N: a re-download merges over those.
+                         #   doc-this has none yet, so its 14 skills are still discounted
  doc-this/               # The reverse-engineering suite — the one plugin that bundles many skills
   .claude-plugin/        # Its plugin.json; the plugin name IS the Skill-tool prefix
   hooks/                 # All 9 doc-this gates + hooks.json + lib/ + run-all.mjs + gate harnesses
@@ -477,7 +486,7 @@ plugins/                 # ONE DIRECTORY PER PLUGIN (FR-LAYOUT-1). Each holds .t
  agent-cli/              # Build and evaluate CLIs for AI agent consumption
   skills/agent-cli/      # SKILL.md + references/ (command design, output design, input security,
                          #   discoverability, composability, agent knowledge, scoring rubric,
-                         #   framework patterns) + LEGACY evals/evals.json, .tesslignore'd
+                         #   framework patterns)
  human-cli/              # Design and evaluate CLIs for human users
   skills/human-cli/      # SKILL.md + references/ (ergonomics, visual output, interactive input,
                          #   help docs, performance, polish, human rubric, framework UX patterns)
@@ -490,9 +499,6 @@ plugins/                 # ONE DIRECTORY PER PLUGIN (FR-LAYOUT-1). Each holds .t
   skills/prototype-spike/
     SKILL.md             # Thesis + 3 fidelity axes (UI/token/data) + ANCHOR->HARVEST->FRAME->BUILD->DRIVE->CLOSE + 13 hard rules
     references/          # anatomy, ui-fidelity, harvest-playbook, control-derivation, fidelity-tiers, verification, exemplar walkthrough
-    evals/               # evals.json — 2 prompts x 19 assertions (with-skill 18/19 vs no-skill 7/19).
-                         #   LEGACY format, not convertible: every assertion cites source facts of a
-                         #   fictional app, so a runnable tessl scenario would need that app built
  okf-maintain/           # Adopt and maintain an Open Knowledge Format v0.2 doc bundle — frontmatter,
                          #   chained root indexes, no log.md / no in-doc history (git owns it),
                          #   agent-entry wiring (FR-OKF-1)
@@ -675,13 +681,24 @@ A standalone skill is a new **plugin root**, not a folder inside an existing one
 
 ## Testing Skills
 
-Author and iterate through `skill-creator:skill-creator`. **Measure** with Tessl evals — write a
-scenario under `evals/<plugin>/<skill>/<scenario>/` and run it against the skill as `--context`.
-See **Evals** below for the layout, the `eval lint` fail-open, and the budget.
+Author and iterate through `skill-creator:skill-creator`. **Measure** with Tessl evals — write
+scenarios under `plugins/<name>/evals/<scenario>/` and run `tessl eval run ./plugins/<name>`, which
+supplies the plugin as context with no `--context` flag. See **Evals** below for the layout, the
+`eval lint` fail-open, the coverage threshold, and the budget.
 
-The older method — prompts in `plugins/<name>/skills/<name>/evals/evals.json`, run with and without the skill in
-parallel subagents, judged by eye — is superseded: it is unrepeatable and produces no comparable
-number. Two files remain in that format and are documented in place; do not add a third.
+**Three scenarios per skill is the floor, not a nice-to-have** — below three the registry discounts
+the published score and the search ranking with it. Every one of the eight solo plugins carries
+exactly three; `doc-this`'s fourteen skills carry none and are still discounted, which is the
+largest piece of unfinished work here. Its workers are dispatched by exact name and need a
+legacy-codebase fixture, so their scenarios are a real design problem rather than an afternoon.
+
+The older method — prompts in `plugins/<name>/skills/<name>/evals/evals.json`, run with and without
+the skill in parallel subagents, judged by eye — is gone, not merely superseded. Both remaining
+files were deleted on 2026-09-07 once real scenarios existed. They were unrepeatable, produced no
+comparable number, and — the part that finally settled it — contributed **nothing to eval
+coverage**, so keeping them meant paying the registry's discount while believing the skill was
+measured. `tests/test-fr-proto-1.mjs` AC-8 used to count `prototype-spike`'s prose assertions and
+now asserts the scenario threshold instead. Do not reintroduce the format.
 
 ## Writing a scanning check
 
@@ -814,6 +831,27 @@ twice — baseline and with the skill injected — and scores the difference aga
 rubric. That delta is what the skill is worth, and it replaces the old
 `evals/evals.json` + parallel-subagents + eyeball method as the measurement of record.
 
+**Never invoke a bare `tessl eval`.** It is not a command group that prints its subcommands the way
+`tessl scenario` and `tessl project` do — `run` is its default subcommand, so `tessl eval` resolves
+to `tessl eval run` with `<source>` defaulting to `.` and **submits a real, billed run**. Measured
+2026-09-07: exactly 10 credits, and from the repository root it buys nothing at all, because the
+root is not a plugin root and the run comes back `arms: [{label:"baseline", includeContext:false}]`
+— baseline only, no context, nothing compared. There is no `eval cancel`. Read the surface with
+`tessl eval run --help`, never by probing the group.
+
+**Eval coverage is not optional cosmetics — its absence is a scored penalty.** From the Tessl web
+changelog, 2026-05-13: *"tiles and skills with no eval coverage now show an adjusted score: 80% of
+the review-based score at zero evals, ramping to full weight at three or more. Search ranking and
+score badges reflect this change."* So the number on a registry page is still the **review** score
+— an eval never produces a score of its own — but a skill with no scenarios is displayed at 80% of
+it and ranked lower in search. **Three scenarios per skill** is the threshold that clears it, which
+is why the target here is three and not one. Three steps get there and all three are required:
+scenarios in `plugins/<name>/evals/`, **no `--skip-evals`** on publish, and a version bump, because
+the registry is version-keyed and an unbumped publish uploads nothing.
+
+A second cap sits beside the credit cap: **300 evals per day**, printed by the CLI as
+`Daily eval usage: N/300`.
+
 ### Layout — inside the plugin root it grades
 
 ```
@@ -837,22 +875,54 @@ whole `judgment-fixture/` app until `.tesslignore` stopped them. Every plugin ro
 carries a `.tesslignore` naming `evals/`, and `tests/test-tessl-publish.mjs` AC-5 asserts it.
 Confirmed by packing all nine and reading the archives: no `evals` path in any of them.
 
+**That rule and uploading scenarios are not in tension, which is the non-obvious part.** Publishing
+reads `evals/` through the *same scenario reader* `tessl eval lint` uses, never through the pack —
+read out of the 0.105.0 binary, where the publish path takes an `evalsDir` and calls the scenario
+walker on it directly, then prints `Uploaded N eval scenarios`. So `.tesslignore` keeps scenarios
+out of the review bundle **and** they still reach the registry as coverage. Do not "fix" the
+apparent contradiction by removing either one; removing the `.tesslignore` line hands a judge the
+answer key to the skill it is grading, and adding `--skip-evals` back reinstates the 80% haircut.
+The publisher also honours a workspace-level switch — with evals disabled on the workspace it
+prints `Skipping eval scenarios — workspace "<name>" has evals disabled` and uploads none.
+
+`tests/test-tessl-publish.mjs` AC-5 checks **both** levels, plugin root and in-skill. It once
+checked only the in-skill spelling, which meant it silently stopped proving anything the day
+scenarios moved up to the plugin root — the pack stayed protected by each plugin's bare `evals/`
+line, but no test said so. A guard scoped to the old location is a guard that reads nothing.
+
 **`.okfignore` needs a line per plugin with scenarios** — it matches a path prefix, not a glob. A
 plugin that gains scenarios without gaining a line is reported by `okf.mjs coverage` as
 `unindexed`, so the omission is loud rather than silent.
 
 Hazards: `tessl scenario download` writes into the plugin root's `evals/` and its default
-`--strategy merge` overwrites `scenario-N/` directories — never point it at the real tree. And a
+`--strategy merge` overwrites the canonical generated directory names — **`scenario-0/`,
+`scenario-1/`, …, zero-indexed**, not the `scenario-1/`-first spelling the docs show. Every
+hand-written scenario here therefore carries a descriptive slug (`postmortem-checkout-latency-spike`,
+`adopt-a-drifting-docs-tree`): a name the generator will never mint is a name a re-download cannot
+silently overwrite, which is cheaper than remembering not to point it at the real tree. And a
 scenario's **`setup.sh` is auto-run if present**; this repo does not author shell scripts
 (ADR-014), so declare `scenario.json`'s `setup: ["node ..."]` instead.
+
+**`tessl scenario generate` costs 300 credits per plugin** — measured 2026-09-07 on `agent-cli`,
+which returned 3 scenarios after ~9 minutes. That is 30× an eval run, and it buys **no score**: the
+coverage that lifts the 80% haircut counts scenarios, not their provenance, so a hand-written
+scenario is worth exactly as much. What it does buy is a good first-draft brief, and even that
+arrives needing curation — two of `agent-cli`'s three came back flagged *"references a path outside
+the evaluated workspace; scoring cannot observe writes there"* (false positives on fictional spec
+prose, but the flag is emitted either way). Generate to break a blank page, never to reach a number.
 
 Fixture shapes, from `eval lint --help`:
 `{"type":"commit","repoUrl","ref","installPath?","include?","exclude?"}` and
 `{"type":"directory","path","installPath"}`.
 
-`criteria.json` items are `{name, description, max_score}` **only**. The `category` enum
-(INTENT/MUST_NOT/…) in the published docs is **not** in 0.105.0's schema — it warns
-`⚠ Extra checklist fields: category`. `tests/test-eval-scenarios.mjs` AC-3 rejects it.
+`criteria.json` items are `{name, description, max_score}` **only** — read out of 0.105.0's own zod
+schema, alongside `context: min(1)` and `checklist: min(1)`. The `category` enum
+(INTENT/DESIGN/MUST_NOT/MINIMALITY/REUSE/INTEGRATION/EDGE_CASE) **is** documented by Tessl, so the
+docs and the CLI disagree and the CLI is the one that runs: an extra key is a **warning**
+(`⚠ Extra checklist fields: category`), not an error. `tests/test-eval-scenarios.mjs` AC-3 is
+therefore stricter than lint on purpose, and it stays that way — the generator does not emit
+`category` (verified on `agent-cli`'s three), so nothing in this tree pays for the strictness, and
+a warning nobody reads is how an unknown key gets normalised into the corpus.
 
 ### `tessl eval lint` fails open — this is the trap
 
@@ -874,6 +944,14 @@ broken one.
 here `mode: "vendored"` with a `tessl/review-plugin-creator` entry. It carries no workspace or
 project field at all. The earlier claim that `tessl project create` writes it, and the matching
 comment in `.gitignore`, were both wrong.
+
+**Tessl's own docs disagree, and they are the ones to distrust here.** The eval page's plugin
+diagram annotates `tessl.json` as *"links the directory to a Tessl project"*, and `tessl project
+--help` says it repairs "a missing or broken reference in tessl.json". Neither matches this file,
+which is gitignored and would therefore carry no link into CI or a fresh clone even if it could.
+Resolution is server-side from the git remote: `tessl project list` returns project `skills`,
+`sourceUri: github.com/wagneripjr/skills`, and eval runs submitted from here attach to it with no
+local link of any kind. Verified 2026-09-07 — do not "repair" a link that nothing is missing.
 
 ```bash
 tessl org usage --json                        # credits.used BEFORE
@@ -963,7 +1041,13 @@ the **same** number:
 | `plugins/<name>/.tessl-plugin/plugin.json` | `.version` |
 | `.claude-plugin/marketplace.json` | that plugin's `.plugins[*].version` |
 
-Current: eight solo plugins at **1.1.0**, `doc-this` at **1.2.0**, marketplace metadata **7.0.0**.
+Current: eight solo plugins at **1.1.1**, `doc-this` at **1.2.0**, marketplace metadata **7.0.0**.
+
+Note what earned that 1.1.1: adding `evals/` changes nothing an installed plugin executes, so by the
+table above it is a `test:` change and no bump at all. The bump is not describing the change, it is
+the **mechanism** — the registry is version-keyed, `already published, nothing to do` skips an
+unbumped plugin, and the scenarios would therefore never upload. When shipping is the point, bump
+even where the mapping says otherwise.
 
 The two manifests must agree: `manifestOf` in `scripts/tessl-publish.mjs` refuses to publish a
 plugin whose `.claude-plugin` twin declares a different version, and

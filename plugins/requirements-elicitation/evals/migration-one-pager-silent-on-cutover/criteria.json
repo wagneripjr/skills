@@ -1,0 +1,71 @@
+{
+  "context": "An engineering lead must assess a one-page plan to replace a nine-year-old pricing engine. Its brevity is being read as evidence the work is small. The document is internally inconsistent in a way that is easy to miss - it promises a like-for-like replacement with no price changes while scoping contract-rate overrides the old engine cannot express, so that path has no baseline to be compared against - and it is silent on everything that decides the first hour of cutover: quotes issued by the old engine and accepted after the flip, what counts as the same number, what turning the flag off actually undoes, and what a quote does when the tax dependency is unavailable. A weak answer produces a generic migration risk list that could have been written without reading this page. A strong one traces every risk to a specific line of it and says what makes each severity the severity it is.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "in_flight_quotes_at_cutover",
+      "description": "The output names quotes that were priced by Pricer v1, are still open, and are accepted after the flag is turned on, and asks which engine's numbers stand for them. Credit requires recognising that the 'repricing a contract that has already been accepted' non-goal does not cover this case, because these quotes are not yet accepted. A general question about migrating historical data does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "parity_tolerance_undefined",
+      "description": "The output treats 'same numbers as today' as unimplementable until a tolerance is defined, and asks for it concretely: exact to the cent or within a bound, compared per line item or on the total only, and with what rounding order relative to tax. It must also ask what happens when the two engines disagree - whether that is a defect in the new engine or a decision to take the new number. Asking how parity will be tested, or proposing to compare outputs, without pinning what counts as a match does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "internal_contradiction_named",
+      "description": "The output flags that the document contradicts itself: contract-rate overrides for enterprise customers are new capability the existing engine cannot express - the Why section says as much about the terms regional teams agree - while the non-goals claim a like-for-like replacement that changes no prices. Credit requires drawing the consequence that this path has no Pricer v1 output to be validated against, so the parity claim cannot cover it. Restating the scope bullets, or listing 'scope is unclear', does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "rollback_is_not_symmetric",
+      "description": "The output challenges 'if anything looks wrong we turn the flag off' by asking what happens to quotes the new service already created while the flag was on - particularly any carrying overrides the old engine cannot represent - and observes that the cost of rolling back grows the longer the flag stays on. Listing 'rollback plan needed' or asking whether the flag works does not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "region_by_region_splits_customers",
+      "description": "The output asks what happens to a customer or a single quote that spans two regions during a region-by-region rollout, given that enterprise contract rates are a customer-level concept rather than a regional one. Noting the rollout is phased, with no question about what straddles a phase boundary, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "tax_dependency_failure_mode",
+      "description": "The output asks what a quote does when Avalor is unavailable or slow - block the quote, use a stale or cached rate, or return a quote with no tax - and whether the tax figure is stored on the quote or recomputed when it is next read. Listing Avalor as a dependency or as an integration risk, without asking for the behavior under failure, does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "historical_reproducibility",
+      "description": "The output asks whether the new service must be able to reproduce the price of an old quote for a dispute or an audit, and what happens to Pricer v1 and its rate tables after the last region moves over - whether the old engine stays readable, and for how long. A question about migrating data that does not reach reproducing a past price does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "analyst_override_undefined",
+      "description": "The output flags that 'Pricing analysts can override a line item' appears once and is never defined, and asks at least two of: who holds that role, what the override is allowed to bypass, whether it survives a recalculation, and whether it is recorded for audit. A general remark that permissions are unspecified does not satisfy this.",
+      "max_score": 2
+    },
+    {
+      "name": "manual_spreadsheet_deals",
+      "description": "The output asks what happens to the deals the two regional teams currently quote by hand - whether the new engine must be able to express them, whether those spreadsheets remain the source of truth for existing customers, and who prices those deals during the rollout. Repeating the Why section's complaint without turning it into a scope question does not satisfy this.",
+      "max_score": 2
+    },
+    {
+      "name": "severity_justified_by_consequence",
+      "description": "Every risk-register entry carries a severity and the concrete consequence that earns it - money quoted wrong, quotes stuck or unpriced during the busy season, a rollback that can no longer be taken - rather than a bare High/Medium/Low label or a restatement of the risk as its own impact. Entries where the impact line only paraphrases the risk name do not satisfy this.",
+      "max_score": 4
+    },
+    {
+      "name": "risks_traced_to_the_document",
+      "description": "Each entry cites the specific line or claim of the one-pager it comes from ('Rollout: we put it behind a flag', 'Scope: same numbers as today', 'Dependencies: taxes come from Avalor'). A register whose entries are generic migration risks - schedule risk, knowledge loss, testing effort, scope creep - that could have been written for any replacement project without reading this page does not satisfy this, even where the entries are individually true.",
+      "max_score": 3
+    },
+    {
+      "name": "no_invented_migration_design",
+      "description": "Neither file presents a migration design as decided: no chosen shadow-comparison rig, change-data-capture pipeline, strangler pattern with named tooling, service framework, storage engine or schema, and no invented volume, latency or error-budget figure presented as a requirement. Proposing shadow-running or a comparison harness as an option to confirm, inside a question, is acceptable and expected; writing it up as the plan is not.",
+      "max_score": 3
+    },
+    {
+      "name": "absent_numbers_requested",
+      "description": "The output asks for the figures the document contains none of - quote volume, the peak the busy season actually represents, and an acceptable pricing latency - as numbers to be supplied rather than as an observation that the document lacks detail. Saying 'no performance requirements are specified' with nothing asked for does not satisfy this.",
+      "max_score": 2
+    }
+  ]
+}
