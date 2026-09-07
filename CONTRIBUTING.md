@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for taking a look. This repo is a Claude Code **marketplace** holding two plugins, so most
+Thanks for taking a look. This repo is a **marketplace** holding nine plugins, so most
 contributions are Markdown — a new skill, or a fix to an existing one.
 
 `CLAUDE.md` is the architecture reference: plugin conventions, the full hook table, and the
@@ -24,17 +24,27 @@ node tests/run-all.mjs
 
 ## Which tree does your change belong in?
 
-| Plugin | Root | What lives there |
-|---|---|---|
-| `wagner-skills` | `skills/` | General-purpose engineering skills. Enabled by default, so it ships **no hooks** — nothing here may cost a session tokens it did not ask for. |
-| `doc-this` | `doc-this/` | The reverse-engineering Discovery pipeline and its 9 enforcement gates. Ships disabled. |
+Every plugin is a root under `plugins/`, in the layout Tessl documents for a repository holding
+more than one:
+
+```
+plugins/<name>/
+├─ .tessl-plugin/plugin.json     # Tessl registry manifest
+├─ .claude-plugin/plugin.json    # Claude Code manifest
+├─ skills/<name>/SKILL.md
+├─ evals/                        # scenarios, when the skill has them
+└─ .tesslignore
+```
+
+Eight are one skill each. `plugins/doc-this/` is the exception and bundles 14, because they share
+nine enforcement gates and a common `hooks/lib/` that has no per-skill home.
 
 New scripts are **zero-dependency `.mjs`** (`node:fs`, `node:path`, `node:os`, `node:url`,
 `node:child_process`). The tree is shell-free — do not add any.
 
 ## Version bumping — read this before opening a PR
 
-Both plugins are version-keyed in the plugin cache. **A change that does not bump a version ships
+Plugins are version-keyed in the plugin cache. **A change that does not bump a version ships
 nothing**: `claude plugin update` compares against the marketplace entry and silently no-ops. There
 is no hook automation — every field is edited by hand.
 
@@ -45,29 +55,26 @@ is no hook automation — every field is edited by hand.
 | `feat!:` / `BREAKING CHANGE:` | major |
 | `docs:`, `chore:`, `ci:`, `test:` | none |
 
-Four fields must agree:
+A change to one plugin touches three fields, all carrying the **same** number:
 
-- `.claude-plugin/plugin.json` → `.version`
-- `.claude-plugin/marketplace.json` → `.metadata.version`
-- `.claude-plugin/marketplace.json` → `.plugins[*].version`
-- `doc-this/.claude-plugin/plugin.json` → `.version`
+- `plugins/<name>/.claude-plugin/plugin.json` → `.version`
+- `plugins/<name>/.tessl-plugin/plugin.json` → `.version`
+- `.claude-plugin/marketplace.json` → that plugin's `.plugins[*].version`
+
+`tests/test-tessl-publish.mjs` fails the build if the two manifests drift, and
+`scripts/tessl-publish.mjs` refuses to publish a plugin whose twins disagree.
 
 Never let `marketplace.json` fall behind `plugin.json`. The marketplace entry is what the client
 compares against; if it advertises a lower version the update is a permanent no-op.
-
-**If you change a skill under `skills/`, bump its Tessl manifest too.** Each of those skills is
-also its own plugin on the Tessl registry, versioned independently in
-`skills/<name>/.tessl-plugin/plugin.json`. So a one-skill fix bumps two numbers: that manifest, and
-the `wagner-skills` Claude Code plugin. `doc-this` keeps its two manifests in step —
-`tests/test-tessl-publish.mjs` fails the build if they drift.
 
 Publishing to Tessl happens automatically on push to `master` and needs a maintainer secret, so
 **a PR is never blocked on it** — `node tests/run-all.mjs` is the bar for contributors.
 
 ## Writing a skill
 
-1. `skills/<name>/SKILL.md` with YAML frontmatter: `name` (must equal the directory name),
-   `description`, `license`.
+1. `plugins/<plugin>/skills/<name>/SKILL.md` with YAML frontmatter: `name` (must equal the
+   directory name), `description`, `license`. A new standalone skill is a new plugin root, with
+   the two manifests and a `.tesslignore` beside them.
 2. **Description**: third person, listing every trigger condition explicitly. **Hard limit 1024
    characters** — past it, review tooling aborts before it evaluates anything.
 3. **Body**: imperative ("Log to…", not "You should log to…"), 1,500–2,000 words. Push detail into
@@ -79,10 +86,11 @@ Two conventions that surprise people:
 
 - **Do not add a `commands/<name>.md` wrapper.** A skill auto-exposes at the bare `/<name>` slot.
   Adding a same-named command file suppresses that slot entirely, leaving only
-  `/<plugin>:<name>` — the wrapper makes the skill *less* reachable. Neither plugin ships a
+  `/<plugin>:<name>` — the wrapper makes the skill *less* reachable. No plugin here ships a
   `commands/` directory.
-- **Dispatching between skills uses the fully namespaced name**, prefixed by the *plugin*:
-  `wagner-skills:<name>` or `doc-this:<name>`. Bare short names do not resolve.
+- **Dispatching between skills uses the fully namespaced name**, prefixed by the *plugin*. For a
+  solo plugin the two are the same word: `postmortem:postmortem`, `okf-maintain:okf-maintain`,
+  and `doc-this:<name>` inside the pipeline. Bare short names do not resolve.
 
 ## Tests
 
@@ -108,9 +116,10 @@ account to contribute.
 > plus `references/`, `scripts/` and `assets/`. Never run it on anything confidential.
 
 A review needs a login and a workspace name (`--workspace`, or `$TESSL_WORKSPACE`); the harness
-skips rather than guessing one. Writing an eval scenario under `evals/` and checking it with
-`tessl eval lint ./evals` or `node tests/test-eval-scenarios.mjs` is free and needs no account —
-contributing one is welcome. *Running* an eval costs credits and is a maintainer step.
+skips rather than guessing one. Writing an eval scenario under `plugins/<name>/evals/` and
+checking it with `tessl eval lint ./plugins/<name>` or `node tests/test-eval-scenarios.mjs` is
+free and needs no account — contributing one is welcome. *Running* an eval costs credits and is a
+maintainer step.
 
 See README for usage.
 

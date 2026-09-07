@@ -1,31 +1,40 @@
 # wagner-skills
 
-A Claude Code plugin marketplace with two plugins: a set of general-purpose engineering
-skills, and a reverse-engineering pipeline that turns a legacy codebase into traceable,
-ATDD-ready specifications.
+A marketplace of **nine plugins** — eight standalone engineering skills you install one at a
+time, and a reverse-engineering pipeline that turns a legacy codebase into traceable, ATDD-ready
+specifications.
 
-| Plugin | Skills | Default state |
-|---|---|---|
-| [`wagner-skills`](#wagner-skills-1) | 8 + 1 hook | enabled |
-| [`doc-this`](#doc-this) | 14 + 9 enforcement hooks | **disabled** |
+Each plugin is a root under [`plugins/`](plugins), the layout Tessl documents for a repository
+holding more than one:
+
+```
+plugins/<name>/
+├─ .tessl-plugin/plugin.json     # Tessl registry manifest
+├─ .claude-plugin/plugin.json    # Claude Code manifest
+├─ skills/<name>/SKILL.md
+├─ evals/                        # scenarios, when the skill has them
+└─ .tesslignore
+```
 
 ## Install
 
+Install only what you want:
+
 ```bash
 claude plugin marketplace add wagneripjr/skills
-claude plugin install wagner-skills@wagner-skills-marketplace
+
+claude plugin install postmortem@wagner-skills-marketplace
+claude plugin install okf-maintain@wagner-skills-marketplace
 claude plugin install doc-this@wagner-skills-marketplace
-claude plugin disable doc-this@wagner-skills-marketplace   # until you need a discovery run
 ```
 
-Restart Claude Code to apply.
+Restart Claude Code to apply. There is no bundle to install and nothing to disable afterwards —
+a plugin you did not install costs no context and spawns no hooks.
 
 ### On the Tessl registry
 
-The same skills are also published to the [Tessl](https://tessl.io) registry, as **nine plugins**
-rather than two: each of the eight `wagner-skills` skills is its own plugin, versioned
-independently, so a fix to one ships without republishing the rest. `doc-this` stays a single
-plugin because its 14 skills share nine enforcement hooks.
+The same nine plugins are published to the [Tessl](https://tessl.io) registry, versioned
+independently so a fix to one ships without republishing the rest:
 
 ```bash
 tessl install wagneripjr/postmortem      # one skill
@@ -36,31 +45,15 @@ Publishing is automatic on every push to `master` (`.github/workflows/tessl-publ
 maintainer step — it needs a workspace API key stored as the `TESSL_TOKEN` repository secret.
 Contributors never need one.
 
-### Why `doc-this` ships disabled
+## The skills
 
-It is only useful while reverse-engineering a legacy codebase, and riding inside the main
-plugin it charged every session ~3.4k tokens of skill descriptions plus five Node hook
-spawns per `Skill` call and two per `Edit`/`Write`. Splitting it into its own plugin makes
-that cost opt-in. Neither `skillOverrides` nor `disable-model-invocation` can express this —
-the former does not unload descriptions, the latter also blocks the orchestrator's own
-dispatch.
-
-Enable it for a run, disable it after:
-
-```bash
-claude plugin enable  doc-this@wagner-skills-marketplace
-claude plugin disable doc-this@wagner-skills-marketplace
-```
-
-## wagner-skills
-
-| Skill | What it does |
+| Plugin | What it does |
 |---|---|
 | `agent-cli` | Design and score CLIs meant for **AI agents** — JSON on stdout, diagnostics on stderr, `--help-json` introspection, semantic exit codes. Scores 0–21 across 7 axes. |
 | `human-cli` | The sibling for **human** CLIs — naming grammar, prompts with flag bypasses, colors, progress, error messages with resolution URLs, XDG paths, shell completions. Same 0–21 rubric. |
 | `airflow-dags` | Apache Airflow 3 DAG authoring — TaskFlow API, asset-driven scheduling, XCom, deferrable operators, dynamic task mapping, multi-layer test suites. 12 reference docs. |
 | `platform-sre-kubernetes` | SRE-focused Kubernetes production deployments and manifest review. |
-| `okf-maintain` | Adopts the [Open Knowledge Format](https://github.com/GoogleCloudPlatform/open-knowledge-format) v0.2 in a repo and keeps the bundle healthy — frontmatter repair, generated `index.md` chained from the project root, `log.md` and in-document changelogs removed because git already holds history, and `CLAUDE.md`/`AGENTS.md`/`GEMINI.md` pointed at the index so `docs/` is never grepped for a document's identity. Ships the plugin's one hook: in a repository that has adopted OKF (an `okf.yaml` is the opt-in), editing a document regenerates the indexes above it, so the catalog cannot drift from the corpus between manual runs. |
+| `okf-maintain` | Adopts the [Open Knowledge Format](https://github.com/GoogleCloudPlatform/open-knowledge-format) v0.2 in a repo and keeps the bundle healthy — frontmatter repair, generated `index.md` chained from the project root, `log.md` and in-document changelogs removed because git already holds history, and `CLAUDE.md`/`AGENTS.md`/`GEMINI.md` pointed at the index so `docs/` is never grepped for a document's identity. Ships one hook: in a repository that has adopted OKF (an `okf.yaml` is the opt-in), editing a document regenerates the indexes above it, so the catalog cannot drift from the corpus between manual runs. |
 | `postmortem` | Production-incident postmortems with a numbered spine — impact and blast radius with per-service evidence, timeline, root cause with mechanism plus five whys plus discarded hypotheses, empirical proof, palliative vs root fix. |
 | `prototype-spike` | Turns a requirement into one self-contained clickable HTML file that doubles as a design spike. Rebuilds existing screens at high fidelity from real source with `file:line` citations; the control panel *is* the set of open questions. |
 | `requirements-elicitation` | Analyzes PRDs and feature specs for gaps, generates clarifying questions for PMs and engineers, assesses technical risk. |
@@ -77,6 +70,11 @@ Scout → Code Analyst → Detective → Architect → Writer → Reviewer → d
 Optional agents run at any point: Tracer (logs/traces), Visor (UI from screenshots),
 Data Master (database), Design System (tokens). `/doc-this-viewer` serves a prebuilt Svelte
 SPA over localhost to browse the output. `/doc-this-help` explains every agent by analogy.
+
+It is the one plugin that bundles many skills, because its 14 skills share nine enforcement
+hooks and a common `hooks/lib/` — machinery that has no per-skill home. Install it only while
+reverse-engineering something: it costs roughly 3.4k tokens of skill descriptions per session
+plus five Node hook spawns per `Skill` call and two per `Edit`/`Write`.
 
 ### The design choices that matter
 
@@ -102,8 +100,8 @@ Output is staged in a hidden `.doc-this-sdd/` tree so an ordinary coding session
 mistakes unpromoted specs for real docs. `doc-this-promote` is the only skill that writes to
 `docs/`.
 
-For index generation it dispatches `wagner-skills:okf-maintain`, which owns the OKF index
-grammar — so install both plugins if you intend to promote. Without it, promote falls back to
+For index generation it dispatches `okf-maintain:okf-maintain`, which owns the OKF index
+grammar — so install that plugin too if you intend to promote. Without it, promote falls back to
 hand-writing the indexes and says so.
 
 ## Development
@@ -136,8 +134,8 @@ node tests/test-okf-index-regen.mjs      # the index-regeneration hook — needs
 node tests/test-no-shell-invocation.mjs  # no .mjs in the tree reaches a shell
 node tests/test-tessl-score-parse.mjs    # how a tessl review score is read (no account needed)
 node tests/test-eval-scenarios.mjs       # eval scenario shape + the `tessl eval lint` fail-open guard
-node doc-this/hooks/run-all.mjs          # the doc-this gate harnesses
-node tests/test-publication-safety.mjs  # repo-wide scan for credential-shaped material
+node plugins/doc-this/hooks/run-all.mjs  # the doc-this gate harnesses
+node tests/test-publication-safety.mjs   # repo-wide scan for credential-shaped material
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers the version-bump rules, skill authoring conventions, and
@@ -165,16 +163,17 @@ tessl login                                        # once
 tessl workspace list                               # names your workspaces
 export TESSL_WORKSPACE=<your-workspace>
 
-# Score a skill on disk:
-tessl review run quality ./skills/postmortem --workspace "$TESSL_WORKSPACE"
+# Score a plugin's skills on disk:
+tessl review run quality ./plugins/postmortem --workspace "$TESSL_WORKSPACE"
 
 # Or with a floor, via the harness (exit 0 pass · 1 below floor · 77 skipped):
-node tests/test-tessl-quality-gate.mjs ./skills/postmortem 90
+node tests/test-tessl-quality-gate.mjs ./plugins/postmortem 90
 ```
 
 The harness runs a free `tessl review list` preflight first, so a logged-out or misnamed-workspace
 run skips before it submits (and pays for) anything. A quality review costs 10 credits.
-`tessl org usage --json` reports what you have left.
+`tessl org usage --json` reports what you have left. Publishing to the registry triggers a review
+automatically and **free**, which is where the registry score comes from.
 
 **A re-review after an edit needs `--force`.** The cache is not content-addressed: three skills
 were re-reviewed here immediately after their `SKILL.md` bodies were rewritten and all three came
@@ -195,15 +194,19 @@ score would let them run outside their pipeline.
 
 ### Skill evals (optional)
 
-`evals/<plugin>/<skill>/<scenario>/` holds eval scenarios: a `task.md` (the only thing the agent
-sees), a `criteria.json` weighted rubric, and optionally `resources/` and a `scenario.json`
-fixture declaration. `tessl eval run` solves each scenario twice — once without the skill and once
-with it — and scores the difference, which is what the skill is actually worth.
+`plugins/<name>/evals/<scenario>/` holds eval scenarios, inside the plugin root they grade: a
+`task.md` (the only thing the agent sees), a `criteria.json` weighted rubric, and optionally
+`resources/` and a `scenario.json` fixture declaration. `tessl eval run` solves each scenario
+twice — once without the skill and once with it — and scores the difference, which is what the
+skill is actually worth.
+
+Scenarios are excluded from the published package by each plugin's `.tesslignore`, because a
+review reads the whole bundle and would otherwise be marking its own answer key.
 
 Writing and checking a scenario is **free and needs no account**:
 
 ```bash
-tessl eval lint ./evals                  # shape check, local
+tessl eval lint ./plugins/postmortem     # shape check, local
 node tests/test-eval-scenarios.mjs       # runs in the default suite, no account required
 ```
 
@@ -212,10 +215,16 @@ Run that second one. `tessl eval lint` recognises a scenario only by the presenc
 from every future run while the linter still reports green. `tests/test-eval-scenarios.mjs` exists
 to catch exactly that, and reproduces the fail-open as a canary so the guard is never quietly lost.
 
-*Running* an eval costs credits and needs a Tessl project link (`tessl project create`), which
-writes a maintainer-local `tessl.json` — deliberately gitignored, since the link points at a
-workspace a contributor would not have. Contributing a scenario is welcome; running one is a
-maintainer step.
+A scenario's `setup.sh` is auto-run if present. This repository does not author shell scripts, so
+declare `scenario.json`'s `setup: ["node ..."]` instead.
+
+*Running* an eval costs credits and is a maintainer step; contributing a scenario is welcome.
+Because a plugin root is passed directly, the plugin is supplied as context automatically and no
+`--context` flag is needed:
+
+```bash
+tessl eval run ./plugins/postmortem --wait
+```
 
 `CLAUDE.md` is the maintainer's architecture reference — plugin conventions, the full hook
 table, and the reasoning behind the pipeline's design.

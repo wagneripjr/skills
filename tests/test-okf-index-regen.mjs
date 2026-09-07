@@ -38,7 +38,7 @@ import { spawnSync } from 'node:child_process';
 import { Harness, skip } from './lib/harness.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
-const HOOK = resolve(DIR, '..', 'hooks', 'okf-index-regen.mjs');
+const HOOK = resolve(DIR, '..', 'plugins', 'okf-maintain', 'hooks', 'okf-index-regen.mjs');
 
 if (!existsSync(HOOK)) skip(`okf-index-regen.mjs not found at ${HOOK}`);
 if (spawnSync('git', ['--version'], { encoding: 'utf8' }).status !== 0) {

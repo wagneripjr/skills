@@ -1,7 +1,0 @@
-{
-  "name": "wagneripjr/platform-sre-kubernetes",
-  "version": "1.0.0",
-  "description": "SRE-focused Kubernetes specialist for production deployments: deploy to Kubernetes, review manifests, establish reliability practices",
-  "private": false,
-  "skills": ["."]
-}

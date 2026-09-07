@@ -2,15 +2,15 @@
 
 ## Scope
 
-This repository ships two Claude Code plugins: `wagner-skills` and `doc-this`. They are
+This repository ships nine plugins, one directory each under `plugins/`. They are
 Markdown skill definitions plus zero-dependency Node hooks and scripts that run
 **locally, inside your own Claude Code session**. There is no hosted service and no
 telemetry.
 
 Worth knowing before you install:
 
-- Hooks in `doc-this/hooks/` run on `Skill`, `Edit`, `Write`, and `LSP` tool calls while the
-  plugin is enabled. They read your project files and write log lines to
+- Hooks in `plugins/doc-this/hooks/` run on `Skill`, `Edit`, `Write`, and `LSP` tool calls while
+  that plugin is installed. They read your project files and write log lines to
   `~/.claude/logs/doc-this-gates.log`. They are deny-only gates — they never send anything
   off your machine.
 - `doc-this-viewer` starts a static HTTP server bound to `127.0.0.1` only. The page it serves
@@ -26,8 +26,8 @@ Worth knowing before you install:
 The above covers the plugins as installed. One *development* command in this repository also
 leaves your machine, and it is opt-in:
 
-- `npx tessl skill review` — used by `tests/test-tessl-quality-gate.mjs` and documented in the
-  README — uploads the reviewed skill to tessl's hosted grading service. It is never run by the
+- `tessl review run quality` — used by `tests/test-tessl-quality-gate.mjs` and documented in the
+  README — uploads the reviewed plugin to tessl's hosted grading service. It is never run by the
   plugins, never run automatically, and is not required to contribute. Do not point it at a skill
   containing confidential material.
 
@@ -38,5 +38,6 @@ open a public issue for anything exploitable. Expect an acknowledgement within a
 
 ## Supported versions
 
-Only the latest published version is supported. Version is tracked in
-`.claude-plugin/plugin.json` and `doc-this/.claude-plugin/plugin.json`.
+Only the latest published version of each plugin is supported. Versions are tracked in
+`plugins/<name>/.claude-plugin/plugin.json` and `plugins/<name>/.tessl-plugin/plugin.json`, which
+must agree.

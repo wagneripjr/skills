@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { Harness } from './lib/harness.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SKILL = join(ROOT, 'skills', 'prototype-spike');
+const SKILL = join(ROOT, 'plugins', 'prototype-spike', 'skills', 'prototype-spike');
 const SKILL_MD = join(SKILL, 'SKILL.md');
 
 const h = new Harness('FR-PROTO-1 acceptance matrix');

@@ -1,0 +1,6 @@
+{
+  "name": "wagneripjr/doc-this",
+  "version": "1.2.0",
+  "description": "Reverse-engineer a legacy codebase into ATDD-ready, traceable specifications",
+  "private": false
+}

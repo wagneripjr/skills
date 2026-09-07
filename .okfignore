@@ -7,7 +7,11 @@ tests/fixtures/
 
 # Eval scenario briefs and rubrics — inputs to `tessl eval run`, addressed to a grading agent,
 # not to a reader of this repository's documentation. Same reasoning as tests/fixtures/ above.
-evals/
+# They sit inside the plugin root they grade, which is where Tessl's own layout puts them.
+# One line per plugin that has scenarios: .okfignore matches a path prefix, not a glob. A plugin
+# that gains scenarios without gaining a line here is reported by `coverage` as unindexed, so the
+# omission is loud rather than silent.
+plugins/postmortem/evals/
 
 # A vendored tool's own files and its memory, not this repository's knowledge. The walk
 # cannot descend into a dot-directory, so `index` can never list these; naming them here is

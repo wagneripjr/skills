@@ -1,9 +1,0 @@
-{
-  "name": "wagneripjr/okf-maintain",
-  "version": "1.0.0",
-  "description": "Adopt and maintain an Open Knowledge Format v0.2 documentation bundle: frontmatter, generated indexes, a fail-closed conformance check, and coverage that names every unindexed document",
-  "private": false,
-  "skills": [
-    "."
-  ]
-}

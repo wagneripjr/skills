@@ -1,9 +1,0 @@
-{
-  "name": "wagneripjr/requirements-elicitation",
-  "version": "1.0.0",
-  "description": "Analyse PRDs and feature specs for gaps, generate clarifying questions for PMs and engineers, and assess technical risk before implementation",
-  "private": false,
-  "skills": [
-    "."
-  ]
-}

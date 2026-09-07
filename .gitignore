@@ -8,13 +8,23 @@ __pycache__/
 .sdlc/
 *-workspace/
 
-# Tessl project link — maintainer-local. Evals are maintainer-only, and a clone would
-# otherwise carry a link to a workspace the cloner cannot use. `tessl project repair` re-links.
+# Tessl's dependency manifest — {name, mode, dependencies}, written by `tessl install`. It is
+# NOT the project link: an eval run resolves its project server-side from the git remote. It is
+# maintainer-local because the vendored dependencies it names are, and a clone does not need them.
 tessl.json
 
 # Tessl's own published plugins, installed by `tessl install`. They belong to another
-# workspace, and inside the wagner-skills pack boundary they would ship in our artifact.
+# workspace, and inside a pack boundary they would ship in our artifact.
 .tessl/plugins/
+
+# Per-agent symlink farms `tessl install` points at .tessl/plugins/ above. Committing them would
+# publish dangling symlinks, because their targets are ignored. `.github/skills/` matters most:
+# unlike the others it sits inside a directory this repo does track.
+.agents/
+.codex/
+.cursor/
+.vscode/
+.github/skills/
 
 # Local credentials. Untracked is not enough in a public repo — an untracked-but-unignored file
 # is one `git add -A` from being published, which is why test-publication-safety.mjs scans

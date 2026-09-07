@@ -1,32 +1,45 @@
 # Wagner Skills
 
-Repo hosting **two** Claude Code plugins published from one marketplace (`wagner-skills-marketplace`),
-and **nine** Tessl registry plugins published from the same tree (FR-TESSL-3). The two channels
-differ in granularity on purpose: Claude Code gets the bundles, Tessl gets one plugin per
-independent skill so a one-skill fix ships alone.
+Repo hosting **nine plugins**, published to two channels at the same granularity: the Claude Code
+marketplace `wagner-skills-marketplace`, and the Tessl registry (FR-TESSL-3). Eight are one skill
+each; `doc-this` bundles fourteen because they share nine gates and a `hooks/lib/`.
 
-| Channel | Units | Published by |
-|---|---|---|
-| Claude Code marketplace | 2 bundles (`wagner-skills` 6.5.2, `doc-this` 1.1.6) | `git push` + `claude plugin update` |
-| Tessl registry | 9 plugins — 8 solo skills at 1.0.0 + `doc-this` 1.1.6 | `.github/workflows/tessl-publish.yml`, **never the CLI** |
+| Channel | Published by |
+|---|---|
+| Claude Code marketplace | `git push` + `claude plugin marketplace update` + `claude plugin update` |
+| Tessl registry | `.github/workflows/tessl-publish.yml`, **never the CLI** |
 
+### FR-LAYOUT-1 · One directory per plugin, serving both channels
 
-| Plugin | Root | Contents | Default state |
-|---|---|---|---|
-| `wagner-skills` | `./` | 8 engineering skills — CLI design (agent + human), Airflow 3, Kubernetes SRE, requirements elicitation, prototype-spike, postmortem, OKF documentation maintenance. One hook: OKF index regeneration on edit. | enabled |
-| `doc-this` | `./doc-this` | The 14-skill reverse-engineering Discovery pipeline + its 9 enforcement gates + `/doc-this-promote`. | **disabled** (FR-DOC-PLUGIN-1) |
+Every plugin is a root under `plugins/`, the layout Tessl documents for a repository holding more
+than one (`docs.tessl.io/creating-skills-and-plugins/create-a-plugin.md`, asked for the monorepo
+shape): `plugins/<name>/` holding `.tessl-plugin/plugin.json`, `skills/`, `evals/` and
+`.tesslignore`. The `.claude-plugin/plugin.json` sits beside them, and the repo-root
+`marketplace.json` points at each with `"source": "./plugins/<name>"`.
 
-`doc-this` is split out because it is only needed while reverse-engineering a legacy codebase, and
-riding inside `wagner-skills` charged every session ~3.4k tokens of skill descriptions plus 5 node
-hook spawns per `Skill` call and 2 per `Edit`/`Write`. Enable it for a discovery run:
+**Why the granularities had to converge.** Claude Code plugin path fields (`skills`, `hooks`,
+`commands`, …) must be relative, must start with `./`, reject `../`, and support no globs — so a
+skill directory cannot be both a member of a Claude Code bundle and its own sibling Tessl plugin
+root. Nine Tessl plugins and two Claude Code bundles could not both be canonical; the bundles were
+dissolved rather than the per-skill release cadence.
+
+Three deviations died with the old tree, and they are worth naming because each was invisible:
+`doc-this` was a root at the repository top level while the other eight were nested *inside*
+`skills/`; `evals/` sat at the repository root, outside every plugin root, which is the exact
+shape the troubleshooting page blames for *"baseline results only, no with-context column"*; and
+the eight solo manifests declared `"skills": ["."]`, which the schema does not document — the
+field is "a directory containing skill subdirectories, or an array of specific skill directory
+paths", and omitting it discovers `./skills/`. All eight now omit it.
+
+**Installing is per plugin.** There is no bundle and nothing ships disabled — a plugin you do not
+install costs no context and spawns no hooks. `doc-this` is still the one to install only for a
+discovery run: it charges ~3.4k tokens of skill descriptions per session plus 5 node hook spawns
+per `Skill` call and 2 per `Edit`/`Write`.
 
 ```bash
-claude plugin enable  doc-this@wagner-skills-marketplace
-claude plugin disable doc-this@wagner-skills-marketplace
+claude plugin install postmortem@wagner-skills-marketplace
+claude plugin install doc-this@wagner-skills-marketplace
 ```
-
-Neither `skillOverrides` nor `disable-model-invocation` can achieve this — see
-*Description classes* below.
 
 ## About the `FR-` / `BUG-` / `ERR-` identifiers in this file
 
@@ -46,7 +59,7 @@ harness, which is the artifact that can actually be wrong.
 
 ### FR-OKF-3 · A document is indexed because it exists
 
-Owned by `skills/okf-maintain`. Four parts, each named by an acceptance test:
+Owned by `plugins/okf-maintain`. Four parts, each named by an acceptance test:
 
 1. **A declared `profile:` in `docs/okf.yaml` is reported, never a refusal.** The refusal it
    replaces was justified by a generator the profile would ship and a byte-exact index-sync gate it
@@ -97,7 +110,7 @@ Titles are now escaped on the way out and unescaped on the way back in. AC-30.
 
 ### FR-OKF-4 · A plugin's payload directories are the loader's, not OKF's
 
-Owned by `skills/okf-maintain`. At a **Claude Code plugin root** — a directory holding
+Owned by `plugins/okf-maintain`. At a **Claude Code plugin root** — a directory holding
 `plugin.json` or `marketplace.json`, either at the package root or under `.claude-plugin/`, both
 of which the loader accepts — the `commands/`, `agents/` and `skills/`
 children are enumerated by Claude Code, not by OKF: every `.md` under `commands/` *is* a slash
@@ -134,7 +147,7 @@ documentation bundle here, which is what the `FR-`/`BUG-` note above already say
 
 ### FR-OKF-5 · An index nothing links to may not vouch for a document
 
-Owned by `skills/okf-maintain`. `okf.mjs index` writes but never deletes, so anything that narrows
+Owned by `plugins/okf-maintain`. `okf.mjs index` writes but never deletes, so anything that narrows
 what gets indexed — a new `.okfignore` line, FR-OKF-4's payload pruning, the last document leaving a
 folder — strands the `index.md` it stops maintaining on disk with its rows intact. `coverage` used
 to union the rows of **every** `index.md` it could find, which credits a document that nothing a
@@ -158,7 +171,7 @@ promise than one that refuses to write where it does not belong.
 
 ### FR-OKF-6 · An index is regenerated when a document under it changes
 
-Owned by `skills/okf-maintain`, and the first hook surface in this plugin. Four parts, each named by
+Owned by `plugins/okf-maintain`, and the first hook surface in this plugin. Four parts, each named by
 an acceptance test:
 
 1. **`okf.mjs` is importable.** Its tail was a bare `process.exit(main(…))`, which runs the CLI — and
@@ -243,7 +256,7 @@ because npx would turn a local structural check into a network call on a cold CI
 account.
 
 `.tessl-plugin/plugin.json` manifests **are** committed — **nine of them since FR-TESSL-3**, one
-per `skills/*` plus `doc-this/`; the repo-root one was deleted with the bundle it described. They
+per `plugins/*`; the repo-root one was deleted with the bundle it described. They
 originally existed for one reason: `tessl skill lint` hard-refuses without one (`Not a Tessl
 plugin: no .tessl-plugin/plugin.json or tile.json found in the package root`). They now also carry
 the published plugins. Lint is not a quality review
@@ -292,7 +305,7 @@ decayed silently in exactly the direction that flatters it. Four parts:
    no effect on review scoring. There is no documented way to change what a *published* score
    means. Do not re-propose one.
 3. **Coverage is checked by a foreign enumerator.** `test-tessl-scores.mjs` walks the working tree
-   for `SKILL.md` under `skills/` and `doc-this/skills/` and requires a row for each. Regenerating
+   for `SKILL.md` under `plugins/*/skills/` and requires a row for each. Regenerating
    the file and diffing it cannot do this: a skill the API never returned is absent from both sides
    and compares equal — the projection-checked-against-itself fail-open FR-OKF-3 already fixed
    once. The suite is green on a bare clone with no tessl and no account, so it runs in
@@ -302,7 +315,7 @@ decayed silently in exactly the direction that flatters it. Four parts:
    be traced to one run from the file alone. The rubric plus the date is what makes two numbers
    comparable, and that is the property that was actually missing.
 
-The API identifies a subject by repo-relative path, so a review of `skills/postmortem/SKILL.md` run
+The API identifies a subject by repo-relative path, so a review of `plugins/postmortem/skills/postmortem/SKILL.md` run
 from a *different* repository is indistinguishable from one run here. Rows are filtered to paths
 that exist in this tree, latest-per-rubric wins, and that is the best discrimination available —
 stated here because it is a real limit, not a bug to chase.
@@ -329,9 +342,11 @@ as unowned `git-skill` rows with null scores. Six parts:
    plugin and a one-skill fix republishes the lot. `create-a-plugin.md`: *"Keep a plugin focused on
    one responsibility; unrelated work belongs in separate plugins"*, and the promote page names the
    old bundle as the anti-pattern — *"avoid throwing in the kitchen sink!"*. So the eight unrelated
-   `skills/*` are solo plugins at `skills/<name>/.tessl-plugin/plugin.json` with `"skills": ["."]`
-   (lint-verified; the skill registers as `{"<name>": {"path": "SKILL.md"}}`), each starting at
-   `1.0.0` and moving independently. `doc-this` stays **one** plugin: its 14 skills share 9
+   skills are solo plugins at `plugins/<name>/.tessl-plugin/plugin.json`, each starting at
+   `1.0.0` and moving independently. The manifests originally declared `"skills": ["."]`, putting
+   `SKILL.md` at the plugin root; that spelling lints but is not in the documented schema, and
+   FR-LAYOUT-1 replaced it with the convention path `plugins/<name>/skills/<name>/SKILL.md` and no
+   `skills` key at all. `doc-this` stays **one** plugin: its 14 skills share 9
    enforcement hooks and a `hooks/lib/`, which are plugin-level and have no per-skill home.
 
 3. **Discovery is anchored on git, not a filesystem walk.** A plain walk for
@@ -365,8 +380,8 @@ as unowned `git-skill` rows with null scores. Six parts:
    1484.46, against 10 credits for a manual `review run`. `"private": false` is **irreversible**
    (*"you cannot make it private again"*); `unpublish` works only within 2 days, after which only
    `plugin archive` remains. In-skill `evals/` are packed and become input to the judge grading
-   that same skill, so they are excluded via `.tesslignore` (`skills/agent-cli`,
-   `skills/prototype-spike`, and `doc-this`'s judgment fixture). Unsolved and worth watching: the
+   that same skill, so they are excluded via `.tesslignore` (`plugins/agent-cli`,
+   `plugins/prototype-spike`, and `doc-this`'s judgment fixture). Unsolved and worth watching: the
    review cache is not content-addressed (CLAUDE.md's own measurement: three rewritten skills came
    back *"reused, 0 credits, byte-identical scores"*) and `plugin publish` has no `--force`, so a
    published score may describe a previous bundle. Splitting does not fix that.
@@ -414,13 +429,15 @@ reports clean. Pair every sweep with a control term that must match.
 ## Repository Structure
 
 ```
-.claude-plugin/          # Claude Code plugin manifest + marketplace config (2 bundled plugins)
-.tesslignore             # (per plugin root) what must NOT reach a published Tessl package
+.claude-plugin/          # marketplace.json ONLY — 9 entries, each source ./plugins/<name>.
+                         #   There is no plugin.json here: the repo root is not a plugin root
 scripts/
   tessl-publish.mjs      # FR-TESSL-3 — git-anchored plugin discovery + idempotent publish.
                          #   --dry-run exists because its other mode is irreversible
-doc-this/                # SECOND PLUGIN — the doc-this reverse-engineering suite (FR-DOC-PLUGIN-1)
-  .claude-plugin/        # Its own plugin.json; the plugin name IS the Skill-tool prefix
+plugins/                 # ONE DIRECTORY PER PLUGIN (FR-LAYOUT-1). Each holds .tessl-plugin/,
+                         #   .claude-plugin/, skills/, .tesslignore, and evals/ when it has any
+ doc-this/               # The reverse-engineering suite — the one plugin that bundles many skills
+  .claude-plugin/        # Its plugin.json; the plugin name IS the Skill-tool prefix
   hooks/                 # All 9 doc-this gates + hooks.json + lib/ + run-all.mjs + gate harnesses
   skills/                # The 14 doc-this* skills:
     doc-this/              # Discovery orchestrator — reverse-engineer legacy codebase into ATDD-ready specs
@@ -438,7 +455,7 @@ doc-this/                # SECOND PLUGIN — the doc-this reverse-engineering su
       references/          # review-checklist
     doc-this-promote/      # Single SDLC bridge — stages .doc-this-sdd/ into docs/ + .feature spec runners, OKF-conformant (frontmatter, generated indexes/traceability)
       references/          # id-assignment, traceability-row-template, feature-stub-template, atdd-scaffolding-guide, okf-conformance
-                           #   (no scripts/ — index generation is a Skill dispatch to wagner-skills:okf-maintain)
+                           #   (no scripts/ — index generation is a Skill dispatch to okf-maintain:okf-maintain)
     doc-this-tracer/       # Optional dynamic analysis (logs/traces/error exports) — resolves 🔴 gaps
     doc-this-visor/        # Optional UI extraction from screenshots
     doc-this-data-master/  # Optional database analysis with ownership branching (owned/external/mixed/none)
@@ -451,11 +468,54 @@ doc-this/                # SECOND PLUGIN — the doc-this reverse-engineering su
                            #   NOT named dist/ — tessl's packer silently drops that name (FR-TESSL-3)
       scripts/             # build-manifest.mjs, serve.mjs + launch.mjs (localhost server), build.mjs, test harness (all zero-dep Node)
       references/          # manifest-schema.md (viewer-manifest.json contract)
-hooks/                   # The wagner-skills plugin's hooks (auto-loaded via hooks/hooks.json)
-  okf-index-regen.mjs    # PostToolUse Write|Edit — regenerates an adopted bundle's index.md files
+ airflow-dags/           # Apache Airflow 3 DAG authoring with 12 reference docs
+  skills/airflow-dags/   # SKILL.md + references/ (authoring, scheduling, testing, etc.)
+ agent-cli/              # Build and evaluate CLIs for AI agent consumption
+  skills/agent-cli/      # SKILL.md + references/ (command design, output design, input security,
+                         #   discoverability, composability, agent knowledge, scoring rubric,
+                         #   framework patterns) + LEGACY evals/evals.json, .tesslignore'd
+ human-cli/              # Design and evaluate CLIs for human users
+  skills/human-cli/      # SKILL.md + references/ (ergonomics, visual output, interactive input,
+                         #   help docs, performance, polish, human rubric, framework UX patterns)
+ platform-sre-kubernetes/ # SRE-focused Kubernetes production deployments and manifest review
+ requirements-elicitation/ # Analyze PRDs/specs for gaps, generate clarifying questions, assess risk
+  skills/requirements-elicitation/ # SKILL.md + references/ (elicitation framework, question templates)
+ prototype-spike/        # Requirement prototypes that double as design spikes — one self-contained
+                         #   HTML file, high-fidelity rebuild from the app's own source,
+                         #   controls = the open questions (FR-PROTO-1)
+  skills/prototype-spike/
+    SKILL.md             # Thesis + 3 fidelity axes (UI/token/data) + ANCHOR->HARVEST->FRAME->BUILD->DRIVE->CLOSE + 13 hard rules
+    references/          # anatomy, ui-fidelity, harvest-playbook, control-derivation, fidelity-tiers, verification, exemplar walkthrough
+    evals/               # evals.json — 2 prompts x 19 assertions (with-skill 18/19 vs no-skill 7/19).
+                         #   LEGACY format, not convertible: every assertion cites source facts of a
+                         #   fictional app, so a runnable tessl scenario would need that app built
+ okf-maintain/           # Adopt and maintain an Open Knowledge Format v0.2 doc bundle — frontmatter,
+                         #   chained root indexes, no log.md / no in-doc history (git owns it),
+                         #   agent-entry wiring (FR-OKF-1)
+  hooks/                 # The plugin's one hook, auto-loaded via hooks/hooks.json
+    okf-index-regen.mjs  # PostToolUse Write|Edit — regenerates an adopted bundle's index.md files
                          #   from the EDITED file's repository; refuses on version skew, foreign
                          #   indexes, unadopted repos, .okfignore hits (FR-OKF-6)
-tests/                   # Repo-level harnesses owned by neither plugin
+  skills/okf-maintain/
+    SKILL.md             # Profile-manifest reading + the two workflows (adopt / maintain)
+    references/          # frontmatter (field families, actors, trust tiers), index-format (frozen grammar), adoption
+    scripts/             # okf.mjs — zero-dep Node (runs on node/bun/deno), importable core plus a
+                         #   guarded CLI; `index` (generate, every tracked .md listed, minus plugin
+                         #   payload) / `check` (§11, fail-closed frontmatter reader, no YAML lib) /
+                         #   `coverage` (git ls-files vs the indexes, crediting only ones the root
+                         #   index reaches — FR-OKF-5) / `wire` (entry blocks). Rows pointing at a
+                         #   document git will not commit are named dangling-row (FR-OKF-6). A
+                         #   declared profile is reported, never a refusal (FR-OKF-3);
+                         #   commands//agents//skills/ at a plugin root belong to Claude Code and
+                         #   are pruned (FR-OKF-4)
+ postmortem/             # Production-incident postmortems — numbered spine, machine-readable frontmatter
+  evals/                 # postmortem-checkout-latency-spike — the first tessl eval scenario.
+                         #   Inside the plugin root, so `tessl eval run ./plugins/postmortem`
+                         #   supplies the plugin as context with no --context flag
+  skills/postmortem/
+    SKILL.md             # Machine contract (frontmatter severity, finding-id stability) + per-section discipline + evidence rules
+    references/          # full-template (long form), quick + Investigation variants
+tests/                   # Repo-level harnesses owned by no plugin
   run-all.mjs            # THE runner — every suite in the repo; 77 = INCOMPLETE, never a pass.
                          #   Excludes test-tessl-quality-gate.mjs (77 without auth = permanent red).
                          #   test-tessl-score-parse.mjs and test-eval-scenarios.mjs are NOT
@@ -494,49 +554,10 @@ tests/                   # Repo-level harnesses owned by neither plugin
                          #   tessl-publish.yml — push-to-master only; the ONLY route that may
                          #   publish, because a CLI publish makes a duplicate (FR-TESSL-3)
 CONTRIBUTING.md          # Contributor entry point: prereqs, version-bump rules, skill conventions
-LICENSE                  # MIT — matches the "license" field in both plugin.json files
-THIRD-PARTY-NOTICES.md   # MIT notices for Svelte + marked (compiled into the viewer's dist bundle)
-README.md                # Public entry point: install, the two-plugin split, skill tables
+LICENSE                  # MIT — matches the "license" field in every .claude-plugin/plugin.json
+THIRD-PARTY-NOTICES.md   # MIT notices for Svelte + marked (compiled into the viewer's bundle)
+README.md                # Public entry point: per-plugin install, the plugin table, dev commands
 SECURITY.md              # Reporting address + what the hooks and skills do locally vs off-machine
-skills/                  # One folder per skill — the 8 wagner-skills members. Each is ALSO its
-                         #   own Tessl plugin: skills/<name>/.tessl-plugin/plugin.json, versioned
-                         #   independently from 1.0.0 (FR-TESSL-3)
-  airflow-dags/          # Apache Airflow 3 DAG authoring with 12 reference docs
-    SKILL.md             # Main skill file
-    references/          # Deep-dive docs (authoring, scheduling, testing, etc.)
-  agent-cli/             # Build and evaluate CLIs for AI agent consumption
-    SKILL.md             # Main skill file
-    references/          # Command design, output design, input security, discoverability, composability, agent knowledge, scoring rubric, framework patterns
-  human-cli/             # Design and evaluate CLIs for human users
-    SKILL.md             # Main skill file
-    references/          # Command ergonomics, visual output, interactive input, help docs, performance, polish, human scoring rubric, framework UX patterns
-  platform-sre-kubernetes/  # SRE-focused Kubernetes production deployments and manifest review
-    SKILL.md             # Main skill file
-  requirements-elicitation/ # Analyze PRDs/specs for gaps, generate clarifying questions, assess risk
-    SKILL.md             # Main skill file
-    references/          # Elicitation framework and question templates
-  prototype-spike/       # Requirement prototypes that double as design spikes — one self-contained HTML file, high-fidelity rebuild from the app's own source, controls = the open questions (FR-PROTO-1)
-    SKILL.md             # Thesis + 3 fidelity axes (UI/token/data) + ANCHOR->HARVEST->FRAME->BUILD->DRIVE->CLOSE + 13 hard rules
-    references/          # anatomy, ui-fidelity, harvest-playbook, control-derivation, fidelity-tiers, verification, exemplar walkthrough
-    evals/               # evals.json — 2 prompts x 19 assertions (with-skill 18/19 vs no-skill 7/19).
-                         #   LEGACY format, not convertible: every assertion cites source facts of a
-                         #   fictional app, so a runnable tessl scenario would need that app built
-  okf-maintain/          # Adopt and maintain an Open Knowledge Format v0.2 doc bundle — frontmatter, chained
-                         #   root indexes, no log.md / no in-doc history (git owns it), agent-entry wiring (FR-OKF-1)
-    SKILL.md             # Profile-manifest reading + the two workflows (adopt / maintain)
-    references/          # frontmatter (field families, actors, trust tiers), index-format (frozen grammar), adoption
-    scripts/             # okf.mjs — zero-dep Node (runs on node/bun/deno), importable core plus a
-                         #   guarded CLI; `index` (generate, every
-                         #   tracked .md listed, minus plugin payload) / `check` (§11, fail-closed
-                         #   frontmatter reader, no YAML lib) / `coverage` (git ls-files vs the
-                         #   indexes, crediting only ones the root index reaches — FR-OKF-5) /
-                         #   `wire` (entry blocks). Rows pointing at a document git will not
-                         #   commit are named dangling-row (FR-OKF-6). A declared profile is reported, never a
-                         #   refusal (FR-OKF-3); commands//agents//skills/ at a plugin root
-                         #   belong to Claude Code and are pruned (FR-OKF-4)
-  postmortem/            # Production-incident postmortems — numbered spine, machine-readable frontmatter
-    SKILL.md             # Machine contract (frontmatter severity, finding-id stability) + per-section discipline + evidence rules
-    references/          # full-template (long form), quick + Investigation variants
 ```
 
 ## Doc-This Discovery Pipeline
@@ -556,16 +577,16 @@ Optional independent agents (run anytime in the pipeline): Tracer, Visor, Data M
 **Reading the output (`doc-this-viewer`)**: an optional, user-triggered companion (`/doc-this-viewer`) serves a prebuilt Svelte SPA over a localhost-only zero-dep Node static server (`serve.mjs`) so a human can browse the generated specs — grouped sidebar, rendered Markdown with Mermaid + 🟢/🔴 badges, an interactive Surface Catalog built from `external-surface.json`, and a coverage dashboard. It navigates BOTH the rich `.doc-this-sdd/` staging tree and the promoted `docs/` tree (source switcher when both exist). It is **not** a pipeline worker — it runs against already-generated output, needs no live state, and is deliberately absent from `hooks/doc-this-dispatch-gate.mjs`'s worker list. Runtime files are written only to `.doc-this/viewer/` (inside doc-this's write boundary); the frozen launcher `scripts/launch.mjs` binds `127.0.0.1` only and runs no git/IaC/deploy commands, so it is safe to run inside a client repository.
 
 **Key design choices**:
-- **Describe-only pact** — the canonical policy at `skills/doc-this/references/describe-only-pact.md` mandates that every Discovery agent documents what exists and never proposes, judges, or invents. No technical-debt registers, no fabricated ADR Alternatives/Consequences, no NFR inference from middleware/timeout patterns, no bug labels. The pact is multilingual: rules apply by **meaning** across whatever language `doc_language` selected (en, pt-BR, or other) — mechanical enforcement is best-effort en + pt-BR; semantic enforcement is the real gate.
+- **Describe-only pact** — the canonical policy at `plugins/doc-this/skills/doc-this/references/describe-only-pact.md` mandates that every Discovery agent documents what exists and never proposes, judges, or invents. No technical-debt registers, no fabricated ADR Alternatives/Consequences, no NFR inference from middleware/timeout patterns, no bug labels. The pact is multilingual: rules apply by **meaning** across whatever language `doc_language` selected (en, pt-BR, or other) — mechanical enforcement is best-effort en + pt-BR; semantic enforcement is the real gate.
 - All orchestration prompts in English; spec output language follows `doc_language` (English and pt-BR are the exercised paths)
 - Output staged in `.doc-this-sdd/` (hidden + auto-gitignored on first run, beside the `.doc-this/` state dir) so a normal coding session never mistakes unpromoted specs for real docs — agents are non-destructive
 - `doc-this-promote` is the ONLY skill that writes to `docs/` — one bridge into the SDLC tree, so Discovery output can never be confused with hand-authored requirements
-- **Promoted output is born OKF-conformant** (FR-DOC-OKF-1) — promote stamps frontmatter (`id`/`type`/`status: Documented`/`description` + `adrs`/`specs` relation keys; `Done` is reserved for observed-GREEN acceptance runs — reverse-engineered specs describe behavior, they do not verify it), silently bootstraps `docs/okf.yaml` in legacy repos (never with `traceability: generated`), regenerates per-folder/root `index.md` by dispatching `wagner-skills:okf-maintain` — the skill that owns the OKF index grammar and ships the generator — appends curated TRACEABILITY rows, and suggests `docs(FR-NNN)` commits
+- **Promoted output is born OKF-conformant** (FR-DOC-OKF-1) — promote stamps frontmatter (`id`/`type`/`status: Documented`/`description` + `adrs`/`specs` relation keys; `Done` is reserved for observed-GREEN acceptance runs — reverse-engineered specs describe behavior, they do not verify it), silently bootstraps `docs/okf.yaml` in legacy repos (never with `traceability: generated`), regenerates per-folder/root `index.md` by dispatching `okf-maintain:okf-maintain` — the skill that owns the OKF index grammar and ships the generator — appends curated TRACEABILITY rows, and suggests `docs(FR-NNN)` commits
 - Public/private API classification (Detective) — only public APIs get `@api` ATDD scenarios; private APIs covered transitively via `@browser`/`@cli`
 - Database ownership branching (Data Master) — `owned` / `external` / `mixed` / `none` flows through every downstream agent; `external`/`mixed` produces `@database` scenarios with `IDatabaseContractDriver` interfaces
 - Schema-versioning gate (Reviewer) — refuses coverage completion when schema is unversioned and no baseline DDL exists
 - **Binary confidence** on every claim: 🟢 CONFIRMED (with citation) / 🔴 GAP (recorded in `questions.md`). 🟡 INFERRED is **retired** — pattern-based guesses do not produce facts; either find direct evidence (🟢) or record a gap (🔴).
-- **Total Source Coverage** (BUG-003) — a 🔴 must be *earned by reading*: it records what the repository cannot answer, never what the pipeline did not read. Scout emits a deterministic `file-manifest.json` (every file classified source/vendored/generated/binary; markup IS source); the Code Analyst routes every source file by subclass (markup/SQL/other = full Read; LSP only accelerates code files) and appends to an append-only `coverage-ledger.json` with a file-level resume cursor; the Architect emits `kind:ui` entries one-per-page; the Writer's `code-spec-matrix.md` is manifest-driven; the Reviewer hard-REJECTs ledger/manifest mismatches, sampling phrases, grouped UI entries, and spot-checks gaps for answers sitting in unread files. `doc-this-coverage-gate.mjs` enforces it mechanically at phase transitions; `--backfill-coverage` migrates legacy runs. Token pressure is absorbed by checkpoint-and-resume, never by skipping. On large codebases the Code Analyst may also, with explicit user consent, fan out the reading to ≤3 `model: sonnet` reader subagents (FR-DOC-FANOUT-1) — it stays the merger and single ledger-writer while readers only transcribe to staging under `.doc-this-sdd/.analyst-staging/`; the shared protocol lives in `skills/doc-this/references/sonnet-reader-fanout.md` and is reused by `--backfill-coverage` (zero hook changes — readers are Agent dispatches the dispatch gate ignores, and the describe-only gate fires on their staging writes).
+- **Total Source Coverage** (BUG-003) — a 🔴 must be *earned by reading*: it records what the repository cannot answer, never what the pipeline did not read. Scout emits a deterministic `file-manifest.json` (every file classified source/vendored/generated/binary; markup IS source); the Code Analyst routes every source file by subclass (markup/SQL/other = full Read; LSP only accelerates code files) and appends to an append-only `coverage-ledger.json` with a file-level resume cursor; the Architect emits `kind:ui` entries one-per-page; the Writer's `code-spec-matrix.md` is manifest-driven; the Reviewer hard-REJECTs ledger/manifest mismatches, sampling phrases, grouped UI entries, and spot-checks gaps for answers sitting in unread files. `doc-this-coverage-gate.mjs` enforces it mechanically at phase transitions; `--backfill-coverage` migrates legacy runs. Token pressure is absorbed by checkpoint-and-resume, never by skipping. On large codebases the Code Analyst may also, with explicit user consent, fan out the reading to ≤3 `model: sonnet` reader subagents (FR-DOC-FANOUT-1) — it stays the merger and single ledger-writer while readers only transcribe to staging under `.doc-this-sdd/.analyst-staging/`; the shared protocol lives in `plugins/doc-this/skills/doc-this/references/sonnet-reader-fanout.md` and is reused by `--backfill-coverage` (zero hook changes — readers are Agent dispatches the dispatch gate ignores, and the describe-only gate fires on their staging writes).
 - **Evidence provenance + fossil-evidence path** (FR-DOC-FOSSIL-1) — every 🟢 scenario carries an `Evidence:` line (`static` from the Writer; the Tracer's corroboration sweep upgrades telemetry-matched scenarios to `static + runtime (<artifact cite>)`); the Reviewer validates the format and reports per-unit corroboration rates in `confidence-report.md`; promote carries the line into `.feature` stubs as `# Evidence:` comments. Confidence stays binary — Evidence is provenance metadata on facts, never a third color. `state.json.legacy_runnable` (`yes`/`prod-only`/`no`, collected at first run) makes the Tracer **hard-advisory** when the system can't be run live, and the Data Master mines actual data distributions (`database/data-profile.md`) as fossil runtime evidence.
 - Mechanical enforcement: the `doc-this-describe-only-gate.mjs` PreToolUse hook on Edit|Write blocks pact violations (🟡, judgment phrases en + pt-BR, fabricated ADR sections, technical-debt headers, NFR-from-pattern phrases) when targeting `.doc-this-sdd/**` — the staging tree only (BUG-005). The promoted `docs/` tree (requirements/adr/bugs) is the shared SDLC namespace co-owned by forward-design work (legitimate `## Consequences`/`## Alternatives`, "should be" requirements, bug reports) and is deliberately NOT policed; promote copies from already-gated staging. Per-artifact escape: `<!-- DOC-THIS-EXEMPT : reason="..." -->`. Per-session: `/tmp/.claude-doc-this-bypass-${CLAUDE_SESSION_ID}`.
 
@@ -575,11 +596,15 @@ Optional independent agents (run anytime in the pipeline): Tracer, Visor, Data M
 
 ## Plugin Convention
 
-- **Plugin manifest**: `.claude-plugin/plugin.json` — name, version, author
-- **Marketplace**: `.claude-plugin/marketplace.json` — self-referencing for discovery
-- **Hooks**: `hooks/hooks.json` — auto-loaded, never reference in plugin.json
-- **Skills**: `skills/<name>/SKILL.md` — one SKILL.md per skill folder
-- **Commands**: `commands/<name>.md` — slash-command wrappers; auto-discovered, never reference in plugin.json. **Caveat**: in current Claude Code (verified 2026-05-31), if a plugin contains both a skill named `X` and a command named `X`, the bare `/X` slot stops resolving in the slash autocomplete — only the namespaced `/<plugin>:X` works. (The command does NOT take the bare slot; the collision suppresses it entirely.) For pure passthrough wrappers (`Invoke the wagner-skills:X skill via the Skill tool. Pass through $ARGUMENTS`), this means **adding the command file makes the skill LESS reachable, not more**. Skills auto-expose at the bare `/X` path when no same-name command file exists — which is why `commands/doc-this.md` was removed (2026-05-31) so `/doc-this` resolves bare like its command-less siblings — and why `commands/doc-this-promote.md` was removed (2026-08-23) for the same reason, one sweep late. **Neither plugin ships a `commands/` directory now; every slash entry point is a bare skill.** When this rule is applied, sweep *every* passthrough wrapper in the tree, not just the one that was reported.
+- **Plugin root**: `plugins/<name>/` — every plugin, both channels (FR-LAYOUT-1)
+- **Plugin manifests**: `plugins/<name>/.claude-plugin/plugin.json` and
+  `plugins/<name>/.tessl-plugin/plugin.json`, carrying the SAME version
+- **Marketplace**: `.claude-plugin/marketplace.json` at the REPO root, one entry per plugin with
+  `"source": "./plugins/<name>"`. There is no `plugin.json` beside it — the repo root is not a
+  plugin root
+- **Hooks**: `plugins/<name>/hooks/hooks.json` — auto-loaded, never reference in plugin.json
+- **Skills**: `plugins/<name>/skills/<skill>/SKILL.md` — one SKILL.md per skill folder
+- **Commands**: `commands/<name>.md` — slash-command wrappers; auto-discovered, never reference in plugin.json. **Caveat**: in current Claude Code (verified 2026-05-31), if a plugin contains both a skill named `X` and a command named `X`, the bare `/X` slot stops resolving in the slash autocomplete — only the namespaced `/<plugin>:X` works. (The command does NOT take the bare slot; the collision suppresses it entirely.) For pure passthrough wrappers (`Invoke the <plugin>:X skill via the Skill tool. Pass through $ARGUMENTS`), this means **adding the command file makes the skill LESS reachable, not more**. Skills auto-expose at the bare `/X` path when no same-name command file exists — which is why `commands/doc-this.md` was removed (2026-05-31) so `/doc-this` resolves bare like its command-less siblings — and why `commands/doc-this-promote.md` was removed (2026-08-23) for the same reason, one sweep late. **No plugin here ships a `commands/` directory; every slash entry point is a bare skill.** When this rule is applied, sweep *every* passthrough wrapper in the tree, not just the one that was reported.
 - **Script paths**: Use `${CLAUDE_PLUGIN_ROOT}` in hooks — resolves to install location
 
 ### Commands vs skills
@@ -592,7 +617,7 @@ Optional independent agents (run anytime in the pipeline): Tracer, Visor, Data M
 
 ### When dispatching from one skill to another
 
-Use the **fully namespaced name** with the Skill tool — the prefix is the **plugin** name, not the repo: `doc-this:<name>` for anything in the Discovery pipeline, `wagner-skills:<name>` for the 8 members of the root plugin, `frontend-design:<name>` for third-party. Bare short names will not resolve. The `${CLAUDE_PLUGIN_ROOT}/skills/<name>/SKILL.md` file-read path is a fallback only for non-Claude-Code harnesses.
+Use the **fully namespaced name** with the Skill tool — the prefix is the **plugin** name, not the repo: `doc-this:<name>` for anything in the Discovery pipeline, and for a solo plugin the prefix and the skill are the same word — `postmortem:postmortem`, `okf-maintain:okf-maintain`, `agent-cli:agent-cli`. Bare short names will not resolve. The `${CLAUDE_PLUGIN_ROOT}/skills/<name>/SKILL.md` file-read path is a fallback only for non-Claude-Code harnesses.
 
 ### Description classes: user-triggered vs orchestrator-dispatched
 
@@ -605,7 +630,7 @@ Two contracts, two description shapes:
 
 ### Pipeline enforcement hooks
 
-The doc-this pipeline is enforced by the hooks below (wired in `doc-this/hooks/hooks.json`, scripts in `doc-this/hooks/`, shared lib in `doc-this/hooks/lib/doc-this-checks.mjs`). They ship with the `doc-this` plugin, so they exist only while it is enabled. All are no-ops in projects that don't use doc-this (i.e., have no `.doc-this/state.json`) — EXCEPT the dispatch gate, which exists precisely to fire in that case for pipeline workers.
+The doc-this pipeline is enforced by the hooks below (wired in `plugins/doc-this/hooks/hooks.json`, scripts in `plugins/doc-this/hooks/`, shared lib in `plugins/doc-this/hooks/lib/doc-this-checks.mjs`). They ship with the `doc-this` plugin, so they exist only while it is enabled. All are no-ops in projects that don't use doc-this (i.e., have no `.doc-this/state.json`) — EXCEPT the dispatch gate, which exists precisely to fire in that case for pipeline workers.
 
 | Hook script | Event | What it blocks |
 |---|---|---|
@@ -615,7 +640,7 @@ The doc-this pipeline is enforced by the hooks below (wired in `doc-this/hooks/h
 | `doc-this-coverage-gate.mjs` | `Skill` | **Total Source Coverage** (BUG-003) at phase transitions, derived from `.doc-this/context/file-manifest.json`: detective denied while any manifest `source` file is missing from `coverage-ledger.json` or unassigned (no `all_files`/`exclusions` home); writer denied while any manifest markup page lacks a per-page `kind:ui` entry in `external-surface.json`; reviewer denied while `code-spec-matrix.md` misses source-file rows. Legacy runs (no manifest) get an advisory pointing at `/doc-this --backfill-coverage` — never denied. Hard deny (`exit 2`), capped 20-path lists, `Set`-difference set math. Regression harness: `hooks/test-doc-this-coverage-gate.mjs` (15 cases). |
 | `doc-this-artifact-completeness-gate.mjs` | `Skill` | **Per-module doc_level artifact completeness** (BUG-004) at the analysis→interpretation transition (`doc_level ∈ {standard, detailed}`): detective denied while any `modules.json` module with entities lacks a non-empty `data-dictionary/[module].md`, or with functions/algorithms lacks `flowcharts/[module].md`. `doc_level=minimal` passes; legacy runs (no `modules.json`) get an advisory. Hard deny (`exit 2`). Regression harness: `hooks/test-doc-this-artifact-completeness-gate.mjs` (14 cases). |
 | `doc-this-promote-warning.mjs` | `Edit\|Write` | Nothing — advisory only. Injects `additionalContext` when the staging tree (`.doc-this-sdd/`, or legacy `_doc_this_sdd/`) exists and the target is `docs/requirements/*.md`, `docs/adr(s)/*.md`, or `docs/TRACEABILITY.md`. |
-| `doc-this-describe-only-gate.mjs` | `Edit\|Write` | Pact violations in `.doc-this-sdd/**` **only** — the staging tree where the agents write (BUG-005; legacy `_doc_this_sdd/**` is still matched for in-flight runs). The promoted `docs/` tree (requirements/adr/bugs) is the shared SDLC namespace co-owned by forward-design work and is NOT policed (a forward ADR's `## Consequences`, a "should be" requirement, and bug files are all legitimate there); promote copies from already-gated staging, so nothing is lost. The regex layer is an **English tripwire, not the rule**: 🟡 markers (language-independent), judgment verbs at line start (`should be / recommend / propose / consider refactoring / better approach`), Technical-debt headers, fabricated ADR sections (`Alternatives considered / Consequences`), NFR-from-pattern phrases (`inferred from middleware`), and sampling-phrases disclosing unread source (`not read in full / read by sampling / skimmed`). Output written in another `doc_language` is caught by **meaning**, by the agents applying the pact — the regex deliberately no longer carries per-language word-lists, because a literal list silently passes every phrasing outside it. Per-artifact escape via `<!-- DOC-THIS-EXEMPT : reason="..." -->`. Best-effort safety net — primary enforcement is the agents' semantic application of `skills/doc-this/references/describe-only-pact.md`. Hard deny (`exit 2`). Regression harness: `hooks/test-doc-this-describe-only-gate.mjs` (24 cases). |
+| `doc-this-describe-only-gate.mjs` | `Edit\|Write` | Pact violations in `.doc-this-sdd/**` **only** — the staging tree where the agents write (BUG-005; legacy `_doc_this_sdd/**` is still matched for in-flight runs). The promoted `docs/` tree (requirements/adr/bugs) is the shared SDLC namespace co-owned by forward-design work and is NOT policed (a forward ADR's `## Consequences`, a "should be" requirement, and bug files are all legitimate there); promote copies from already-gated staging, so nothing is lost. The regex layer is an **English tripwire, not the rule**: 🟡 markers (language-independent), judgment verbs at line start (`should be / recommend / propose / consider refactoring / better approach`), Technical-debt headers, fabricated ADR sections (`Alternatives considered / Consequences`), NFR-from-pattern phrases (`inferred from middleware`), and sampling-phrases disclosing unread source (`not read in full / read by sampling / skimmed`). Output written in another `doc_language` is caught by **meaning**, by the agents applying the pact — the regex deliberately no longer carries per-language word-lists, because a literal list silently passes every phrasing outside it. Per-artifact escape via `<!-- DOC-THIS-EXEMPT : reason="..." -->`. Best-effort safety net — primary enforcement is the agents' semantic application of `plugins/doc-this/skills/doc-this/references/describe-only-pact.md`. Hard deny (`exit 2`). Regression harness: `plugins/doc-this/hooks/test-doc-this-describe-only-gate.mjs` (24 cases). |
 | `doc-this-lsp-budget.mjs` | `LSP` (PreToolUse) | Per-agent, per-operation LSP call budgets. The Code Analyst gets unlimited `documentSymbol` but near-zero `incomingCalls` (5) since that's Detective's job. Soft limits at ~50% inject advisory; hard limits deny (`exit 2`). Tracker: `os.tmpdir()/.claude-doc-this-lsp-${SESSION_ID}.json` (a legacy `/tmp` tracker from an in-flight pre-port session is still read). |
 | `doc-this-lsp-timing.mjs` | `LSP` (PostToolUse) | Nothing — advisory only. Tracks per-call duration, warns on slow calls (>15s) and cumulative LSP time (>5min). Logs to `~/.claude/logs/doc-this-lsp.log`. |
 
@@ -627,11 +652,19 @@ The doc-this pipeline is enforced by the hooks below (wired in `doc-this/hooks/h
 
 ## Adding a New Skill
 
-1. Create `skills/<skill-name>/SKILL.md` with YAML frontmatter (`name`, `description`)
-2. Add supporting files in `scripts/`, `assets/`, `references/` as needed
-3. If the skill needs hooks, append them to `hooks/hooks.json`
-4. Bump the version by hand in all four fields (see Versioning) — nothing bumps it for you
-5. Commit and push — marketplace users run `claude plugin marketplace update` to sync
+A standalone skill is a new **plugin root**, not a folder inside an existing one.
+
+1. `plugins/<name>/skills/<name>/SKILL.md` with YAML frontmatter (`name`, `description`)
+2. `plugins/<name>/.tessl-plugin/plugin.json` (`name: wagneripjr/<name>`, `version`,
+   `description`, `private: false`; **no `skills` key** — convention discovery finds `./skills/`)
+   and `plugins/<name>/.claude-plugin/plugin.json` carrying the same `version`
+3. `plugins/<name>/.tesslignore` naming `evals/`
+4. A `.plugins[]` entry in `.claude-plugin/marketplace.json` with `"source": "./plugins/<name>"`
+5. Supporting files under the skill folder: `references/`, `scripts/`, `assets/`
+6. Hooks, if any, in `plugins/<name>/hooks/hooks.json` — plugin-level, never inside `skills/`
+7. Add the name to `PUBLIC_8` in `tests/test-fr-bundle-3.mjs` (an allowlist, deliberately)
+8. Commit and push — the Action publishes to Tessl; marketplace users run
+   `claude plugin marketplace update` to sync
 
 ## SKILL.md Writing Rules
 
@@ -647,7 +680,7 @@ Author and iterate through `skill-creator:skill-creator`. **Measure** with Tessl
 scenario under `evals/<plugin>/<skill>/<scenario>/` and run it against the skill as `--context`.
 See **Evals** below for the layout, the `eval lint` fail-open, and the budget.
 
-The older method — prompts in `skills/<name>/evals/evals.json`, run with and without the skill in
+The older method — prompts in `plugins/<name>/skills/<name>/evals/evals.json`, run with and without the skill in
 parallel subagents, judged by eye — is superseded: it is unrepeatable and produces no comparable
 number. Two files remain in that format and are documented in place; do not add a third.
 
@@ -688,7 +721,7 @@ Enable the server for this repo first — `.claude/` is gitignored, so a fresh c
 configuration and you must add it to your own `.claude/settings.local.json`:
 
 1. `mcp__tessl__status` — confirm `authenticated: true`.
-2. `mcp__tessl__review_run` — `path: ./skills/<skill-name>`, `kind: "quality"`. Async: returns a
+2. `mcp__tessl__review_run` — `path: ./plugins/<plugin-name>`, `kind: "quality"`. Async: returns a
    run ID immediately. One run per user request, never speculative.
 3. `mcp__tessl__review_view` — poll that `runId` until `status` is `completed` (or `failed` /
    `cancelled`). Budget a couple of minutes, not seconds.
@@ -704,7 +737,7 @@ CLI's `tessl review fix` replaces the old `--optimize` and inherits the same rep
 
 ```bash
 export TESSL_WORKSPACE=wagneripjr        # no default; the harness SKIPs rather than guess
-node tests/test-tessl-quality-gate.mjs ./skills/<skill-name> 90
+node tests/test-tessl-quality-gate.mjs ./plugins/<plugin-name> 90
 # exit 0 pass · 1 below floor · 77 skipped (no CLI / no workspace / preflight failed / no score)
 ```
 
@@ -780,29 +813,41 @@ twice — baseline and with the skill injected — and scores the difference aga
 rubric. That delta is what the skill is worth, and it replaces the old
 `evals/evals.json` + parallel-subagents + eyeball method as the measurement of record.
 
-### Layout — repo root, not inside the skill
+### Layout — inside the plugin root it grades
 
 ```
-evals/<skill>-<scenario>/
+plugins/<name>/evals/<scenario>/
   task.md        # the ONLY thing the agent sees
   criteria.json  # {context, type:"weighted_checklist", checklist:[{name,description,max_score}]}
   resources/     # optional, auto-copied into the working dir
   scenario.json  # optional; fixtures: directory | commit, plus include[] / setup[]
 ```
 
-Root, **not** `skills/<name>/evals/`, and the first reason is decisive: a quality review bundles
-the whole skill directory, so an in-skill `evals/` is uploaded to the judges as part of the thing
-it grades — verified, not theoretical: the packs shipped `skills/*/evals/evals.json` and the whole
-`judgment-fixture/` app until `.tesslignore` stopped them. Root placement also lets one free
-`tessl eval lint ./evals` cover everything, and keeps fixture `resources/` out of a shipped plugin.
+This is the layout the docs give for a repository holding several plugins — *"put `evals/` inside
+each plugin root, as a sibling of `.tessl-plugin/`"* — and it is what makes
+`tessl eval run ./plugins/<name>` supply the plugin as context with no `--context` flag. The
+troubleshooting page attributes *"baseline results only, no with-context column"* to `evals/` not
+sharing a plugin root, which is precisely what the old repo-root placement was.
 
-**Flat, one level, since FR-TESSL-3.** The old `evals/<plugin>/<skill>/<scenario>/` nesting is gone:
-the docs' shape is `<plugin-root>/evals/<scenario-name>/`, and after the split the plugin roots
-moved *into* `skills/<name>/`, which puts the repository root outside all nine pack boundaries —
-the placement that satisfies both the convention and the don't-feed-the-judges rule at once. The
-cost: bare `tessl eval run ./<plugin>` will not auto-discover these, so keep passing an explicit
-path plus `--context`, which is already the practice. Hazard: `tessl scenario download` writes into
-the *plugin* root's `evals/`, now inside a skill directory — never run it against the real tree.
+**The don't-feed-the-judges rule still holds, and `.tesslignore` is what enforces it.** A quality
+review bundles the whole plugin, so an `evals/` inside one would be uploaded to the judges as part
+of the thing it grades — verified, not theoretical: the packs shipped `evals/evals.json` and the
+whole `judgment-fixture/` app until `.tesslignore` stopped them. Every plugin root therefore
+carries a `.tesslignore` naming `evals/`, and `tests/test-tessl-publish.mjs` AC-5 asserts it.
+Confirmed by packing all nine and reading the archives: no `evals` path in any of them.
+
+**`.okfignore` needs a line per plugin with scenarios** — it matches a path prefix, not a glob. A
+plugin that gains scenarios without gaining a line is reported by `okf.mjs coverage` as
+`unindexed`, so the omission is loud rather than silent.
+
+Hazards: `tessl scenario download` writes into the plugin root's `evals/` and its default
+`--strategy merge` overwrites `scenario-N/` directories — never point it at the real tree. And a
+scenario's **`setup.sh` is auto-run if present**; this repo does not author shell scripts
+(ADR-014), so declare `scenario.json`'s `setup: ["node ..."]` instead.
+
+Fixture shapes, from `eval lint --help`:
+`{"type":"commit","repoUrl","ref","installPath?","include?","exclude?"}` and
+`{"type":"directory","path","installPath"}`.
 
 `criteria.json` items are `{name, description, max_score}` **only**. The `category` enum
 (INTENT/MUST_NOT/…) in the published docs is **not** in 0.105.0's schema — it warns
@@ -819,36 +864,54 @@ canary** (AC-6b) so the guard cannot be quietly lost. Never rely on `eval lint` 
 
 ### Running one
 
-An eval — unlike a review — requires a **Tessl project link**: `tessl project create skills
---workspace wagneripjr`, which writes `tessl.json` at the repo root. That file is **gitignored on
-purpose**: it names a workspace no contributor has, and evals are a maintainer step. Same
-precedent as `.claude/`. `tessl project repair` re-links a broken one.
+Eval runs are saved to a Tessl project, resolved **server-side from the git remote** — this repo's
+is `skills`, in workspace `wagneripjr`, `sourceUri: github.com/wagneripjr/skills`. `tessl project
+create <name> --workspace <name>` mints one if it is missing, and `tessl project repair` re-links a
+broken one.
+
+**`tessl.json` is NOT that link.** It is a dependency manifest — `{name, mode, dependencies}`, and
+here `mode: "vendored"` with a `tessl/review-plugin-creator` entry. It carries no workspace or
+project field at all. The earlier claim that `tessl project create` writes it, and the matching
+comment in `.gitignore`, were both wrong.
 
 ```bash
-tessl eval run ./evals/wagner-skills/postmortem --context ./skills/postmortem --wait
+tessl org usage --json                        # credits.used BEFORE
+tessl eval lint ./plugins/postmortem          # free
+tessl eval run ./plugins/postmortem --wait
+tessl org usage --json                        # the delta is the price
+tessl eval view --last
 ```
 
-`--context` takes a local path or glob, so **an eval never needs the plugin manifest**. The two
-`.tessl-plugin/plugin.json` files this repo does carry are there for `tessl skill lint` alone (see
-FR-TESSL-1); they are not what makes evals work, and pointing `eval run` at a plugin root instead
-of `--context` buys nothing here. `tessl scenario generate` and the `eval run ./my-plugin`
-shorthand remain unused: if generated scenarios are ever wanted, do it in a **throwaway copy
-outside this repo** (`tessl skill import` → `scenario generate` → `scenario download --output` → curate → copy
-the good ones in). Never point `scenario download` at the real tree: its default
-`--strategy merge` overwrites `scenario-N/` directories and destroys hand edits.
+No `--context`: the path is a plugin root, so the plugin *is* the context. `--wait` is required —
+a non-interactive run without it submits and exits 0 without waiting, reporting success for a run
+that has not started.
+
+**Tessl recommends no agent or model.** Every documented eval command omits `--agent`/`--model`,
+so the CLI default applies (`deepseek-v4-flash`; `--list-agents` prints the full matrix). Its only
+stated tuning guidance is **`--runs 3` to average out model variance before drawing conclusions**,
+and `--count 5` for broader scenario *generation*. If a model is pinned, record it beside the
+number — an unlabelled score cannot be compared, which is the FR-TESSL-2 rule.
+
+`tessl scenario generate` and generated scenarios remain unused: if they are ever wanted, do it in
+a **throwaway copy outside this repo** (`tessl skill import` → `scenario generate` →
+`scenario download --output` → curate → copy the good ones in).
 
 **There is no dry-run.** `tessl eval run --json` *submits* — by the time it prints
 `estimatedCredits` you have paid. Budget a priori from `tessl org usage --json`, before invoking.
 Cheap levers: `--skip-baseline` (halves it when the baseline is meaningless), `--skip-scoring` (no
 scorer model runs at all), `-n 1` while exploring and `-n 3` only for probabilistic properties.
+`-f/--force` re-runs previously solved cases; `--context-commit <ref>` sources a local `--context`
+from a commit instead of the working tree, which is the honest way to compare two versions of a
+skill; `--skill <name>` narrows a local plugin context; `tessl eval retry <id>|--last` re-runs a
+scenario that did not complete, which the docs call normal agent behaviour rather than an error.
 
 ### The non-activation proof (planned)
 
 `--skip-forced-context-activation --skip-scoring` observes whether an agent reaches for a skill on
 its own. Pointed at scenarios written as the most tempting user phrasing for each doc-this worker,
-with `--context './doc-this/skills/*'` so the agent has a real choice, it turns
+with `--context './plugins/doc-this/skills/*'` so the agent has a real choice, it turns
 "`trigger_term_quality` is N/A by design" from an excuse into a measurement. Pass condition: across
-every run, **no member of the `WORKERS` set in `doc-this/hooks/doc-this-dispatch-gate.mjs`**
+every run, **no member of the `WORKERS` set in `plugins/doc-this/hooks/doc-this-dispatch-gate.mjs`**
 appears in the Activated-skills column — the orchestrator `doc-this` activating is expected and
 allowed. The assertion must read that set from the gate file, never restate it. Record the result
 in a committed `RESULTS.json` (no run ids, no workspace ids) enforced by a zero-credit harness,
@@ -876,8 +939,8 @@ the same shape as `judgment-fixture/FINDINGS.md`.
 
 ## Versioning
 
-Versions are maintained **by hand** — there is no hook automation. Both plugins are version-keyed
-in the plugin cache, so a bump is mandatory to ship anything: `update` silently no-ops otherwise.
+Versions are maintained **by hand** — there is no hook automation. Plugins are version-keyed in
+the plugin cache, so a bump is mandatory to ship anything: `update` silently no-ops otherwise.
 
 ### Commit → Version Bump Mapping
 
@@ -890,32 +953,32 @@ in the plugin cache, so a bump is mandatory to ship anything: `update` silently 
 
 ### Version Files
 
-**Two channels, two granularities, on purpose.** The Claude Code marketplace ships two bundled
-plugins; Tessl ships nine. A change to one `skills/*` skill therefore bumps **two** numbers — its
-own solo `.tessl-plugin` manifest and the `wagner-skills` Claude Code plugin. That is the price of
-per-skill release cadence, and it is the deal FR-TESSL-3 took knowingly.
+**One granularity since FR-LAYOUT-1.** A change to one plugin touches three fields, all carrying
+the **same** number:
 
-Claude Code channel — four fields, edited by hand, all of which must agree:
+| File | Field |
+|---|---|
+| `plugins/<name>/.claude-plugin/plugin.json` | `.version` |
+| `plugins/<name>/.tessl-plugin/plugin.json` | `.version` |
+| `.claude-plugin/marketplace.json` | that plugin's `.plugins[*].version` |
 
-| File | Field | Current |
-|---|---|---|
-| `.claude-plugin/plugin.json` | `.version` | 6.5.2 |
-| `.claude-plugin/marketplace.json` | `.metadata.version` | 6.5.2 |
-| `.claude-plugin/marketplace.json` | `.plugins[*].version` | 6.5.2 / 1.1.6 |
-| `doc-this/.claude-plugin/plugin.json` | `.version` | 1.1.6 |
+Current: eight solo plugins at **1.1.0**, `doc-this` at **1.2.0**, marketplace metadata **7.0.0**.
 
-Tessl channel — nine `.tessl-plugin/plugin.json` manifests, one per published plugin:
-`doc-this` (**1.1.6**, kept in step with its Claude Code twin and drift-checked at publish time by
-`resolveVersion`), plus `skills/<name>` for each of the eight, independently versioned from
-`1.0.0`. `version` is **required** here, not optional: `tessl plugin pack` hard-refuses without it.
-`tests/test-tessl-publish.mjs` asserts every manifest carries `name`/`version`/`description` and
-`"private": false`, and mutation-tests each guard — which is what makes these fields safe to add,
-where FR-TESSL-1's objection to an unchecked field still stands for any field nothing pins.
+The two manifests must agree: `manifestOf` in `scripts/tessl-publish.mjs` refuses to publish a
+plugin whose `.claude-plugin` twin declares a different version, and
+`tests/test-tessl-publish.mjs` mutation-tests that guard. `version` is **required** in a Tessl
+manifest — `tessl plugin pack` hard-refuses without it, stricter than lint, which only warns.
 
 **Never let `marketplace.json` fall behind `plugin.json`.** The marketplace entry is what the
 client compares against; if it advertises a lower version, `claude plugin update` is a permanent
 no-op and nothing you ship reaches the cache. Realign both and move on — there is no hook left to
 re-sync them for you.
+
+**Absence has two spellings, and only one was known before the first bump.** A plugin nobody has
+published answers `plugin info` with "Could not find plugin"; one that exists at an older version
+answers `Plugin "w/p" exists, but it has no version "1.1.0"`. Reading the second as an outage makes
+every bump after the initial publish refuse to ship — which is exactly what the 1.0.0 → 1.1.0
+repackaging hit, on all nine plugins at once. `classifyInfo` accepts both; AC-7f2 pins it.
 
 ### Gotchas
 
@@ -928,41 +991,47 @@ Local development:
 claude plugin add /path/to/this/repo
 ```
 
-Via marketplace:
+Via marketplace — install only what you want; there is no bundle:
 ```bash
 claude plugin marketplace add wagneripjr/skills
-claude plugin install wagner-skills@wagner-skills-marketplace
-claude plugin install doc-this@wagner-skills-marketplace
-claude plugin disable doc-this@wagner-skills-marketplace   # off until a discovery run
+claude plugin install postmortem@wagner-skills-marketplace
+claude plugin install okf-maintain@wagner-skills-marketplace
+claude plugin install doc-this@wagner-skills-marketplace     # only for a discovery run
 ```
 
 ## Updating After Changes
 
-Both plugins are version-keyed in the cache — bump the relevant `plugin.json` (and its
-`marketplace.json` entry) or `update` no-ops.
+Each plugin is version-keyed in the cache — bump its two manifests and its `marketplace.json`
+entry, or `update` no-ops.
 
 ```bash
 claude plugin marketplace update wagner-skills-marketplace
-claude plugin update wagner-skills@wagner-skills-marketplace
-claude plugin update doc-this@wagner-skills-marketplace
+claude plugin update <name>@wagner-skills-marketplace
 ```
 
-Then restart Claude Code to apply.
+Then restart Claude Code to apply. After a rename or a layout change, `claude plugin uninstall`
+the old entries first — the cache is keyed on the old name and will not migrate itself.
 
 ## Commands
 
 ```bash
-# Verify plugin loads
+# Verify plugins load
 claude plugin list
 
 # Every suite in the repo — what CI runs. Exit 0 only if none skipped.
 node tests/run-all.mjs
 
+# The doc-this gate harnesses
+node plugins/doc-this/hooks/run-all.mjs
+
 # Repo-wide scan for credential-shaped material (also in CI)
 node tests/test-publication-safety.mjs
 
-# Run the tree/closure acceptance matrix (asserts only the 8 expected skill dirs exist)
+# Run the tree/closure acceptance matrix (asserts plugins/ holds exactly the expected 9)
 node tests/test-fr-bundle-3.mjs
+
+# What the publish workflow would do, without publishing
+node scripts/tessl-publish.mjs --dry-run
 
 # Refresh the score record from the API — FREE, needs `tessl login` (--check to diff instead)
 node tests/tessl-scores.mjs

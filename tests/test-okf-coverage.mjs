@@ -58,7 +58,7 @@ import { spawnSync } from 'node:child_process';
 import { Harness, skip } from './lib/harness.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
-const OKF = resolve(DIR, '..', 'skills', 'okf-maintain', 'scripts', 'okf.mjs');
+const OKF = resolve(DIR, '..', 'plugins', 'okf-maintain', 'skills', 'okf-maintain', 'scripts', 'okf.mjs');
 
 if (!existsSync(OKF)) skip(`okf.mjs not found at ${OKF}`);
 if (spawnSync('git', ['--version'], { encoding: 'utf8' }).status !== 0) {

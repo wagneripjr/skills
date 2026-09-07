@@ -20,12 +20,18 @@ import { Harness } from './lib/harness.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const SCORES = resolve(ROOT, 'tests', 'tessl-scores.json');
-const SKILL_ROOTS = ['skills', 'doc-this/skills'];
+const PLUGINS = 'plugins';
 
 // The foreign enumerator: what the TREE says exists, independent of what the API returned.
+// Every plugin is a root under plugins/ and every skill sits at <root>/skills/<name>/SKILL.md,
+// so one two-level walk covers a solo plugin and doc-this alike.
 export function skillPaths(root = ROOT) {
   const found = [];
-  for (const base of SKILL_ROOTS) {
+  const pluginsDir = resolve(root, PLUGINS);
+  if (!existsSync(pluginsDir)) return found;
+  for (const plugin of readdirSync(pluginsDir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    if (!plugin.isDirectory()) continue;
+    const base = join(PLUGINS, plugin.name, 'skills');
     const dir = resolve(root, base);
     if (!existsSync(dir)) continue;
     for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {

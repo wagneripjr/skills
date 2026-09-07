@@ -28,7 +28,9 @@ import { resolveTessl } from './lib/tessl.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(DIR, '..');
-const EVALS = join(ROOT, 'evals');
+// Scenarios live inside the plugin root they grade — the layout Tessl documents, and what makes
+// `tessl eval run <plugin root>` supply the plugin as context without an explicit --context.
+const PLUGINS = join(ROOT, 'plugins');
 
 const isDir = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
@@ -46,12 +48,16 @@ function walk(dir, acc = []) {
 
 const h = new Harness('eval scenario tree: shape, rubric contract, and the lint fail-open guard');
 
-if (!isDir(EVALS)) {
-  h.bad('AC-0 evals/ does not exist — nothing to check', EVALS);
+const evalRoots = isDir(PLUGINS)
+  ? readdirSync(PLUGINS).map((n) => join(PLUGINS, n, 'evals')).filter(isDir)
+  : [];
+
+if (evalRoots.length === 0) {
+  h.bad('AC-0 no plugins/*/evals/ exists — nothing to check', PLUGINS);
   h.done();
 }
 
-const dirs = walk(EVALS);
+const dirs = evalRoots.flatMap((r) => walk(r));
 const withCriteria = dirs.filter((d) => existsSync(join(d, 'criteria.json')));
 const withTask = dirs.filter((d) => existsSync(join(d, 'task.md')));
 const rel = (p) => relative(ROOT, p);
@@ -106,7 +112,7 @@ const bin = resolveTessl({ allowNpx: false });
 if (!bin) {
   process.stdout.write('  note: tessl CLI not found — AC-5 (count agreement) not evaluated; structural checks above still ran.\n');
 } else {
-  const r = spawnSync(bin.cmd, [...bin.prefix, 'eval', 'lint', EVALS], { encoding: 'utf8' });
+  const r = spawnSync(bin.cmd, [...bin.prefix, 'eval', 'lint', PLUGINS], { encoding: 'utf8' });
   const m = /(\d+)\s+scenarios?\s+valid/.exec(`${r.stdout ?? ''}${r.stderr ?? ''}`);
   if (!m) {
     process.stdout.write(`  note: could not read a scenario count from tessl eval lint — AC-5 not evaluated (exit ${r.status}).\n`);

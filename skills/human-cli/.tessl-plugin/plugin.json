@@ -1,9 +1,0 @@
-{
-  "name": "wagneripjr/human-cli",
-  "version": "1.0.0",
-  "description": "Design and evaluate command-line tools for human users: naming and grammar, interactive prompts, colour and progress output, error messages, and a 0-21 usability rubric",
-  "private": false,
-  "skills": [
-    "."
-  ]
-}

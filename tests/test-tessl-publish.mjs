@@ -23,21 +23,32 @@ import { discover, manifestOf, classifyInfo } from '../scripts/tessl-publish.mjs
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const MANIFEST = join('.tessl-plugin', 'plugin.json');
-const SKILL_ROOTS = ['skills', 'doc-this/skills'];
+const PLUGINS = 'plugins';
 
 const git = (args, cwd) => spawnSync('git', args, { cwd, encoding: 'utf8' });
 if (git(['rev-parse', '--git-dir'], ROOT).status !== 0) {
   skip('git is required: discovery is anchored on `git ls-files`');
 }
 
-// A foreign enumerator over the tree, independent of what discovery returns.
+// A foreign enumerator over the tree, independent of what discovery returns. Every plugin is a
+// root directly under plugins/, which is what discovery must agree with.
+function pluginRoots(root = ROOT) {
+  const dir = resolve(root, PLUGINS);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && existsSync(join(dir, e.name, MANIFEST)))
+    .map((e) => join(PLUGINS, e.name))
+    .sort();
+}
+
+// Every skill in the tree, at the convention path <plugin root>/skills/<name>/SKILL.md.
 function skillDirs(root = ROOT) {
   const found = [];
-  for (const base of SKILL_ROOTS) {
-    const dir = resolve(root, base);
+  for (const base of pluginRoots(root)) {
+    const dir = resolve(root, base, 'skills');
     if (!existsSync(dir)) continue;
     for (const e of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-      if (e.isDirectory() && existsSync(join(dir, e.name, 'SKILL.md'))) found.push(join(base, e.name));
+      if (e.isDirectory() && existsSync(join(dir, e.name, 'SKILL.md'))) found.push(join(base, 'skills', e.name));
     }
   }
   return found;
@@ -46,13 +57,12 @@ function skillDirs(root = ROOT) {
 const h = new Harness('tessl publish manifests, discovery and its ignored-path guard');
 const found = discover();
 const skills = skillDirs();
-// doc-this is a plugin root without being a skill dir; skills/* are both.
-const PLUGIN_ROOTS = new Set([...skills, 'doc-this']);
+const PLUGIN_ROOTS = new Set(pluginRoots());
 
 h.section('AC-1 discovery scope');
 h.check('discovery returned at least one plugin', found.length > 0, `found ${found.length}`);
 const stray = found.filter((p) => !PLUGIN_ROOTS.has(p));
-h.check('every discovered plugin is a skill dir or the doc-this root', stray.length === 0,
+h.check('every discovered plugin is a root under plugins/', stray.length === 0,
   `unexpected: ${stray.join(', ')}`);
 
 h.section('AC-2 ignored paths are never discovered');
@@ -88,8 +98,14 @@ export function evalsIgnored(skillDir, root = ROOT) {
     const file = resolve(root, owner, '.tesslignore');
     if (!existsSync(file)) continue;
     const rel = [...parts.slice(i), 'evals'].join('/');
-    const wanted = new RegExp(`^\\s*${rel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?\\s*$`, 'm');
-    if (wanted.test(readFileSync(file, 'utf8'))) return owner;
+    const body = readFileSync(file, 'utf8');
+    // Two spellings both exclude it, because .tesslignore is gitignore-style: a pattern
+    // containing a slash is anchored to the plugin root, while a bare `evals/` has no slash and
+    // therefore matches a directory of that name at any depth. Accepting only the anchored form
+    // would report a genuinely-excluded directory as unprotected.
+    const anchored = new RegExp(`^\\s*/?${rel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?\\s*$`, 'm');
+    const bare = /^\s*evals\/?\s*$/m;
+    if (anchored.test(body) || bare.test(body)) return owner;
   }
   return null;
 }
@@ -139,6 +155,10 @@ h.check('AC-7d a manifest with no version is rejected', missing);
 
 h.check('AC-7e a "could not find plugin" exit is a publish signal, not an error',
   classifyInfo({ status: 1, stderr: 'Could not find plugin "x/y".' }).state === 'absent');
+// The second spelling of absence, verbatim from `tessl plugin info` 0.105.0 on the 1.0.0 -> 1.1.0
+// bump. Missing it is not a cosmetic gap: it blocks every version bump after the first publish.
+h.check('AC-7f2 "exists, but it has no version" is also a publish signal',
+  classifyInfo({ status: 1, stderr: '✘ Plugin "wagneripjr/agent-cli" exists, but it has no version "1.1.0".\n\nIts latest version is 1.0.0.' }).state === 'absent');
 h.check('AC-7f any other non-zero exit is an error, not a publish signal',
   classifyInfo({ status: 1, stderr: 'network unreachable' }).state === 'error');
 h.check('AC-7g exit 0 means published', classifyInfo({ status: 0 }).state === 'published');

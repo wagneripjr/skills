@@ -76,11 +76,19 @@ const runTessl = (args) =>
 // `plugin info` exits non-zero both when the version is genuinely absent and when the call failed.
 // Only the first is a publish signal; treating every non-zero exit as "not published" turns an
 // outage or an expired token into a spurious publish attempt.
+//
+// Absence has TWO spellings and only one of them was known before the first version bump. A
+// plugin nobody has ever published answers "Could not find plugin"; one that exists at an older
+// version answers `Plugin "w/p" exists, but it has no version "1.1.0"`. Reading the second as an
+// outage makes every bump after the initial publish refuse to ship — which is exactly what the
+// 1.0.0 -> 1.1.0 repackaging hit, on all nine plugins at once.
+const ABSENT = [/could not find plugin/i, /exists, but it has no version/i];
+
 export function classifyInfo({ status, stdout = '', stderr = '', error }) {
   if (error) return { state: 'error', detail: String(error.message || error) };
   if (status === 0) return { state: 'published' };
   const text = `${stdout}${stderr}`;
-  if (/could not find plugin/i.test(text)) return { state: 'absent' };
+  if (ABSENT.some((re) => re.test(text))) return { state: 'absent' };
   return { state: 'error', detail: text.trim() || `exit ${status}` };
 }
 

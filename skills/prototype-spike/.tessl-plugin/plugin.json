@@ -1,9 +1,0 @@
-{
-  "name": "wagneripjr/prototype-spike",
-  "version": "1.0.0",
-  "description": "Turn a requirement or an unproven technique into a single self-contained HTML prototype that doubles as a design spike, rebuilt at high fidelity from the app's own source",
-  "private": false,
-  "skills": [
-    "."
-  ]
-}

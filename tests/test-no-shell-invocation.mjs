@@ -28,7 +28,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Harness } from './lib/harness.mjs';
-import { browserOpenCommand } from '../doc-this/skills/doc-this-viewer/scripts/launch.mjs';
+import { browserOpenCommand } from '../plugins/doc-this/skills/doc-this-viewer/scripts/launch.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const h = new Harness('no shell invocation');
