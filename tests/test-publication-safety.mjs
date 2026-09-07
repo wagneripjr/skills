@@ -59,6 +59,16 @@ const ASSIGNMENT =
 const looksGenerated = (v) =>
   v.length >= 20 && /[A-Za-z]/.test(v) && /[0-9]/.test(v) && !PLACEHOLDER.test(v);
 
+// Rule 3 — a UUID in a tracked file of this repository is a tessl run, workspace or user id. None
+// of those belongs in a public tree: they identify a private workspace and the runs inside it, and
+// they are not secrets, so nothing else would ever flag them. Inherited from the score table's
+// AC-4, which was scoped to one generated file; the identifiers can appear in any pasted API
+// envelope, so the rule belongs here instead. A first group of all zeros is a redacted id by
+// construction — the shape the committed fixtures use — and is allowed, same principle as
+// PLACEHOLDER above.
+const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i;
+const REDACTED_UUID = /^0{8}-/;
+
 function scanLine(line) {
   for (const [label, re] of PROVIDER) {
     const m = line.match(re);
@@ -66,6 +76,8 @@ function scanLine(line) {
   }
   const a = line.match(ASSIGNMENT);
   if (a && looksGenerated(a[1])) return 'high-entropy credential assignment';
+  const u = line.match(UUID);
+  if (u && !REDACTED_UUID.test(u[0]) && !PLACEHOLDER.test(line)) return 'run/workspace id (uuid)';
   return null;
 }
 
@@ -75,8 +87,10 @@ const MUST_FLAG = [
   'api_key: ' + 'a9f3' + 'c1d84b26e07f5' + '3ab19d2',
   'ghp_' + 'aB3'.repeat(12),
   '-----BEGIN RSA ' + 'PRIVATE' + ' KEY-----',   // split: a literal here would flag this file
+  '"runId": "01a06d2f' + '-81c3-70cf-' + 'b176-4711110473ba"',  // split for the same reason
 ];
 const MUST_NOT_FLAG = [
+  '"workspaceId": "00000000-0000-7000-8000-000000000002",',
   'password: test_pass',
   'MYCLI_PASSWORD=hunter2',
   'conn_password: password123',

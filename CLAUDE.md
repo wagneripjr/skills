@@ -273,52 +273,54 @@ only warns `No version set`), and `tests/test-tessl-publish.mjs` now checks ever
 that a packer reads and a harness pins is not the drift the objection was about. There are now nine
 `.tessl-plugin` manifests, each carrying its own — see **Versioning**.
 
-### FR-TESSL-2 · A published score names its rubric and its run, or it is not a score
+### FR-TESSL-2 · A score is never hand-written, and this repo no longer keeps one
 
-Owned by `tests/tessl-scores.mjs` and `tests/test-tessl-scores.mjs`. The score record used to be
-hand-written prose in `CLAUDE.md` and in the memory index, and by 2026-09-04 it had drifted up to
-**10 points in both directions** — `postmortem` recorded 100 against an actual 90, `doc-this-viewer`
-99 against 93, `doc-this-reviewer` 79 against 89 — while `platform-sre-kubernetes` had fallen from
-89 to **80** with no entry at all. A number written by hand is never re-derived, so the record
-decayed silently in exactly the direction that flatters it. Four parts:
+**The record is gone; the rule that produced it stands.** `tests/tessl-scores.json`,
+`tests/tessl-scores.mjs` and `tests/test-tessl-scores.mjs` were removed on 2026-09-07. What
+remains binding: **prose may carry *why* a dimension sits where it does; it may not carry the
+number.** Not in this file, not in README, not in the memory index. The registry page for each
+published plugin is the score of record.
 
-1. **Nothing hand-writes a score.** `tests/tessl-scores.mjs` rebuilds `tests/tessl-scores.json`
-   from `tessl review list --limit 100 --json`, which is **free** — it reads reviews already paid
-   for and submits nothing. `--check` diffs instead of writing. It reuses `reviewScoreFrom` and
-   `resolveTessl` from `tests/lib/tessl.mjs` rather than reimplementing the envelope rules that
-   `test-tessl-score-parse.mjs` already pins. Prose may carry *why* a dimension sits where it does;
-   it may not carry the number.
-2. **Every row names its rubric, and only reproducible rubrics are recorded.** Two were once in
-   play and they were not one scale: the same `okf-maintain` bytes scored **87** on
-   `tessl/default-skill-review@0.2.0` and **95** on a local `review-plugin/` fork forty minutes
-   apart. An unlabelled number cannot be compared to anything, which is how a custom-rubric run
-   silently became the recorded score for a skill. The fork was **removed** — these plugins are
-   public, and a published registry score is always Tessl's standard rubric, so a custom
-   `--review-plugin` could never influence the number that matters. `rowsFrom` now filters on
-   `isReproducibleRubric`, an **allowlist** (`REPRODUCIBLE_RUBRICS`) rather than a denylist: the
-   API still returns those two custom-rubric runs forever, and re-recording them would label the
-   record against a rubric no clone can obtain — the defect the FR-TESSL-2 commit existed to fix,
-   reintroduced from the other direction. A denylist would silently record the *next* local fork,
-   because nobody adds an entry for a rubric not yet invented.
-   **`rules` are not a substitute.** `configuration.md` calls them *"always-loaded guidance for
-   agents — the plugin.json equivalent of steering"*; they ship context at install time and have
-   no effect on review scoring. There is no documented way to change what a *published* score
-   means. Do not re-propose one.
-3. **Coverage is checked by a foreign enumerator.** `test-tessl-scores.mjs` walks the working tree
-   for `SKILL.md` under `plugins/*/skills/` and requires a row for each. Regenerating
-   the file and diffing it cannot do this: a skill the API never returned is absent from both sides
-   and compares equal — the projection-checked-against-itself fail-open FR-OKF-3 already fixed
-   once. The suite is green on a bare clone with no tessl and no account, so it runs in
-   `run-all.mjs`; the generator does not.
-4. **No run ids, no workspace ids** in the committed file, the rule CLAUDE.md already states for the
-   evals `RESULTS.json`, asserted by AC-4 with a planted-UUID canary. The price is that a row cannot
-   be traced to one run from the file alone. The rubric plus the date is what makes two numbers
-   comparable, and that is the property that was actually missing.
+**The defect this fixed, kept because it recurs.** The record used to be hand-written prose here
+and in the memory index, and by 2026-09-04 it had drifted **10 points in both directions** —
+`postmortem` recorded 100 against an actual 90, `doc-this-viewer` 99 against 93, `doc-this-reviewer`
+79 against 89 — while `platform-sre-kubernetes` had fallen from 89 to 80 with no entry at all. A
+number written by hand is never re-derived, so the record decayed silently in exactly the direction
+that flatters it.
 
-The API identifies a subject by repo-relative path, so a review of `plugins/postmortem/skills/postmortem/SKILL.md` run
-from a *different* repository is indistinguishable from one run here. Rows are filtered to paths
-that exist in this tree, latest-per-rubric wins, and that is the best discrimination available —
-stated here because it is a real limit, not a bug to chase.
+**Why the generated replacement was removed rather than repaired.** It had no free way to stay
+current, which was only discovered when FR-LAYOUT-1 invalidated every row at once:
+
+- Rows key on the repo-relative subject path, so any move empties the file, and the generator
+  refuses to write an empty record rather than silently blanking it.
+- **A publish does not refill it.** Measured 2026-09-07 against `tessl review list --limit 100`:
+  all 73 `subject.type: "skill"` rows are manual `review run` invocations from 08-20, 08-24 and
+  09-04. The nine Action publishes that day produced **zero**. The single publish-time row that
+  does exist — from the accidental CLI publish of `platform-sre-kubernetes@1.0.0` — carries
+  `subject.type: "tile_skill"` and `path: "SKILL.md"` with a `tileRef`, not a repo-relative path,
+  so it fails both the type filter and the existence filter. Correct the earlier claim wherever it
+  survives: publishing puts a score on the **registry**, not into `review list --mine`.
+- Refilling therefore costs one `review run quality` per **skill** path — the command takes a skill
+  directory, not a plugin root, so 22 runs at 10 credits — repeated with `--force` after every
+  edit, because the cache is not content-addressed. A record that stays true only through recurring
+  manual payment is the same failure mode it was built to kill, one step removed.
+
+**What was kept, and where.** `tests/lib/tessl.mjs` and `tests/test-tessl-score-parse.mjs` stay:
+they pin how a score is read from three different envelopes and are used by the quality gate. The
+old AC-4 — no run or workspace id in a public tree — moved into
+`tests/test-publication-safety.mjs` as Rule 3, where it now covers **any** tracked file rather than
+one generated JSON, since these ids arrive in any pasted API envelope. A first group of all zeros
+is a redacted id by construction and is allowed; the rule is mutation-tested, and removing it flips
+a split-literal canary.
+
+**Two findings worth not relearning.** A rubric must be named beside a number or two scores cannot
+be compared: the same `okf-maintain` bytes scored **87** on `tessl/default-skill-review@0.2.0` and
+**95** on a local `review-plugin/` fork forty minutes apart. That fork was removed — a published
+registry score is always Tessl's standard rubric, so a custom `--review-plugin` could never move
+the number that matters. And **`rules` are not a substitute**: `configuration.md` calls them
+*"always-loaded guidance for agents"*; they ship context at install time and have no effect on
+review scoring. There is no documented way to change what a *published* score means. Do not
+re-propose one.
 
 ### FR-TESSL-3 · A skill is published from the repository that owns it, or it is a duplicate
 
@@ -377,7 +379,9 @@ as unowned `git-skill` rows with null scores. Six parts:
 
 6. **What publishing costs and what it exposes.** Publishing triggers a server-side review whose
    score lands on the registry — and it is **free**: 22 skills published with credits unchanged at
-   1484.46, against 10 credits for a manual `review run`. `"private": false` is **irreversible**
+   1484.46, against 10 credits for a manual `review run`. That score reaches the **registry page**
+   and nothing else: it does not appear in `tessl review list --mine`, so it cannot feed any local
+   record (FR-TESSL-2). `"private": false` is **irreversible**
    (*"you cannot make it private again"*); `unpublish` works only within 2 days, after which only
    `plugin archive` remains. In-skill `evals/` are packed and become input to the judge grading
    that same skill, so they are excluded via `.tesslignore` (`plugins/agent-cli`,
@@ -541,15 +545,10 @@ tests/                   # Repo-level harnesses owned by no plugin
                          #   fail-open (a dir without task.md lints green) so the guard can't be lost
   fixtures/tessl/         # real 0.105.0 review envelopes, ids replaced, judge prose elided
   test-tessl-quality-gate.mjs
-  tessl-scores.mjs        # generator (FR-TESSL-2) — rebuilds tessl-scores.json from the FREE
-                         #   `tessl review list`; needs a login, so excluded from run-all.mjs
   test-tessl-publish.mjs  # the publish manifests + discovery AC matrix (FR-TESSL-3). AC-2/AC-7a
                          #   canary that a gitignored vendored manifest is NEVER discovered
-  tessl-scores.json       # THE score record. Generated, one row per skill PER RUBRIC, no run or
-                         #   workspace ids. Nothing hand-writes a score any more
-  test-tessl-scores.mjs   # that file's AC matrix, green on a bare clone with no tessl. AC-2 is
-                         #   the foreign enumerator: it walks the TREE for SKILL.md, because
-                         #   regenerate-and-diff cannot see a skill the API never returned
+                         #   (no score record here any more — the registry page is the score of
+                         #   record; FR-TESSL-2 says why the generated one was removed)
 .github/                 # CI (test.yml: ubuntu + macOS, both blocking) + templates
                          #   tessl-publish.yml — push-to-master only; the ONLY route that may
                          #   publish, because a CLI publish makes a duplicate (FR-TESSL-3)
@@ -774,10 +773,12 @@ plan and is therefore available, but **this tree no longer carries one** — the
 removed under FR-TESSL-3, because a published registry score is always Tessl's standard rubric and
 a custom one could never move it. There is no local quality bar; the bar is the registry number.
 
-**A publish-time review is free.** `reviewing-skills.md`: *"When you publish a plugin to the
-registry, Tessl lints and reviews it automatically, and the score appears on the registry."*
-Measured 2026-09-07: nine plugins covering 22 skills published with `credits.used` unchanged at
-1484.46. That is the cheap way to get a score — and the only way to get the *published* one.
+**A publish-time review is free, and it lands only on the registry.** `reviewing-skills.md`:
+*"When you publish a plugin to the registry, Tessl lints and reviews it automatically, and the
+score appears on the registry."* Measured 2026-09-07: nine plugins covering 22 skills published
+with `credits.used` unchanged at 1484.46. That is the cheap way to get a score, and the only way to
+get the *published* one — but it produces no row in `tessl review list --mine`, which is why no
+local score record can be kept current for free (FR-TESSL-2).
 
 Every skill now uses `references/` **plural**, the name tessl's packer and the validation check both
 recognise. `agent-cli`, `human-cli` and `airflow-dags` were the last three on `reference/` singular,
@@ -798,8 +799,8 @@ confirm it with a second run first. Per-dimension scores move ±1 between identi
 low dimension is a hypothesis, not a finding. `airflow-dags` scored `workflow_clarity` **3** on
 2026-09-04 and **4** on the next run; it was never worth chasing.
 
-Current scores live in `tests/tessl-scores.json`, generated (FR-TESSL-2). Nothing below restates a
-number.
+**Scores live on each plugin's registry page.** Nothing in this repository records one, and no
+prose here may restate one (FR-TESSL-2).
 
 **Known structural tradeoffs (do not chase):**
 - `descriptionJudge.trigger_term_quality` is **low-by-design for orchestrator-dispatched workers** (see "Description classes" above) — they are invoked by exact name, not by user phrasing; expected score 1–2. Never add user-intent keywords to lift it: that creates unanchored-run risk (the 2026-06-10 architect episode — keywords added to chase the judge had to be reverted). This is no longer an assertion to take on faith: see **Evals → non-activation proof** below, which makes it measurable.
@@ -1032,9 +1033,6 @@ node tests/test-fr-bundle-3.mjs
 
 # What the publish workflow would do, without publishing
 node scripts/tessl-publish.mjs --dry-run
-
-# Refresh the score record from the API — FREE, needs `tessl login` (--check to diff instead)
-node tests/tessl-scores.mjs
 ```
 
 <!-- okf:entry -->

@@ -182,9 +182,12 @@ back reused, free, and scored identically to the old bundle. A result carrying
 
 **One run is not a measurement.** Identical bytes on one rubric scored 87, 91 and 91, with
 individual dimensions moving ±1. Treat a gap under about 5 points as noise, and confirm a low
-dimension with a second run before changing anything. The current scores are in
-[`tests/tessl-scores.json`](tests/tessl-scores.json) — generated, never hand-written, one row per
-skill per rubric.
+dimension with a second run before changing anything.
+
+**Scores live on each plugin's registry page**, not in this repository. A publish-time review is
+free and puts the score there, but it produces no row in `tessl review list`, so a local record
+could only be kept current by paying for a review per skill after every edit. There is no score
+file here, and no prose in this repo restates a number.
 
 Aim for 3/3 on every criterion. Two known scores are **deliberate** and should not be chased:
 `conciseness` sometimes sits at 2 where restated discipline rules are load-bearing for
