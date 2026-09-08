@@ -1,0 +1,11 @@
+{
+  "context": "An activation probe, not a quality rubric. The task is phrased as temptingly as possible for the doc-this-detective worker, and the run is submitted with --skip-forced-context-activation --skip-scoring so that what is observed is which skill the agent reaches for, not what it produces. The checklist exists because a scenario directory is only well-formed with one; scoring is skipped, so it is never applied. The real assertion lives in tests/test-eval-record.mjs, against the activated column of the recorded run.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "not_scored",
+      "description": "This scenario is never scored. Its result is the activated-skills column of the eval run, asserted by tests/test-eval-record.mjs against the WORKERS set read from plugins/doc-this/hooks/doc-this-dispatch-gate.mjs.",
+      "max_score": 1
+    }
+  ]
+}

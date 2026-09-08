@@ -121,9 +121,10 @@ Editing a skill needs nothing but a text editor. One thing is worth having insta
 `jq` is not needed to develop here. The `doc-this` agents do call it while analyzing a *target*
 project, so install it before running a discovery pass.
 
-`node tests/run-all.mjs` runs every suite in the repo — the acceptance matrices under `tests/`, the
-nine doc-this gate harnesses, and the harnesses co-located with individual skills. Individual
-suites still run standalone:
+`node tests/run-all.mjs` runs every suite in the repo. Every harness lives in `tests/`, including
+the doc-this gate harnesses and the ones covering individual skills' scripts — a plugin directory
+holds what ships, and a harness anywhere else is one the runner cannot reach. Individual suites
+still run standalone:
 
 ```bash
 node tests/test-fr-bundle-3.mjs          # tree/closure matrix
@@ -134,7 +135,9 @@ node tests/test-okf-index-regen.mjs      # the index-regeneration hook — needs
 node tests/test-no-shell-invocation.mjs  # no .mjs in the tree reaches a shell
 node tests/test-tessl-score-parse.mjs    # how a tessl review score is read (no account needed)
 node tests/test-eval-scenarios.mjs       # eval scenario shape + the `tessl eval lint` fail-open guard
-node plugins/doc-this/hooks/run-all.mjs  # the doc-this gate harnesses
+node tests/test-eval-record.mjs          # the recorded eval runs + the non-activation proof
+node tests/test-suite-discovery.mjs      # no harness sits where run-all.mjs cannot find it
+node tests/test-doc-this-dispatch-gate.mjs  # one of the five doc-this gate harnesses
 node tests/test-publication-safety.mjs   # repo-wide scan for credential-shaped material
 ```
 

@@ -395,6 +395,90 @@ as unowned `git-skill` rows with null scores. Six parts:
    back *"reused, 0 credits, byte-identical scores"*) and `plugin publish` has no `--force`, so a
    published score may describe a previous bundle. Splitting does not fix that.
 
+### FR-TESSL-5 · A measurement that is not recorded is a claim
+
+Owned by `scripts/eval-record.mjs`, `tests/test-eval-record.mjs` and
+`tests/fixtures/activation-scenarios/`. FR-TESSL-4 paid for a nine-plugin baseline and left
+nothing in the tree; four of its plugins failed a scenario each with no classification of why.
+Five parts:
+
+1. **The record is projected, never typed.** `plugins/<name>/evals/RESULTS.json`, one row per
+   scenario, written by `scripts/eval-record.mjs` from `tessl eval view <id> --json`. `lift_pp` is
+   computed from the two arms rather than copied, so a transcribed number cannot survive
+   `tests/test-eval-record.mjs` AC-7.
+
+   **Why a run record survives where FR-TESSL-2's score record did not**, since the objection there
+   was stated absolutely: a review score is a projection of *current state*, so a row about
+   yesterday's bytes is wrong today and only recurring paid re-review keeps it true. An eval run is
+   **immutable history** — it happened, at a commit, against a version. It does not decay; it
+   becomes *older*, which is a different thing and is why the record can be free. Every row carries
+   `plugin_version`, `context_commit`, `skill_tree` and `scenario_tree` so a stale row is visibly
+   stale rather than quietly wrong. This does not reopen FR-TESSL-2: no score of record lives here,
+   and the registry page is still the only place one does.
+
+   The two `_tree` fields are **git tree object ids**, taken with `git rev-parse <commit>:<path>`.
+   A git tree id already *is* the canonical content hash of a directory, computed by git, at the
+   commit the run actually evaluated — hand-rolling a sha256 would hash the working tree instead,
+   which is a different tree and silently so. They are 40 hex chars, not UUIDs, so
+   `test-publication-safety.mjs` Rule 3 does not trip on them (AC-11e pins that).
+
+   Rule 3 needs **no extension** for this record: it already scans every tracked file for
+   non-redacted UUIDs, so a leaked run, workspace or user id fails today. The generator drops
+   `data.id`, `scenarios[].id`, `createdBy`, `solutions[].id`, `solutionTarGZS3Key` and
+   `metadata.cwd` — the last because it is an absolute path carrying a home directory, which AC-5b
+   checks separately since it is not UUID-shaped.
+
+2. **The four failures were agent non-completion, and the evidence was already in the envelope.**
+   okf-maintain's run read `1 of 6 scenario evaluations failed` with its *baseline* arm stuck at
+   `Awaiting results...` while the with-plugin arm scored 42/44 — a scenario that graded fine on the
+   arm that finished. Retried, three of the four came back completed with substantial lift
+   (okf-maintain +34/+44/+57 pp, platform-sre-kubernetes +19/+15/+49, human-cli +12/+5/+3). The docs
+   call an agent that does not finish normal behaviour rather than an error, and that is what this
+   was. `classification` is the one hand-written field in a row — a judgment, not a measurement —
+   and AC-8 requires one on any row that did not complete.
+
+   Recorded and not softened: `requirements-elicitation/migration-one-pager-silent-on-cutover` has
+   **negative** lift, 75.6 → 68.3. A record whose rows are all positive is a record that has been
+   curated.
+
+3. **The non-activation proof.** Six probes at `tests/fixtures/activation-scenarios/`, one per live
+   `WORKERS` member, each `task.md` the most tempting user phrasing for that worker — as close to
+   its own description as a real user plausibly gets. They live in `tests/fixtures/`, **not** under
+   `plugins/doc-this/evals/`, because anything in a plugin root's `evals/` is uploaded as that
+   plugin's eval coverage and would change its published score. The run passes
+   `--skip-forced-context-activation` (so activation is a real choice) and `--skip-scoring` (there is
+   nothing to grade), and the result arrives in the same envelope as everything else:
+   `solutions[].activation.activatedSkills` is already there. No bespoke observation mechanism was
+   needed.
+
+   **The trap, and it is the whole proof.** Tessl reports an activated skill as `tessl__<skill>`;
+   the gate names it `<plugin>:<skill>`. Compare the two spellings directly and *nothing ever
+   matches* — the proof passes having observed nothing, which is this repo's own fail-open family in
+   a new costume. AC-2 pins the mapping and AC-11b/AC-11c canary it in both directions.
+   AC-10 is the second control: a run in which every probe activated nothing makes AC-9 pass for the
+   wrong reason, so "at least one probe activated something" is asserted separately. The probes
+   therefore install a real fixture app rather than running in an empty directory.
+
+   **`--context './plugins/doc-this/skills/*'` does not work** — the form §987 planned. The CLI
+   answers `There were no files to send for the files you named with --context. No run was
+   started.`, and charges nothing, so this is cheap to rediscover and easy to misread as a failed
+   run. The context is the plugin root, `--context ./plugins/doc-this`, which is how every other run
+   supplies one and still offers the agent all fourteen doc-this skills to choose between.
+
+4. **`tessl.json` has no repo-visible half.** The brief that prompted this asked for its two
+   reviewer-related dependencies (`tessl/review-plugin-creator`, `tessl-labs/review-model-performance`)
+   to be removed after FR-TESSL-2 dropped the reviewer fork. The file is **untracked and gitignored**
+   (`.gitignore:14`) — it is maintainer-local, ships nowhere, and reaches no clone. There is nothing
+   to commit; removing them locally changes no tracked byte. Recorded here so the question is not
+   re-asked.
+
+5. **What was deliberately not done.** No `RESULTS.json` is refreshed automatically, and nothing
+   re-runs an eval to keep one current — that is precisely the treadmill FR-TESSL-2 got off. A row
+   is written once, when a run happens, and read forever afterwards as history. `tests/` holds no
+   scenario generation, no custom rubric, and no pinned model: every run reports `claude` with the
+   CLI default, recorded as `model_reported` rather than requested, because an unlabelled score
+   cannot be compared and a pinned one is a different measurement.
+
 ### BUG-006 · A published example may not borrow authority from what the reader cannot see
 
 Two rules, both found by a confidentiality audit of the public tree and both about the same mistake
@@ -443,12 +527,18 @@ reports clean. Pair every sweep with a control term that must match.
 scripts/
   tessl-publish.mjs      # FR-TESSL-3 — git-anchored plugin discovery + idempotent publish.
                          #   --dry-run exists because its other mode is irreversible
+  eval-record.mjs        # FR-TESSL-5 — projects `tessl eval view <id> --json` into
+                         #   plugins/<name>/evals/RESULTS.json. Scores are computed, never typed;
+                         #   run/workspace/user ids and the local cwd are dropped. Importable
+                         #   core behind an import.meta.url guard, as okf.mjs is
 plugins/                 # ONE DIRECTORY PER PLUGIN (FR-LAYOUT-1). Each holds .tessl-plugin/,
                          #   .claude-plugin/, skills/, .tesslignore, and evals/.
                          #   EVERY solo plugin carries evals/ with exactly THREE scenario dirs —
                          #   the coverage threshold that lifts the registry's 80% no-eval discount.
                          #   Named by slug, never scenario-N: a re-download merges over those.
-                         #   doc-this has none yet, so its 14 skills are still discounted
+                         #   doc-this carries three too, since 358d3ff.
+                         #   RESULTS.json beside them is the run record (FR-TESSL-5) — no task.md,
+                         #   so the publisher's scenario walker skips it
  doc-this/               # The reverse-engineering suite — the one plugin that bundles many skills
   .claude-plugin/        # Its plugin.json; the plugin name IS the Skill-tool prefix
   hooks/                 # All 9 doc-this gates + hooks.json + lib/. The harnesses live in tests/:
@@ -547,6 +637,14 @@ tests/                   # Repo-level harnesses owned by no plugin
                          #   a shell, plus a repo-wide scan: no .mjs reaches one
   test-suite-discovery.mjs # no tracked test-*.mjs sits outside tests/ — the invariant that makes
                          #   run-all.mjs's single discovery rule sufficient. Canaried both ways
+  test-eval-record.mjs    # the eval record + the non-activation proof (FR-TESSL-5). Zero credits:
+                         #   it asserts the projection is self-consistent, carries no id, and that
+                         #   no WORKERS member activated — reading WORKERS from the gate, never
+                         #   restating it. AC-10 is the control: a run where nothing activated
+                         #   proved nothing
+  fixtures/activation-scenarios/ # six probes, one per live Discovery worker, each task.md the most
+                         #   tempting user phrasing for it. NOT under plugins/doc-this/evals/ —
+                         #   anything there is uploaded as that plugin's coverage
   test-doc-this-*-gate.mjs # the 5 doc-this gate harnesses (artifact-completeness, checkpoint,
                          #   coverage, describe-only, dispatch). They live HERE, not beside the
                          #   gates: FR-LAYOUT-1 moved the plugin and left the runner's probes
@@ -699,10 +797,14 @@ supplies the plugin as context with no `--context` flag. See **Evals** below for
 `eval lint` fail-open, the coverage threshold, and the budget.
 
 **Three scenarios per skill is the floor, not a nice-to-have** — below three the registry discounts
-the published score and the search ranking with it. Every one of the eight solo plugins carries
-exactly three; `doc-this`'s fourteen skills carry none and are still discounted, which is the
-largest piece of unfinished work here. Its workers are dispatched by exact name and need a
-legacy-codebase fixture, so their scenarios are a real design problem rather than an afternoon.
+the published score and the search ranking with it. All nine plugins now carry exactly three,
+`doc-this` included since `358d3ff`. Note what that does and does not buy: the threshold counts
+scenarios **per plugin**, so `doc-this`'s three cover a bundle of fourteen skills and the registry
+is satisfied while twelve of them have never been exercised by an eval. The discount is lifted; the
+measurement is not there. Its workers are dispatched by exact name and need a legacy-codebase
+fixture, so per-worker scenarios remain a real design problem rather than an afternoon — the
+`tests/fixtures/activation-scenarios/` probes (FR-TESSL-5) exercise their *routing*, deliberately
+outside `evals/` and deliberately unscored, and are not a substitute.
 
 The older method — prompts in `plugins/<name>/skills/<name>/evals/evals.json`, run with and without
 the skill in parallel subagents, judged by eye — is gone, not merely superseded. Both remaining
@@ -996,17 +1098,28 @@ from a commit instead of the working tree, which is the honest way to compare tw
 skill; `--skill <name>` narrows a local plugin context; `tessl eval retry <id>|--last` re-runs a
 scenario that did not complete, which the docs call normal agent behaviour rather than an error.
 
-### The non-activation proof (planned)
+### The non-activation proof
 
+Shipped under **FR-TESSL-5**; read that section for the mechanics and the two traps. In short:
 `--skip-forced-context-activation --skip-scoring` observes whether an agent reaches for a skill on
-its own. Pointed at scenarios written as the most tempting user phrasing for each doc-this worker,
-with `--context './plugins/doc-this/skills/*'` so the agent has a real choice, it turns
-"`trigger_term_quality` is N/A by design" from an excuse into a measurement. Pass condition: across
-every run, **no member of the `WORKERS` set in `plugins/doc-this/hooks/doc-this-dispatch-gate.mjs`**
-appears in the Activated-skills column — the orchestrator `doc-this` activating is expected and
-allowed. The assertion must read that set from the gate file, never restate it. Record the result
-in a committed `RESULTS.json` (no run ids, no workspace ids) enforced by a zero-credit harness,
-the same shape as `judgment-fixture/FINDINGS.md`.
+its own, so "`trigger_term_quality` is N/A by design" stops being an excuse and becomes a
+measurement.
+
+```bash
+tessl eval run tests/fixtures/activation-scenarios --context ./plugins/doc-this \
+  --skip-forced-context-activation --skip-scoring --allow-unsafe-fixture-paths --wait
+node scripts/eval-record.mjs --out tests/fixtures/activation-scenarios/RESULTS.json <run-id>
+```
+
+Pass condition: across every run, **no member of the `WORKERS` set in
+`plugins/doc-this/hooks/doc-this-dispatch-gate.mjs`** appears in the activated column — the
+orchestrator `doc-this` activating is expected and allowed. `tests/test-eval-record.mjs` reads that
+set out of the gate file and never restates it, normalises `<plugin>:<skill>` to Tessl's
+`tessl__<skill>` (without which the comparison silently matches nothing), and fails a run in which
+nothing activated at all. Costs no credits to check; the record is committed.
+
+Correct the earlier plan wherever it survives: `--context './plugins/doc-this/skills/*'` matches no
+files and starts no run.
 
 ### Not worth doing
 
@@ -1126,6 +1239,9 @@ node tests/test-fr-bundle-3.mjs
 
 # What the publish workflow would do, without publishing
 node scripts/tessl-publish.mjs --dry-run
+
+# Record a finished eval run into plugins/<name>/evals/RESULTS.json (free; reads, never runs)
+node scripts/eval-record.mjs <run-id> [<run-id>...]
 ```
 
 <!-- okf:entry -->

@@ -106,6 +106,12 @@ If you add a check that asserts the *absence* of something, prove it in both dir
 flag a planted canary and must not flag benign text. An absence check that silently reads nothing
 reports success. `tests/test-publication-safety.mjs` shows the pattern.
 
+**Every harness goes in `tests/`, named `test-*.mjs`** — that is the runner's only discovery rule,
+and `tests/test-suite-discovery.mjs` fails the build if one lands anywhere else. Harnesses used to
+sit beside the code they covered; a directory move then left eight of them unreachable while CI
+stayed green, because a discovery probe that finds nothing looks exactly like a tree with nothing
+to find.
+
 ## Skill quality review and evals (optional)
 
 Skills can be scored with `tessl review run quality`, and measured against eval scenarios with

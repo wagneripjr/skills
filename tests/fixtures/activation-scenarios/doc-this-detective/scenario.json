@@ -1,0 +1,10 @@
+{
+  "description": "Activation probe for the doc-this-detective worker, over the small real service the judgment fixture already ships. A probe over an empty directory proves nothing: an agent with no code to look at activates nothing, and the proof passes for the wrong reason.",
+  "fixtures": {
+    "app": {
+      "type": "directory",
+      "path": "../../../../plugins/doc-this/skills/doc-this/evals/judgment-fixture/app",
+      "installPath": "."
+    }
+  }
+}
