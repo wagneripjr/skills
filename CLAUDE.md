@@ -431,15 +431,25 @@ Five parts:
 2. **The four failures were agent non-completion, and the evidence was already in the envelope.**
    okf-maintain's run read `1 of 6 scenario evaluations failed` with its *baseline* arm stuck at
    `Awaiting results...` while the with-plugin arm scored 42/44 — a scenario that graded fine on the
-   arm that finished. Retried, three of the four came back completed with substantial lift
-   (okf-maintain +34/+44/+57 pp, platform-sre-kubernetes +19/+15/+49, human-cli +12/+5/+3). The docs
-   call an agent that does not finish normal behaviour rather than an error, and that is what this
-   was. `classification` is the one hand-written field in a row — a judgment, not a measurement —
-   and AC-8 requires one on any row that did not complete.
+   arm that finished. **All four retried clean**, every scenario scored on both arms, with
+   substantial lift: okf-maintain +34/+44/+57 pp, platform-sre-kubernetes +19/+15/+49, human-cli
+   +12/+5/+3, prototype-spike +26/−11/+56. Four for four is itself the finding — not one of the five
+   failures was a scenario defect, and none needed a `.learnings` entry, because nothing about a
+   skill was wrong. The docs call an agent that does not finish normal behaviour rather than an
+   error, and that is exactly what this was.
 
-   Recorded and not softened: `requirements-elicitation/migration-one-pager-silent-on-cutover` has
-   **negative** lift, 75.6 → 68.3. A record whose rows are all positive is a record that has been
-   curated.
+   `classification` is the one hand-written field in a row — a judgment, not a measurement — and the
+   generator leaves it `null` on purpose. An early draft had it default to `agent-non-completion`,
+   which made AC-8 assert that this script had filled a field in: every row passed, having said
+   nothing. It is the same fail-open as a scan that reads no files, committed by the guard's own
+   author.
+
+   Recorded and not softened, three rows of **negative** lift:
+   `requirements-elicitation/migration-one-pager-silent-on-cutover` 75.6 → 68.3,
+   `prototype-spike/manifest-viewer-controls-from-the-undecided-questions` 91.5 → 80.9, and
+   `doc-this/billing-module-handover-for-the-team-inheriting-it` 55.6 → 51.1. A record whose rows
+   are all positive is a record that has been curated. Each is a skill making a strong baseline
+   worse on one scenario, which is a lead worth keeping, not an embarrassment worth trimming.
 
 3. **The non-activation proof.** Six probes at `tests/fixtures/activation-scenarios/`, one per live
    `WORKERS` member, each `task.md` the most tempting user phrasing for that worker — as close to
