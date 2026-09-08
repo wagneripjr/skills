@@ -11,10 +11,10 @@ import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, chmodSync }
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { Harness } from '../../../../../tests/lib/harness.mjs';
+import { Harness } from './lib/harness.mjs';
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const TARGET = join(SCRIPT_DIR, 'cross-review.mjs');
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+const TARGET = join(ROOT, 'plugins/doc-this/skills/doc-this-reviewer/scripts/cross-review.mjs');
 
 const h = new Harness('cross-review wrapper');
 const TMPROOT = h.mkTemp('xr-test-');

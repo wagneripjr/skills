@@ -5,10 +5,10 @@ import { mkdirSync, writeFileSync, readFileSync, readdirSync, renameSync, exists
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { Harness } from '../../../../../tests/lib/harness.mjs';
+import { Harness } from './lib/harness.mjs';
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const SUT = join(SCRIPT_DIR, 'backfill-coverage.mjs');
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+const SUT = join(ROOT, 'plugins/doc-this/skills/doc-this/scripts/backfill-coverage.mjs');
 
 const h = new Harness('backfill-coverage');
 const SANDBOX = h.mkTemp('dtbf-test-');

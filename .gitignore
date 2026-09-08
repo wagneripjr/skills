@@ -26,6 +26,10 @@ tessl.json
 .vscode/
 .github/skills/
 
+# An SDLC run log a session dropped inside the plugin's hooks directory. It is transcript, not
+# payload, and everything under a plugin root is a candidate for the pack.
+plugins/doc-this/hooks/docs/
+
 # Local credentials. Untracked is not enough in a public repo — an untracked-but-unignored file
 # is one `git add -A` from being published, which is why test-publication-safety.mjs scans
 # untracked files too and flags this one.

@@ -19,10 +19,10 @@ import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { Harness, runNode } from '../../../tests/lib/harness.mjs';
+import { Harness, runNode } from './lib/harness.mjs';
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const GATE = join(SCRIPT_DIR, 'doc-this-checkpoint-gate.mjs');
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+const GATE = join(ROOT, 'plugins/doc-this/hooks/doc-this-checkpoint-gate.mjs');
 const SESSION_ID = `test-bug002-${process.pid}`;
 
 // Ensure no stray bypass marker would mask a real deny.

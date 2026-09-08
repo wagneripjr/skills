@@ -9,15 +9,15 @@
 // here the manifest is just parsed and asserted directly.
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { Harness } from '../../../../../tests/lib/harness.mjs';
+import { Harness } from './lib/harness.mjs';
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const SKILL_DIR = resolve(SCRIPT_DIR, '..');
-const BUILDER = join(SCRIPT_DIR, 'build-manifest.mjs');
-const LAUNCH = join(SCRIPT_DIR, 'launch.mjs');
+const REPO = dirname(dirname(fileURLToPath(import.meta.url)));
+const SKILL_DIR = join(REPO, 'plugins/doc-this/skills/doc-this-viewer');
+const BUILDER = join(SKILL_DIR, 'scripts', 'build-manifest.mjs');
+const LAUNCH = join(SKILL_DIR, 'scripts', 'launch.mjs');
 const DIST = join(SKILL_DIR, 'assets', 'viewer', 'index.html');
 
 const h = new Harness('Unit Tests: build-manifest.mjs');

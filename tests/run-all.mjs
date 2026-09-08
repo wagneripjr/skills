@@ -3,16 +3,21 @@
 //
 // Exit 0 only when at least one suite ran AND none skipped. A suite that cannot run
 // (exit 77 — a missing prerequisite) is NOT a pass: counting it as one lets a
-// machine lacking it print a green run that asserted nothing. Same contract as
-// doc-this/hooks/run-all.mjs, which this delegates to for the gate suites.
+// machine lacking it print a green run that asserted nothing.
+//
+// Discovery is one rule: every tests/test-*.mjs. It used to also probe two paths under
+// a plugin directory, and when FR-LAYOUT-1 moved that directory both probes silently
+// found nothing while this runner kept printing ALL SUITES PASSED over the hole.
+// test-suite-discovery.mjs now asserts no harness lives outside this directory, so a
+// harness can no longer become unreachable without a suite failing.
 //
 // Usage: node tests/run-all.mjs
 //
 // Zero dependencies. Node >= 18.
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { readdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -28,22 +33,6 @@ const suites = [];
 for (const f of readdirSync(join(ROOT, 'tests')).sort()) {
   if (!/^test-.*\.mjs$/.test(f) || EXCLUDE.has(f)) continue;
   suites.push(join('tests', f));
-}
-
-// doc-this/hooks/ — delegated to its own runner, which already owns the 77 contract.
-if (existsSync(join(ROOT, 'doc-this/hooks/run-all.mjs'))) suites.push('doc-this/hooks/run-all.mjs');
-
-// doc-this/skills/*/scripts/ — harnesses co-located with the skill they cover.
-const skillsDir = join(ROOT, 'doc-this/skills');
-if (existsSync(skillsDir)) {
-  for (const skill of readdirSync(skillsDir).sort()) {
-    const scripts = join(skillsDir, skill, 'scripts');
-    if (!existsSync(scripts)) continue;
-    for (const f of readdirSync(scripts).sort()) {
-      if (!/^test-.*\.mjs$/.test(f) || EXCLUDE.has(f)) continue;
-      suites.push(relative(ROOT, join(scripts, f)));
-    }
-  }
 }
 
 let passed = 0, failed = 0;

@@ -16,10 +16,10 @@ import { mkdirSync, writeFileSync, rmSync, closeSync, openSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { Harness, runNode } from '../../../tests/lib/harness.mjs';
+import { Harness, runNode } from './lib/harness.mjs';
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const GATE = join(SCRIPT_DIR, 'doc-this-describe-only-gate.mjs');
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+const GATE = join(ROOT, 'plugins/doc-this/hooks/doc-this-describe-only-gate.mjs');
 const SESSION_ID = `test-bug005-${process.pid}`;
 const BYPASS = join(tmpdir(), `.claude-doc-this-bypass-${SESSION_ID}`);
 

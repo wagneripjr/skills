@@ -451,7 +451,9 @@ plugins/                 # ONE DIRECTORY PER PLUGIN (FR-LAYOUT-1). Each holds .t
                          #   doc-this has none yet, so its 14 skills are still discounted
  doc-this/               # The reverse-engineering suite — the one plugin that bundles many skills
   .claude-plugin/        # Its plugin.json; the plugin name IS the Skill-tool prefix
-  hooks/                 # All 9 doc-this gates + hooks.json + lib/ + run-all.mjs + gate harnesses
+  hooks/                 # All 9 doc-this gates + hooks.json + lib/. The harnesses live in tests/:
+                         #   everything under a plugin root is a candidate for the pack, and a
+                         #   harness outside tests/ is one the runner cannot reach
   skills/                # The 14 doc-this* skills:
     doc-this/              # Discovery orchestrator — reverse-engineer legacy codebase into ATDD-ready specs
       SKILL.md             # Orchestrator
@@ -543,6 +545,16 @@ tests/                   # Repo-level harnesses owned by no plugin
                          #   profile: spellings declaredProfile accepts (FR-OKF-6)
   test-no-shell-invocation.mjs  # the viewer launcher opens a URL on darwin/linux/win32 without
                          #   a shell, plus a repo-wide scan: no .mjs reaches one
+  test-suite-discovery.mjs # no tracked test-*.mjs sits outside tests/ — the invariant that makes
+                         #   run-all.mjs's single discovery rule sufficient. Canaried both ways
+  test-doc-this-*-gate.mjs # the 5 doc-this gate harnesses (artifact-completeness, checkpoint,
+                         #   coverage, describe-only, dispatch). They live HERE, not beside the
+                         #   gates: FR-LAYOUT-1 moved the plugin and left the runner's probes
+                         #   pointing at the old path, so all of them went unrun and CI stayed
+                         #   green over the hole
+  test-doc-this-backfill-coverage.mjs  # the doc-this skills' own script harnesses, moved out of
+  test-doc-this-cross-review.mjs       #   the payload for the same reason; each anchors its
+  test-doc-this-build-manifest.mjs     #   subject on the repo root, never on its own directory
   lib/tessl.mjs           # reviewScoreFrom / reviewIdFrom / resolveTessl / workspaceFrom — the
                          #   parsing and resolution rules the tessl harnesses share
   test-tessl-score-parse.mjs # those rules, asserted with no account and no credits. AC-3 pins
@@ -639,13 +651,13 @@ The doc-this pipeline is enforced by the hooks below (wired in `plugins/doc-this
 
 | Hook script | Event | What it blocks |
 |---|---|---|
-| `doc-this-dispatch-gate.mjs` | `Skill` | **Unanchored Discovery worker activation**: the 7 Discovery workers (incl. legacy `doc-this-archaeologist` name) denied when `.doc-this/state.json` is absent in cwd. Workers are dispatched objectively by `/doc-this` — circumstantial activation would run them without manifest/ledger/gates (BUG-003 failure mode). `/doc-this`, promote, help, optional agents, and non-pipeline skills pass through. Runs FIRST in the Skill matcher. Harness: `hooks/test-doc-this-dispatch-gate.mjs` (11 cases). |
+| `doc-this-dispatch-gate.mjs` | `Skill` | **Unanchored Discovery worker activation**: the 7 Discovery workers (incl. legacy `doc-this-archaeologist` name) denied when `.doc-this/state.json` is absent in cwd. Workers are dispatched objectively by `/doc-this` — circumstantial activation would run them without manifest/ledger/gates (BUG-003 failure mode). `/doc-this`, promote, help, optional agents, and non-pipeline skills pass through. Runs FIRST in the Skill matcher. Harness: `tests/test-doc-this-dispatch-gate.mjs` (11 cases). |
 | `doc-this-phase-gate.mjs` | `Skill` | `doc-this:doc-this-code-analyst` activation (legacy alias `doc-this-archaeologist` also matched) when `state.json.doc_level` or `state.json.database_ownership` is null. Hard deny (`exit 2`). |
 | `doc-this-checkpoint-gate.mjs` | `Skill` | Any `doc-this:doc-this-<agent>` activation when the predecessor phase has no checkpoint in `state.json.checkpoints` (legacy key `archaeologist` accepted alongside `code_analyst`). Optional agents (tracer, visor, data-master, design-system, promote, help) exempt. Hard deny. |
-| `doc-this-coverage-gate.mjs` | `Skill` | **Total Source Coverage** (BUG-003) at phase transitions, derived from `.doc-this/context/file-manifest.json`: detective denied while any manifest `source` file is missing from `coverage-ledger.json` or unassigned (no `all_files`/`exclusions` home); writer denied while any manifest markup page lacks a per-page `kind:ui` entry in `external-surface.json`; reviewer denied while `code-spec-matrix.md` misses source-file rows. Legacy runs (no manifest) get an advisory pointing at `/doc-this --backfill-coverage` — never denied. Hard deny (`exit 2`), capped 20-path lists, `Set`-difference set math. Regression harness: `hooks/test-doc-this-coverage-gate.mjs` (15 cases). |
-| `doc-this-artifact-completeness-gate.mjs` | `Skill` | **Per-module doc_level artifact completeness** (BUG-004) at the analysis→interpretation transition (`doc_level ∈ {standard, detailed}`): detective denied while any `modules.json` module with entities lacks a non-empty `data-dictionary/[module].md`, or with functions/algorithms lacks `flowcharts/[module].md`. `doc_level=minimal` passes; legacy runs (no `modules.json`) get an advisory. Hard deny (`exit 2`). Regression harness: `hooks/test-doc-this-artifact-completeness-gate.mjs` (14 cases). |
+| `doc-this-coverage-gate.mjs` | `Skill` | **Total Source Coverage** (BUG-003) at phase transitions, derived from `.doc-this/context/file-manifest.json`: detective denied while any manifest `source` file is missing from `coverage-ledger.json` or unassigned (no `all_files`/`exclusions` home); writer denied while any manifest markup page lacks a per-page `kind:ui` entry in `external-surface.json`; reviewer denied while `code-spec-matrix.md` misses source-file rows. Legacy runs (no manifest) get an advisory pointing at `/doc-this --backfill-coverage` — never denied. Hard deny (`exit 2`), capped 20-path lists, `Set`-difference set math. Regression harness: `tests/test-doc-this-coverage-gate.mjs` (15 cases). |
+| `doc-this-artifact-completeness-gate.mjs` | `Skill` | **Per-module doc_level artifact completeness** (BUG-004) at the analysis→interpretation transition (`doc_level ∈ {standard, detailed}`): detective denied while any `modules.json` module with entities lacks a non-empty `data-dictionary/[module].md`, or with functions/algorithms lacks `flowcharts/[module].md`. `doc_level=minimal` passes; legacy runs (no `modules.json`) get an advisory. Hard deny (`exit 2`). Regression harness: `tests/test-doc-this-artifact-completeness-gate.mjs` (14 cases). |
 | `doc-this-promote-warning.mjs` | `Edit\|Write` | Nothing — advisory only. Injects `additionalContext` when the staging tree (`.doc-this-sdd/`, or legacy `_doc_this_sdd/`) exists and the target is `docs/requirements/*.md`, `docs/adr(s)/*.md`, or `docs/TRACEABILITY.md`. |
-| `doc-this-describe-only-gate.mjs` | `Edit\|Write` | Pact violations in `.doc-this-sdd/**` **only** — the staging tree where the agents write (BUG-005; legacy `_doc_this_sdd/**` is still matched for in-flight runs). The promoted `docs/` tree (requirements/adr/bugs) is the shared SDLC namespace co-owned by forward-design work and is NOT policed (a forward ADR's `## Consequences`, a "should be" requirement, and bug files are all legitimate there); promote copies from already-gated staging, so nothing is lost. The regex layer is an **English tripwire, not the rule**: 🟡 markers (language-independent), judgment verbs at line start (`should be / recommend / propose / consider refactoring / better approach`), Technical-debt headers, fabricated ADR sections (`Alternatives considered / Consequences`), NFR-from-pattern phrases (`inferred from middleware`), and sampling-phrases disclosing unread source (`not read in full / read by sampling / skimmed`). Output written in another `doc_language` is caught by **meaning**, by the agents applying the pact — the regex deliberately no longer carries per-language word-lists, because a literal list silently passes every phrasing outside it. Per-artifact escape via `<!-- DOC-THIS-EXEMPT : reason="..." -->`. Best-effort safety net — primary enforcement is the agents' semantic application of `plugins/doc-this/skills/doc-this/references/describe-only-pact.md`. Hard deny (`exit 2`). Regression harness: `plugins/doc-this/hooks/test-doc-this-describe-only-gate.mjs` (24 cases). |
+| `doc-this-describe-only-gate.mjs` | `Edit\|Write` | Pact violations in `.doc-this-sdd/**` **only** — the staging tree where the agents write (BUG-005; legacy `_doc_this_sdd/**` is still matched for in-flight runs). The promoted `docs/` tree (requirements/adr/bugs) is the shared SDLC namespace co-owned by forward-design work and is NOT policed (a forward ADR's `## Consequences`, a "should be" requirement, and bug files are all legitimate there); promote copies from already-gated staging, so nothing is lost. The regex layer is an **English tripwire, not the rule**: 🟡 markers (language-independent), judgment verbs at line start (`should be / recommend / propose / consider refactoring / better approach`), Technical-debt headers, fabricated ADR sections (`Alternatives considered / Consequences`), NFR-from-pattern phrases (`inferred from middleware`), and sampling-phrases disclosing unread source (`not read in full / read by sampling / skimmed`). Output written in another `doc_language` is caught by **meaning**, by the agents applying the pact — the regex deliberately no longer carries per-language word-lists, because a literal list silently passes every phrasing outside it. Per-artifact escape via `<!-- DOC-THIS-EXEMPT : reason="..." -->`. Best-effort safety net — primary enforcement is the agents' semantic application of `plugins/doc-this/skills/doc-this/references/describe-only-pact.md`. Hard deny (`exit 2`). Regression harness: `tests/test-doc-this-describe-only-gate.mjs` (24 cases). |
 | `doc-this-lsp-budget.mjs` | `LSP` (PreToolUse) | Per-agent, per-operation LSP call budgets. The Code Analyst gets unlimited `documentSymbol` but near-zero `incomingCalls` (5) since that's Detective's job. Soft limits at ~50% inject advisory; hard limits deny (`exit 2`). Tracker: `os.tmpdir()/.claude-doc-this-lsp-${SESSION_ID}.json` (a legacy `/tmp` tracker from an in-flight pre-port session is still read). |
 | `doc-this-lsp-timing.mjs` | `LSP` (PostToolUse) | Nothing — advisory only. Tracks per-call duration, warns on slow calls (>15s) and cumulative LSP time (>5min). Logs to `~/.claude/logs/doc-this-lsp.log`. |
 
@@ -653,7 +665,7 @@ The doc-this pipeline is enforced by the hooks below (wired in `plugins/doc-this
 
 **Logs**: `~/.claude/logs/doc-this-gates.log`. Format: `TIMESTAMP | VERSION | SESSION | PROJECT | DECISION | TARGET | REASON | DUR_S`. One line per decision (allow/deny/advise/exempt/skip).
 
-**Adding a new hook**: write a zero-dep Node `.mjs` script under `hooks/` (only `node:fs`/`node:path`/`node:os`/`node:url`), import the canonical I/O helpers from `hooks/lib/doc-this-checks.mjs` (`readHookInput`, `parseInput`, `bypassActive`, `bypassHint`, `statePath`, `resolveProject`, `stateField`, `log`, `allow`, `deny`, `advise`, `advisePost`, `lspTrackerPath`, `phaseToAgent`, `failOpen`), wrap the body in `failOpen(main)`, append a `node "${CLAUDE_PLUGIN_ROOT}/hooks/X.mjs"` command to `hooks/hooks.json`, `chmod +x` the script (verify `git ls-files -s` shows `100755`). Node ≥18 required; hooks fail-open if `node` is missing (command error → non-blocking) or the script throws. Test harnesses are zero-dep `.mjs` too — the tree is shell-free.
+**Adding a new hook**: write a zero-dep Node `.mjs` script under `hooks/` (only `node:fs`/`node:path`/`node:os`/`node:url`), import the canonical I/O helpers from `hooks/lib/doc-this-checks.mjs` (`readHookInput`, `parseInput`, `bypassActive`, `bypassHint`, `statePath`, `resolveProject`, `stateField`, `log`, `allow`, `deny`, `advise`, `advisePost`, `lspTrackerPath`, `phaseToAgent`, `failOpen`), wrap the body in `failOpen(main)`, append a `node "${CLAUDE_PLUGIN_ROOT}/hooks/X.mjs"` command to `hooks/hooks.json`, `chmod +x` the script (verify `git ls-files -s` shows `100755`). Node ≥18 required; hooks fail-open if `node` is missing (command error → non-blocking) or the script throws. Its harness is a zero-dep `.mjs` too — the tree is shell-free — and it belongs in `tests/`, never beside the hook: everything under a plugin root is a candidate for the pack, and `tests/test-suite-discovery.mjs` fails on a harness the runner cannot reach.
 
 ## Adding a New Skill
 
@@ -1041,7 +1053,7 @@ the **same** number:
 | `plugins/<name>/.tessl-plugin/plugin.json` | `.version` |
 | `.claude-plugin/marketplace.json` | that plugin's `.plugins[*].version` |
 
-Current: eight solo plugins at **1.1.1**, `doc-this` at **1.2.0**, marketplace metadata **7.0.0**.
+Current: eight solo plugins at **1.1.1**, `doc-this` at **1.2.2**, marketplace metadata **7.0.0**.
 
 Note what earned that 1.1.1: adding `evals/` changes nothing an installed plugin executes, so by the
 table above it is a `test:` change and no bump at all. The bump is not describing the change, it is
@@ -1105,9 +1117,6 @@ claude plugin list
 
 # Every suite in the repo — what CI runs. Exit 0 only if none skipped.
 node tests/run-all.mjs
-
-# The doc-this gate harnesses
-node plugins/doc-this/hooks/run-all.mjs
 
 # Repo-wide scan for credential-shaped material (also in CI)
 node tests/test-publication-safety.mjs
