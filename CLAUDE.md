@@ -465,6 +465,22 @@ Five parts:
    run. The context is the plugin root, `--context ./plugins/doc-this`, which is how every other run
    supplies one and still offers the agent all fourteen doc-this skills to choose between.
 
+   **Result, first run, recorded in `tests/fixtures/activation-scenarios/RESULTS.json`: the claim
+   holds.** Zero workers activated across six probes, each phrased as temptingly as its own
+   description allows. Two probes — `doc-this-writer` and `doc-this-reviewer` — reached for
+   `tessl__doc-this`, the orchestrator, which is the routing working rather than a violation, and
+   which is also what satisfies AC-10: the other four activated nothing, so without those two the
+   run would have proved nothing at all. `trigger_term_quality` being low for these six is now a
+   measurement, not an excuse, and the tradeoff recorded under **Known structural tradeoffs** can be
+   cited rather than asserted.
+
+   One observation the probes did not set out to make, visible in the record beside them: **the
+   plugin-root runs show `doc-this` activating no skill at all.** Every solo plugin's rows carry its
+   one skill in the activated column; doc-this's three carry an empty one, with forced activation
+   *on*. Its lift on those scenarios came from the injected context, not from a skill being invoked
+   — which is worth knowing before reading any doc-this eval number as evidence about a doc-this
+   skill.
+
 4. **`tessl.json` has no repo-visible half.** The brief that prompted this asked for its two
    reviewer-related dependencies (`tessl/review-plugin-creator`, `tessl-labs/review-model-performance`)
    to be removed after FR-TESSL-2 dropped the reviewer fork. The file is **untracked and gitignored**
@@ -934,7 +950,7 @@ low dimension is a hypothesis, not a finding. `airflow-dags` scored `workflow_cl
 prose here may restate one (FR-TESSL-2).
 
 **Known structural tradeoffs (do not chase):**
-- `descriptionJudge.trigger_term_quality` is **low-by-design for orchestrator-dispatched workers** (see "Description classes" above) — they are invoked by exact name, not by user phrasing; expected score 1–2. Never add user-intent keywords to lift it: that creates unanchored-run risk (the 2026-06-10 architect episode — keywords added to chase the judge had to be reverted). This is no longer an assertion to take on faith: see **Evals → non-activation proof** below, which makes it measurable.
+- `descriptionJudge.trigger_term_quality` is **low-by-design for orchestrator-dispatched workers** (see "Description classes" above) — they are invoked by exact name, not by user phrasing; expected score 1–2. Never add user-intent keywords to lift it: that creates unanchored-run risk (the 2026-06-10 architect episode — keywords added to chase the judge had to be reverted). **No longer an assertion**: measured under FR-TESSL-5 — six probes, each the most tempting user phrasing for one worker, activated zero workers; two reached the orchestrator instead. `tests/fixtures/activation-scenarios/RESULTS.json` is the record and `tests/test-eval-record.mjs` re-checks it for free.
 - `contentJudge.conciseness` may stay 2 (or 1 for doc-this-code-analyst) where inline commands and restated discipline rules are load-bearing for actionability=3. Verify judge claims before reacting (e.g., judge line-count assertions have been wrong).
 - `validation.relative_links` on **okf-maintain** flags a missing `index.md`. It is a false positive and must not be "fixed": the link sits inside a fenced block quoting `okf.mjs`'s `ENTRY_BLOCK` verbatim, `tests/test-okf-maintain.mjs` AC-17 pins that quote byte-identical to what the script writes, and the link is relative to the *target* repo — it can never resolve from the skill directory. Editing it breaks AC-17 and makes the doc lie about what `wire` emits. The same block is quoted in `references/adoption.md` and carries the same warning.
 
