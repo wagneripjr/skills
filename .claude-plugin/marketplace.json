@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "One plugin per skill: install only what you need. Plus doc-this, a reverse-engineering pipeline whose skills share a hook set and therefore ship as one package.",
-    "version": "7.0.0"
+    "version": "7.1.0"
   },
   "plugins": [
     {
@@ -25,7 +25,7 @@
       "name": "doc-this",
       "source": "./plugins/doc-this",
       "description": "Reverse-engineer a legacy codebase into ATDD-ready, traceable specifications",
-      "version": "1.2.2"
+      "version": "1.2.3"
     },
     {
       "name": "human-cli",
@@ -37,7 +37,7 @@
       "name": "okf-maintain",
       "source": "./plugins/okf-maintain",
       "description": "Adopt and maintain an Open Knowledge Format v0.2 documentation bundle: frontmatter, generated indexes, a fail-closed conformance check, and coverage that names every unindexed document",
-      "version": "1.1.1"
+      "version": "1.2.0"
     },
     {
       "name": "platform-sre-kubernetes",
