@@ -61,8 +61,11 @@ autofixer; `{@html}` in `MarkdownPane.svelte` is an intentional, documented exce
 
 ## Testing
 
+Harnesses live at the repository root, not inside the plugin — everything under a plugin root is a
+candidate for the publish pack. Run from there:
+
 ```bash
-node scripts/test-build-manifest.mjs
+node tests/test-doc-this-build-manifest.mjs
 ```
 
 Unit tests cover the manifest builder (nav groups, confidence counts, surface catalog,

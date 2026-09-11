@@ -6,8 +6,9 @@ because a static HTTP server cannot list a directory as JSON.
 
 **Stability rule:** no wall-clock `generated_at` field — the manifest is a pure function
 of the on-disk doc-this output, so two runs over the same tree produce byte-identical
-output (the `test-build-manifest.mjs` idempotency check depends on this). `launch.mjs`
-rebuilds it on every launch, so freshness comes from re-running, not from a timestamp.
+output (the idempotency check in `tests/test-doc-this-build-manifest.mjs`, at the
+repository root, depends on this). `launch.mjs` rebuilds it on every launch, so freshness
+comes from re-running, not from a timestamp.
 
 ## Path convention
 
