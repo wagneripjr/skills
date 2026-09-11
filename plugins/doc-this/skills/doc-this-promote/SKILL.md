@@ -220,7 +220,7 @@ docs(FR-002): promote payments unit from legacy reverse engineering
 - **`.feature` collision**: target filename exists. Ask the user; existing specs may be hand-written.
 - **`TRACEABILITY.md` is missing or malformed** (curated mode): ask the user to scaffold first.
 - **`traceability: generated` declared in okf.yaml**: halt — the repo carries a projection obligation this session cannot satisfy; never hand-write the projection and never hand-append rows into it.
-- **Existing `index.md` without the generator marker**: hand-authored — halt and ask before overwriting.
+- **Existing `index.md` carrying neither marker `okf.mjs` writes**: hand-authored, or adoptable only if a regeneration reproduces every row — halt and ask before overwriting.
 - **No spec runner detected**: ask the user to pick one (Reqnroll/Cucumber.js/playwright-bdd/behave/godog/cucumber-rs).
 - **`docs/BOUNDARIES.md` mentioned in an ADR but absent**: warn the user that any architecture-boundary gate their project runs will fail on the first commit against a missing boundaries file; offer to scaffold.
 - **Promotion target is `docs/bugs/`**: doc-this never writes there. If any unit's content was framed as a bug report, halt and ask the user to refile it manually as a human-authored `BUG-NNN` outside this workflow.

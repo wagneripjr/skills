@@ -23,7 +23,8 @@ Where `(-segment)*` allows zero or more uppercase segments and the last segment 
 
 In an OKF repo (`docs/okf.yaml` present), read `docs/requirements/index.md` FIRST — the generated
 `id — status — description` catalog answers the existing-ID scan in one read. Fall back to the
-directory scan below when there is no index or it lacks the generator marker.
+directory scan below when there is no index, or its marker is neither of the two `okf.mjs` writes
+(`references/okf-conformance.md`) — any other catalog may be stale or partial.
 
 ```
 existing_ids = scan(docs/requirements/*.md)
