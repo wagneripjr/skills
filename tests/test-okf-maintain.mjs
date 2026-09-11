@@ -80,7 +80,7 @@
 // real git work tree and therefore owns its own 77. Numbers do not repeat across the two files.
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync, renameSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { Harness, skip } from './lib/harness.mjs';
@@ -364,9 +364,15 @@ h.check('AC-19 control: a plain description is unchanged',
 // Truncating would put a half-sentence nobody wrote into the field consumers trust most, which is
 // the "inventing a description" anti-pattern arriving by another route. An absent description is
 // already a visible gap; an unusable one becomes the same gap, and is reported for repair.
+// DESC_MAX is not exported, so the cap is restated here on purpose: a silent change to it
+// must move a fixture, not pass unnoticed. Pitching both fixtures at the cap is the point —
+// one comfortably past it, one exactly on it — because a canary that sits 200 chars below
+// the boundary stops testing the boundary the moment the boundary moves, which is what
+// happened when DESC_MAX went 160 -> 512 and this AC's over-cap fixture became a control.
+const CAP = 512;
 R = join(WORK, 'longdesc'); mkdirSync(join(R, 'docs'), { recursive: true });
-const LONG = 'word '.repeat(60).trim();
-const ATCAP = 'a'.repeat(159);
+const LONG = 'word '.repeat(160).trim();
+const ATCAP = 'a'.repeat(CAP);
 write(join(R, 'docs/overlong.md'), `---\ntype: Requirement\ntitle: Overlong\ndescription: ${LONG}\n---\n\nbody\n`);
 write(join(R, 'docs/atcap.md'), `---\ntype: Requirement\ntitle: Atcap\ndescription: ${ATCAP}\n---\n\nbody\n`);
 res = run('index', R);
@@ -376,9 +382,10 @@ h.check('AC-20 no dangling separator or trailing space', !/^\* \[Overlong\]\(ove
 has('AC-20 names the file it dropped', res.err, 'long-description: docs/overlong.md');
 has('AC-20 check reports it as a note', run('check', R).out, 'note: docs/overlong.md');
 eq('AC-20 an over-long description is never a conformance violation', run('check', R).rc, 0);
-// negative control — a description at the cap must survive verbatim
-h.check('AC-20 control: a 159-char description survives verbatim',
+// negative control — a description exactly at the cap must survive verbatim
+h.check(`AC-20 control: a ${CAP}-char description survives verbatim`,
   idx.includes(`* [Atcap](atcap.md) - ${ATCAP}`));
+hasNot('AC-20 control: and the one at the cap is not reported', res.err, 'docs/atcap.md');
 run('index', R); const first20 = read(join(R, 'docs/index.md'));
 run('index', R); const second20 = read(join(R, 'docs/index.md'));
 h.check('AC-20 gated output is still idempotent', first20 === second20);
@@ -705,5 +712,342 @@ if (!existsSync(CORPUS)) {
       `expected ${JSON.stringify(expected)} got ${JSON.stringify(got)}`);
   }
 }
+
+
+// ---------- AC-55..AC-65 the profiled dialect (FR-OKF-7) ----------
+// One generator, two dialects. The default one is what every unprofiled repository already has on
+// disk, so its rows are a compatibility contract and the first AC here is a negative control that
+// they did not move. The profiled one exists because a bundle whose manifest requires an id and a
+// status of every concept document has two fields the default row cannot carry, and a catalog that
+// silently drops them answers none of the questions it is opened for.
+//
+// The three markers are READ OUT OF the generator, never restated. A fixture built from a mistyped
+// marker is not recognised, the adoption path never runs, and every assertion below passes having
+// exercised nothing — the fail-open shape this repo keeps meeting. Read from a CHILD process for
+// the same reason AC-45 is: if the import guard regresses, a top-level import takes the whole
+// suite down as a crash instead of reporting it as a failure.
+const markerProbe = `
+  import { GEN_MARKER, GEN_MARKER_V1, RETIRED_V1_MARKER } from ${JSON.stringify(OKF)};
+  process.stdout.write(JSON.stringify({ GEN_MARKER, GEN_MARKER_V1, RETIRED_V1_MARKER }));
+`;
+const markerRun = spawnSync(process.execPath, ['--input-type=module', '-e', markerProbe], { encoding: 'utf8' });
+let MARK = {};
+try { MARK = JSON.parse(markerRun.stdout || '{}'); } catch { MARK = {}; }
+const DEFAULT_MARKER = MARK.GEN_MARKER;
+const PROFILED_MARKER = MARK.GEN_MARKER_V1;
+const RETIRED_MARKER = MARK.RETIRED_V1_MARKER;
+// Asserted before anything uses them: undefined markers would make every fixture below a string
+// containing "undefined", which no code path recognises and no assertion could distinguish from
+// a generator that simply never adopts.
+h.check('AC-55 the three markers are exported and distinct',
+  [DEFAULT_MARKER, PROFILED_MARKER, RETIRED_MARKER].every((m) => typeof m === 'string' && m.length > 10)
+  && new Set([DEFAULT_MARKER, PROFILED_MARKER, RETIRED_MARKER]).size === 3,
+  `got: ${JSON.stringify(MARK)} ${markerRun.stderr}`);
+
+const pdoc = (p, id, type, status, title, description) =>
+  write(p, `---\nid: ${id}\ntype: ${type}\nstatus: ${status}\ntitle: ${title}\ndescription: ${description}\n---\n\nbody\n`);
+const manifest = (root, body) => write(join(root, 'docs/okf.yaml'), body);
+const retiredIndex = (p, heading, rows) =>
+  write(p, `# ${heading}\n\n${RETIRED_MARKER}\n\n${rows.join('\n')}\n`);
+// Block and flow are the two live spellings of the same declaration; a reader that knows only one
+// returns [] for the other, which reads a profiled bundle as an unprofiled one and rewrites its
+// whole catalog in the poorer dialect.
+const BLOCK_KEYS = 'required_keys:\n  - id\n  - type\n  - status\n  - description\n';
+const FLOW_KEYS = 'required_keys: [id, type, status, description]\n';
+const BLOCK_KEYS_PLAIN = 'required_keys:\n  - type\n  - description\n';
+const FLOW_KEYS_PLAIN = 'required_keys: [type, description]\n';
+const subdirRows = (text) => text.split('\n')
+  .filter((l) => /^\* \[[^\]]+\]\([^)]+\/index\.md\)/.test(l))
+  .map((l) => /^\* \[([^\]]+)\]/.exec(l)[1]);
+const differingLines = (before, after) => {
+  const a = before.split('\n');
+  const b = after.split('\n');
+  const out = [];
+  for (let i = 0; i < Math.max(a.length, b.length); i += 1) if (a[i] !== b[i]) out.push([a[i], b[i]]);
+  return out;
+};
+
+// ---------- AC-55 the default dialect did not move, and the one honest exception ----------
+// Every unprofiled repository regenerates through this path on the next edit, so a change here is
+// a change to files already committed elsewhere. The exception is deliberate and must be visible:
+// DESC_MAX moved 160 -> 512, so a description in that band now renders where it used to be dropped.
+R = fixture('dialect-default');
+doc(join(R, 'docs/midband.md'), 'Note', 'Midband', 'x'.repeat(300));
+res = run('index', R);
+idx = read(join(R, 'docs/index.md'));
+h.check('AC-55 the default index still opens with the default marker, before any heading',
+  idx.startsWith(`${DEFAULT_MARKER}\n\n# `));
+h.check('AC-55 rows are still * [title](link) - description under a # <Type> heading',
+  read(join(R, 'docs/requirements/index.md'))
+    .includes('# Requirement\n\n* [Cancel an order](FR-002.md) - User cancels an unshipped order.'));
+h.check('AC-55 subdirectories still live under their own # Subdirectories heading',
+  idx.includes('# Subdirectories\n\n* [adr](adr/index.md)'));
+h.check('AC-55 and only the bundle root carries okf_version frontmatter',
+  read(join(R, 'index.md')).startsWith('---\nokf_version: "0.2"\n---\n\n') && !idx.startsWith('---'));
+// the honest exception — a 300-char description is now carried, not dropped
+h.check('AC-55 a 300-char description now RENDERS, where the old 160 cap dropped it',
+  idx.includes(`* [Midband](midband.md) - ${'x'.repeat(300)}`));
+hasNot('AC-55 and it is not reported as over-cap any more', res.err, 'long-description: docs/midband.md');
+
+// ---------- AC-56 a profiled repository round-trips, and the root gains frontmatter ----------
+// Adoption must be a marker swap and nothing else when the rows are already right. Anything more
+// is the tool rewriting a catalog it claims only to be re-stamping.
+R = join(WORK, 'dialect-profiled');
+rmSync(R, { recursive: true, force: true });
+manifest(R, `okf_version: "0.2"\n${BLOCK_KEYS}`);
+pdoc(join(R, 'docs/requirements/FR-001.md'), 'FR-001', 'Requirement', 'Done', 'Place an order', 'User submits a cart.');
+pdoc(join(R, 'docs/requirements/FR-002.md'), 'FR-002', 'Requirement', 'Draft', 'Cancel an order', 'User cancels it.');
+retiredIndex(join(R, 'docs/requirements/index.md'), 'requirements', [
+  '* [FR-001 — Place an order](FR-001.md) - **Done** — User submits a cart.',
+  '* [FR-002 — Cancel an order](FR-002.md) - **Draft** — User cancels it.',
+]);
+const beforeRT = read(join(R, 'docs/requirements/index.md'));
+res = run('index', R);
+const afterRT = read(join(R, 'docs/requirements/index.md'));
+const rtDiff = differingLines(beforeRT, afterRT);
+h.check('AC-56 an already-correct profiled index changes by exactly one line', rtDiff.length === 1,
+  JSON.stringify(rtDiff));
+h.check('AC-56 and that line is the marker swap, nothing else',
+  rtDiff.length === 1 && rtDiff[0][0] === RETIRED_MARKER && rtDiff[0][1] === PROFILED_MARKER,
+  JSON.stringify(rtDiff));
+has('AC-56 the adoption is reported', res.err, 'adopted-index: docs/requirements/index.md');
+h.check('AC-56 the heading is the directory basename and the marker sits AFTER it',
+  afterRT.startsWith(`# requirements\n\n${PROFILED_MARKER}\n\n`));
+h.check('AC-56 the bundle root gains okf_version frontmatter, above its heading',
+  read(join(R, 'index.md')).startsWith(`---\nokf_version: "0.2"\n---\n\n# ${basename(R)}\n\n${PROFILED_MARKER}\n`));
+h.check('AC-56 a non-root profiled index carries no frontmatter', !afterRT.startsWith('---'));
+h.check('AC-56 subdirectory rows are inline in the same list, with no description slot',
+  read(join(R, 'docs/index.md')).includes('* [requirements](requirements/index.md)\n')
+  && !/\* \[requirements\]\(requirements\/index\.md\) -/.test(read(join(R, 'docs/index.md'))));
+// The profiled dialect has nowhere to put a folder description, so asking for one is asking for
+// something the format cannot hold. Control below proves the prompt still exists where it can.
+hasNot('AC-56 needs-description never fires under the profiled dialect', res.err, 'needs-description:');
+rmSync(join(R, 'docs/okf.yaml'));
+rmSync(join(R, 'docs/requirements/index.md'));
+has('AC-56 control: the same tree unprofiled still asks for one', run('index', R).err,
+  'needs-description: docs/requirements');
+
+// ---------- AC-57 a retired index is refused where the manifest cannot express its rows ----------
+// The default renderer has no slot for an id or a status, so adopting here would silently downgrade
+// a catalog that answers "which requirement is which, and where is it up to" into one that cannot.
+R = join(WORK, 'retired-unprofiled');
+rmSync(R, { recursive: true, force: true });
+manifest(R, 'okf_version: "0.2"\nrequired_keys: [type, description]\n');
+pdoc(join(R, 'docs/requirements/FR-001.md'), 'FR-001', 'Requirement', 'Done', 'Place an order', 'User submits a cart.');
+retiredIndex(join(R, 'docs/requirements/index.md'), 'requirements', [
+  '* [FR-001 — Place an order](FR-001.md) - **Done** — User submits a cart.',
+]);
+const beforeUP = read(join(R, 'docs/requirements/index.md'));
+res = run('index', R);
+eq('AC-57 canary: the retired index is left byte-identical',
+  read(join(R, 'docs/requirements/index.md')), beforeUP);
+has('AC-57 and the reason is the dialect, not the documents', res.err,
+  'foreign-index: docs/requirements/index.md (carries the retired v1 marker; the default dialect projects no id or status');
+has('AC-57 with the advice NOT to delete it', res.err, 'Do not delete the index');
+// control: the same tree, the same index, one line added to the manifest
+manifest(R, `okf_version: "0.2"\n${FLOW_KEYS}`);
+res = run('index', R);
+has('AC-57 control: declaring id and status makes the same file adoptable', res.err,
+  'adopted-index: docs/requirements/index.md');
+h.check('AC-57 control: and the adopted rows keep the id and the status',
+  read(join(R, 'docs/requirements/index.md'))
+    .includes('* [FR-001 — Place an order](FR-001.md) - **Done** — User submits a cart.'));
+
+// ---------- AC-58 one concept document without id/status holds the whole directory ----------
+// Adoption is per directory because an index is: half a catalog in the richer dialect and half in
+// the poorer one is not a catalog, it is two grammars in one file that no reader survives.
+R = join(WORK, 'profiled-degraded');
+rmSync(R, { recursive: true, force: true });
+manifest(R, `okf_version: "0.2"\n${BLOCK_KEYS}`);
+pdoc(join(R, 'docs/requirements/FR-001.md'), 'FR-001', 'Requirement', 'Done', 'Place an order', 'User submits a cart.');
+write(join(R, 'docs/requirements/FR-002.md'),
+  '---\ntype: Requirement\ntitle: No status here\ndescription: User cancels it.\n---\n\nbody\n');
+retiredIndex(join(R, 'docs/requirements/index.md'), 'requirements', [
+  '* [FR-001 — Place an order](FR-001.md) - **Done** — User submits a cart.',
+]);
+const beforeDeg = read(join(R, 'docs/requirements/index.md'));
+res = run('index', R);
+eq('AC-58 canary: the directory is left byte-identical', read(join(R, 'docs/requirements/index.md')), beforeDeg);
+has('AC-58 and the offending document is named in the refusal', res.err,
+  '1 document(s) carry no id/status: docs/requirements/FR-002.md');
+has('AC-58 it is reported on its own line too', res.err,
+  'unprofiled-document: docs/requirements/FR-002.md (no id/status - rendered in the default row shape)');
+// the default row shape is observable in a directory with no index in the way
+write(join(R, 'docs/notes/loose.md'), '---\ntype: Note\ntitle: Loose\ndescription: A loose note.\n---\n\nbody\n');
+run('index', R);
+h.check('AC-58 and such a document renders in the default row shape, never **** — around nothing',
+  read(join(R, 'docs/notes/index.md')).includes('* [Loose](loose.md) - A loose note.'));
+// control: give it the two keys and the same directory adopts
+pdoc(join(R, 'docs/requirements/FR-002.md'), 'FR-002', 'Requirement', 'Draft', 'Cancel an order', 'User cancels it.');
+res = run('index', R);
+has('AC-58 control: supplying id and status clears the refusal', res.err,
+  'adopted-index: docs/requirements/index.md');
+hasNot('AC-58 control: and nothing is foreign any more', res.err, 'foreign-index:');
+
+// ---------- AC-59 the capability gate is scoped by isConcept, in BOTH directions ----------
+// This is the highest-value pair in the set. Scoped to every listable file instead of to concept
+// documents, the gate refuses any folder containing a README — forever, with no action the author
+// can take that clears it: a README cannot be given an id, and naming it in .okfignore deletes the
+// row that FR-OKF-3 exists to guarantee. That is a condition nothing can satisfy, which is the
+// exact shape of the refusal FR-OKF-3 removed, wearing a new costume. The other direction matters
+// just as much: a genuine concept document with the identical lack MUST block and MUST be named,
+// or the gate is not a gate.
+R = join(WORK, 'isconcept-scope');
+rmSync(R, { recursive: true, force: true });
+manifest(R, `okf_version: "0.2"\n${BLOCK_KEYS}`);
+pdoc(join(R, 'docs/withmeta/FR-001.md'), 'FR-001', 'Requirement', 'Done', 'Place an order', 'User submits a cart.');
+write(join(R, 'docs/withmeta/README.md'), 'project furniture, no frontmatter\n');
+retiredIndex(join(R, 'docs/withmeta/index.md'), 'withmeta', [
+  '* [FR-001 — Place an order](FR-001.md) - **Done** — User submits a cart.',
+]);
+pdoc(join(R, 'docs/withconcept/FR-002.md'), 'FR-002', 'Requirement', 'Done', 'Cancel an order', 'User cancels it.');
+write(join(R, 'docs/withconcept/notes.md'), '# Loose notes\n\nsame lack, not project furniture\n');
+retiredIndex(join(R, 'docs/withconcept/index.md'), 'withconcept', [
+  '* [FR-002 — Cancel an order](FR-002.md) - **Done** — User cancels it.',
+]);
+const beforeConcept = read(join(R, 'docs/withconcept/index.md'));
+res = run('index', R);
+has('AC-59 canary: a README with no frontmatter does NOT block adoption — scoped to every listable file, this folder would be refused forever with no action that clears it',
+  res.err, 'adopted-index: docs/withmeta/index.md');
+hasNot('AC-59 and the README is never named as a reason', res.err, 'docs/withmeta/README.md');
+h.check('AC-59 yet it still gets its row — unreported is not unlisted',
+  read(join(R, 'docs/withmeta/index.md')).includes('* [README](README.md)'));
+h.check('AC-59 canary, other direction: a concept document with the IDENTICAL lack blocks adoption',
+  read(join(R, 'docs/withconcept/index.md')) === beforeConcept);
+has('AC-59 and it is named, where the README was not', res.err,
+  '1 document(s) carry no id/status: docs/withconcept/notes.md');
+has('AC-59 foreign-index names the directory it held back', res.err,
+  'foreign-index: docs/withconcept/index.md');
+
+// ---------- AC-60 a description past the cap blocks adoption, never a quiet drop ----------
+// The cap already drops a description rather than truncating it (AC-20). Doing that while ALSO
+// adopting would hand the retired catalog's own description away and stamp this tool's marker on
+// the result — a lossy rewrite that then looks like a file this tool has always owned.
+R = join(WORK, 'profiled-overcap');
+rmSync(R, { recursive: true, force: true });
+manifest(R, `okf_version: "0.2"\n${BLOCK_KEYS}`);
+const OVERCAP = 'y'.repeat(CAP + 88);
+pdoc(join(R, 'docs/requirements/FR-001.md'), 'FR-001', 'Requirement', 'Done', 'Place an order', OVERCAP);
+retiredIndex(join(R, 'docs/requirements/index.md'), 'requirements', [
+  '* [FR-001 — Place an order](FR-001.md) - **Done** — the description the retired catalog carried.',
+]);
+const beforeCap = read(join(R, 'docs/requirements/index.md'));
+res = run('index', R);
+eq('AC-60 canary: the retired index is left byte-identical', read(join(R, 'docs/requirements/index.md')), beforeCap);
+has('AC-60 and the cap is named as the reason, with the path', res.err,
+  `1 description(s) over the ${CAP}-char cap: docs/requirements/FR-001.md`);
+has('AC-60 the drop is reported on its own line too', res.err,
+  `long-description: docs/requirements/FR-001.md (${OVERCAP.length} chars, max ${CAP})`);
+// control: bring it inside the cap and the same file adopts, carrying the description
+pdoc(join(R, 'docs/requirements/FR-001.md'), 'FR-001', 'Requirement', 'Done', 'Place an order', 'Within the cap.');
+res = run('index', R);
+has('AC-60 control: within the cap the same file adopts', res.err, 'adopted-index: docs/requirements/index.md');
+h.check('AC-60 control: and the description is carried, not lost',
+  read(join(R, 'docs/requirements/index.md')).includes('**Done** — Within the cap.'));
+
+// ---------- AC-61 concept_folders is the author's running order ----------
+// Sorting the declared folders alphabetically would discard the only ordering information the
+// manifest carries, and it would do it invisibly: the index still lists everything.
+R = join(WORK, 'concept-order');
+rmSync(R, { recursive: true, force: true });
+manifest(R, `okf_version: "0.2"\n${BLOCK_KEYS}concept_folders:\n  - requirements\n  - adr\n`);
+pdoc(join(R, 'docs/requirements/FR-001.md'), 'FR-001', 'Requirement', 'Done', 'Place an order', 'd.');
+pdoc(join(R, 'docs/adr/ADR-001.md'), 'ADR-001', 'ADR', 'Accepted', 'JWT authentication', 'd.');
+pdoc(join(R, 'docs/bbb/N-001.md'), 'N-001', 'Note', 'Draft', 'Bee', 'd.');
+pdoc(join(R, 'docs/zzz/N-002.md'), 'N-002', 'Note', 'Draft', 'Zed', 'd.');
+run('index', R);
+h.check('AC-61 declared folders keep their declared order, and the rest fall in alphabetically behind them',
+  JSON.stringify(subdirRows(read(join(R, 'docs/index.md')))) === JSON.stringify(['requirements', 'adr', 'bbb', 'zzz']),
+  JSON.stringify(subdirRows(read(join(R, 'docs/index.md')))));
+// control: with nothing declared the order is purely alphabetical, which is what makes the
+// assertion above discriminating — 'requirements' before 'adr' can only come from the manifest
+manifest(R, `okf_version: "0.2"\n${BLOCK_KEYS}`);
+run('index', R);
+h.check('AC-61 control: with no concept_folders the order is alphabetical',
+  JSON.stringify(subdirRows(read(join(R, 'docs/index.md')))) === JSON.stringify(['adr', 'bbb', 'requirements', 'zzz']),
+  JSON.stringify(subdirRows(read(join(R, 'docs/index.md')))));
+
+// ---------- AC-62 both manifest spellings select the profiled dialect ----------
+// Both are live in adopted repositories. A reader that knows one spelling silently reads the other
+// repository as unprofiled and rewrites its whole catalog in the poorer dialect on the next edit.
+for (const [spelling, keys, plain] of [['block', BLOCK_KEYS, BLOCK_KEYS_PLAIN], ['flow', FLOW_KEYS, FLOW_KEYS_PLAIN]]) {
+  const S = join(WORK, `spelling-${spelling}`);
+  rmSync(S, { recursive: true, force: true });
+  manifest(S, `okf_version: "0.2"\n${keys}`);
+  pdoc(join(S, 'docs/requirements/FR-001.md'), 'FR-001', 'Requirement', 'Done', 'Place an order', 'User submits a cart.');
+  run('index', S);
+  const si = read(join(S, 'docs/requirements/index.md'));
+  h.check(`AC-62 the ${spelling} sequence selects the profiled dialect`,
+    si.startsWith(`# requirements\n\n${PROFILED_MARKER}\n\n`), si);
+  h.check(`AC-62 and the ${spelling} spelling's rows carry the id and the status`,
+    si.includes('* [FR-001 — Place an order](FR-001.md) - **Done** — User submits a cart.'), si);
+  // control: the same spelling without id and status stays on the default dialect
+  manifest(S, `okf_version: "0.2"\n${plain}`);
+  rmSync(join(S, 'docs/requirements/index.md'));
+  run('index', S);
+  h.check(`AC-62 control: the ${spelling} spelling without id/status stays default`,
+    read(join(S, 'docs/requirements/index.md')).startsWith(`${DEFAULT_MARKER}\n\n# Requirement\n`));
+}
+
+// ---------- AC-63 a merely STALE index adopts and heals ----------
+// Pinned because it was a corrected design error: an earlier gate compared the committed text with
+// the rendered text and refused when they differed, which turns the tool's entire purpose — making
+// a stale index current — into a permanent refusal whose only escape is deleting the catalog.
+R = join(WORK, 'profiled-stale');
+rmSync(R, { recursive: true, force: true });
+manifest(R, `okf_version: "0.2"\n${BLOCK_KEYS}`);
+pdoc(join(R, 'docs/requirements/FR-001.md'), 'FR-001', 'Requirement', 'Done', 'Place an order', 'The current description.');
+retiredIndex(join(R, 'docs/requirements/index.md'), 'requirements', [
+  '* [FR-001 — A title nobody uses any more](FR-001.md) - **Draft** — a description three edits out of date.',
+]);
+const beforeStale = read(join(R, 'docs/requirements/index.md'));
+res = run('index', R);
+const afterStale = read(join(R, 'docs/requirements/index.md'));
+h.check('AC-63 the stale index was rewritten, not refused', afterStale !== beforeStale);
+h.check('AC-63 and it differs by MORE than the marker, which a text-diff gate would have refused',
+  differingLines(beforeStale, afterStale).length > 1,
+  JSON.stringify(differingLines(beforeStale, afterStale)));
+has('AC-63 it is reported as an adoption', res.err, 'adopted-index: docs/requirements/index.md');
+h.check('AC-63 the healed row carries the document\'s current truth',
+  afterStale.includes('* [FR-001 — Place an order](FR-001.md) - **Done** — The current description.'));
+hasNot('AC-63 and the stale title is gone', afterStale, 'A title nobody uses any more');
+
+// ---------- AC-64 an index that OMITTED documents gains rows and still adopts ----------
+// A superset of rows is not a loss. Listing a document the retired generator left out is FR-OKF-3
+// working; counting it as a difference that blocks adoption would make the omission permanent.
+R = join(WORK, 'profiled-omission');
+rmSync(R, { recursive: true, force: true });
+manifest(R, `okf_version: "0.2"\n${BLOCK_KEYS}`);
+pdoc(join(R, 'docs/requirements/FR-001.md'), 'FR-001', 'Requirement', 'Done', 'Place an order', 'Listed already.');
+pdoc(join(R, 'docs/requirements/FR-002.md'), 'FR-002', 'Requirement', 'Draft', 'Cancel an order', 'Never listed.');
+retiredIndex(join(R, 'docs/requirements/index.md'), 'requirements', [
+  '* [FR-001 — Place an order](FR-001.md) - **Done** — Listed already.',
+]);
+res = run('index', R);
+idx = read(join(R, 'docs/requirements/index.md'));
+has('AC-64 an index missing a document still adopts', res.err, 'adopted-index: docs/requirements/index.md');
+h.check('AC-64 and the omitted document gains a row', idx.includes('* [FR-002 — Cancel an order](FR-002.md) - **Draft** — Never listed.'));
+h.check('AC-64 while the row it already had survives', idx.includes('* [FR-001 — Place an order](FR-001.md) - **Done** — Listed already.'));
+
+// ---------- AC-65 a 0.1 manifest is reported, never a refusal and never a dialect selector ----------
+// required_keys selects the dialect; okf_version does not. Treating a stale version field as the
+// evidence would read a bundle by a field that was never the evidence, and refusing on it would
+// leave the repositories most in need of regeneration with no index at all.
+R = join(WORK, 'retired-version');
+rmSync(R, { recursive: true, force: true });
+manifest(R, `okf_version: "0.1"\n${BLOCK_KEYS}`);
+pdoc(join(R, 'docs/requirements/FR-001.md'), 'FR-001', 'Requirement', 'Done', 'Place an order', 'User submits a cart.');
+res = run('index', R);
+eq('AC-65 a 0.1 manifest is not a refusal', res.rc, 0);
+has('AC-65 it is reported, with the repair', res.err, 'retired-okf-version: docs/okf.yaml (0.1 is retired; declare "0.2")');
+h.check('AC-65 and the repository is indexed anyway', existsSync(join(R, 'docs/requirements/index.md')));
+h.check('AC-65 the version selects no dialect — required_keys still does',
+  read(join(R, 'docs/requirements/index.md')).includes('* [FR-001 — Place an order](FR-001.md) - **Done** — User submits a cart.'));
+h.check('AC-65 and the root index is stamped with the current version, not the declared one',
+  read(join(R, 'index.md')).startsWith('---\nokf_version: "0.2"\n---\n'));
+// control: a current manifest says nothing at all
+manifest(R, `okf_version: "0.2"\n${BLOCK_KEYS}`);
+hasNot('AC-65 control: a 0.2 manifest is not reported', run('index', R).err, 'retired-okf-version:');
+
 
 h.done();

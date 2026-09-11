@@ -216,6 +216,126 @@ All four guards are mutation-tested: reverting the root resolution to cwd, dropp
 refusal, unscoping the dangling-row check, removing the byte-diff write, and removing the import
 guard each flip at least one canary.
 
+### FR-OKF-7 · One generator renders both dialects, and adopts a catalog only where nothing is lost
+
+Owned by `plugins/okf-maintain`. Two OKF index dialects were live and only one had a generator. The
+profiled row is `* [<id> — <title>](<file>) - **<status>** — <description>` under a single
+`# <directory basename>` heading with the marker beneath it; the v0.2 row is
+`* [<title>](<file>) - <description>` grouped under `# <type>` headings with the marker first. The
+profiled generator, `okf-index-gen.mjs`, was deleted when index generation moved here, and the
+survivor it was renamed into kept only `--traceability` — its argument parser falls through to
+`usage()` without that flag, so no version of `agentic-sdlc` regenerates a folder index. Every
+repository on the profiled dialect therefore hand-maintained its catalogs while `okf.mjs` correctly
+refused them. Six parts:
+
+1. **The manifest selects the dialect, and nothing else does.** `required_keys` containing both `id`
+   and `status` gets the profiled row; anything else gets v0.2. Not `profile:`, which names which
+   documents carry required keys and never which are enumerated, and not `okf_version`.
+   `declaredRequiredKeys` and `declaredConceptFolders` line-scan the manifest in the style of
+   `declaredProfile`, and they accept **both** YAML spellings — the block sequence and the one-line
+   flow sequence — because the two repositories on this dialect use one each, and a reader that knew
+   only the one in front of it would have shipped silently half-working.
+2. **OKF v0.2 is the only format version there is.** A profile changes the row shape, never the
+   version, so the root index carries `okf_version: "0.2"` in both dialects — which today's profiled
+   roots carry none of, and gaining it is the point. A manifest still declaring `0.1` is named as
+   `retired-okf-version:` and otherwise ignored: refusing would lock out the two repositories the
+   feature exists for, and honouring it would perpetuate a version that means nothing beyond "which
+   generator wrote this".
+3. **Adoption is gated on what the renderer can express, not on what the bytes say.** An index
+   carrying the retired marker is adopted — marker replaced, file regenerated — when every *concept*
+   document in that directory has a non-empty `id` and `status` and no description was dropped by the
+   cap. The first draft compared rendered text against committed text instead, and it was wrong in
+   both directions: it refused a merely **stale** index, whose only escape was deleting the file,
+   when regenerating a stale index is the entire purpose of the tool; and it refused an index that
+   had **omitted** documents, because adding their rows changed the row count — though adding a row
+   is FR-OKF-3 working, not a loss. Losslessness is a property of the documents.
+4. **`isConcept` scopes the gate, and this is load-bearing.** Scoped to every listable file instead,
+   an ordinary `README.md` in an indexed folder refuses that folder forever: you cannot give a README
+   an `id`, and naming it in `.okfignore` would delete its row. That is a guard whose condition
+   nothing can satisfy — the exact defect FR-OKF-3 removed when it deleted the profile refusal,
+   reintroduced in a new costume, and it was caught on a two-file fixture rather than in review.
+   Project-meta files render in the default row shape, are not reported, and never block.
+5. **Three markers, two of them written.** The retired `okf-index-gen.mjs` marker (an em dash, where
+   both live markers use ASCII hyphens) is recognised **only** so a catalog it left behind can be
+   adopted, and is never emitted — stamping forward the name of a binary on no disk anywhere is the
+   defect being repaired, not a format worth continuing. The profiled marker's bytes differ from the
+   v0.2 marker by the single word `concept`, which is what makes an *older* `okf.mjs` refuse a
+   profiled index rather than silently rewriting it without an id or a status. `wasGenerated` had to
+   learn the second written marker too, or `coverage` stops naming adopted debris as `orphan-index:`
+   — the FR-OKF-5 fail-open, one marker later.
+6. **The cap moved to 512 and still drops rather than truncates.** Measured before choosing:
+   20 of 26 described documents in the hub exceed 160, 4 of 15 in `claude-code-config`, and 13 of 14
+   in a client repository — and the profiled dialect has **no** cap, so its committed rows carry
+   descriptions up to 413 characters verbatim. At 160 the capability gate would have refused nearly
+   every profiled directory, shipping a feature that did nothing. 512 clears every profiled corpus
+   measured and changes no v0.2 row in any of them. Its ceiling is stated rather than discovered:
+   512 is fitted to today's corpus, nine hub descriptions still exceed it and stay bare behind a
+   `long-description:` report, and the "a machine-cut half-sentence is a summary no author wrote"
+   argument against truncating is untouched — only the threshold moved.
+
+The hook needed no change, and the reason is worth recording because it looks like an omission: the
+"index carries no generation marker" refusal has never lived in `okf-index-regen.mjs`. It lives in
+`ownsIndex`, per directory, which is where widening it belongs — a repository-wide refusal because
+one directory's index is foreign would be strictly worse.
+
+`tests/test-okf-maintain.mjs` AC-55..AC-63.
+
+### FR-CORPUS-1 · A shipped instruction may not name an executable that is not there
+
+Owned by `tests/test-shipped-names-resolve.mjs`. The class is shipped instructions disagreeing with
+shipped code — `agentic-sdlc` BUG-092, BUG-140 and BUG-145 are the same shape, each found by a
+consuming-repository session rather than by a test. The guard BUG-145 left behind greps for one live
+basename and so structurally cannot see a retired one. Two rules, both mutation-tested:
+
+- **Every `.mjs` basename the shipped instruction corpus names resolves to a tracked file.**
+- **Every generation marker a skill stamps is byte-identical to one imported from `okf.mjs`**, never
+  restated as a literal in the test.
+
+**Scoped to `.mjs`, and the measurement is why.** The rule as first stated — every executable
+basename resolves — reports 78 findings out of 109 basenames, of which **two** are real; the other
+76 are illustrative code about the reader's own project (`mycli.js`, `my_dag.py`, `auth.service.ts`).
+ADR-014 makes `.mjs` this repository's own executable extension, so a `.mjs` named in our text is a
+claim about our tree while the rest are examples. An allowlist of 76 would be the stale-inline-list
+anti-pattern this file warns about, inverted.
+
+**Scoped to instruction text, not source, and that is a rule the suite asserts about itself.**
+`okf.mjs` lives inside the corpus glob and legitimately contains both a retired basename and the
+retired marker, because recognising them is its job. A naive scan reports the oracle as two defects.
+AC-5 therefore pins that the generator's source is out of the read scope *and* that it really does
+carry the strings a narrower scan would trip on — so the exclusion cannot later be mistaken for
+dead weight and removed.
+
+Its ceiling: a basename sweep sees only names that were **written**. An instruction omitting the
+executable entirely — which is what BUG-145 was filed for — stays invisible to it, and so does a
+retired `.sh` or `.py` helper, which ADR-014 makes acceptable here.
+
+AC-7 and AC-8 are R-97's graduation condition: a fixture carrying a retired executable name and a
+drifted generation marker fires both rules, and AC-9's benign control fires neither. AC-10 proves the
+one exemption is scoped to the single file entitled to it by aiming it at the wrong file and watching
+the mention reappear.
+
+### BUG-007 · A skill may not mint indexes the owner it names refuses
+
+`doc-this-promote`'s `references/okf-conformance.md` shipped a fallback hand-written-index template
+stamping the retired `okf-index-gen.mjs` marker, so every index that skill hand-wrote was born
+permanently foreign to `okf-maintain` — which the same skill body names as the owner of the index
+grammar. Two paragraphs in the same reference depended on the retired name and were false with it:
+the promise that the first real regeneration heals any drift, and the `## Existing-index safety`
+rule, which keyed "hand-authored" off *the* generator marker while naming only the deleted one.
+`references/id-assignment.md` and `SKILL.md` were the second and third consumers of that singular
+phrase. All four now name the **set** of markers and the adoption rule FR-OKF-7 actually implements.
+
+Ordering was the whole constraint: the template had to name a marker the shipped tool honours, so it
+lands **after** the renderer. Fixed first, it would have minted a second class of index nothing
+regenerates.
+
+### BUG-008 · A reference may not name a file at the path a layout change moved it from
+
+`doc-this-viewer`'s `references/maintaining.md` and `references/manifest-schema.md` named
+`test-build-manifest.mjs`; FR-LAYOUT-1 moved every harness out of the plugin payload — because
+anything under a plugin root is a candidate for the publish pack — and the real file is
+`tests/test-doc-this-build-manifest.mjs`. Found by FR-CORPUS-1's first run, which is the point of it.
+
 ### FR-TESSL-1 · A skill's score is read, never guessed; a scenario is counted, never assumed
 
 Owned by `tests/lib/tessl.mjs` and the two harnesses beside it. Four parts, each named by an
@@ -635,7 +755,9 @@ plugins/                 # ONE DIRECTORY PER PLUGIN (FR-LAYOUT-1). Each holds .t
                          #   document git will not commit are named dangling-row (FR-OKF-6). A
                          #   declared profile is reported, never a refusal (FR-OKF-3);
                          #   commands//agents//skills/ at a plugin root belong to Claude Code and
-                         #   are pruned (FR-OKF-4)
+                         #   are pruned (FR-OKF-4). Renders TWO dialects from one generator, chosen
+                         #   by the manifest's required_keys, and adopts a retired-marker catalog
+                         #   only where every concept document is expressible (FR-OKF-7)
  postmortem/             # Production-incident postmortems — numbered spine, machine-readable frontmatter
   evals/                 # postmortem-checkout-latency-spike — the first tessl eval scenario.
                          #   Inside the plugin root, so `tessl eval run ./plugins/postmortem`
@@ -659,6 +781,10 @@ tests/                   # Repo-level harnesses owned by no plugin
   fixtures/okf-frontmatter/ # the frontmatter contract corpus: one document plus a hand-written
                          #   expected-parse JSON per case, an expectation PER CONSUMER, and the
                          #   profile: spellings declaredProfile accepts (FR-OKF-6)
+  test-shipped-names-resolve.mjs # FR-CORPUS-1 — every .mjs the shipped INSTRUCTION text names
+                         #   resolves, and every marker it stamps is imported from okf.mjs. Scoped
+                         #   to .md/.json on purpose: okf.mjs is inside the corpus and legitimately
+                         #   carries the retired name, so a naive scan reports the oracle as a defect
   test-no-shell-invocation.mjs  # the viewer launcher opens a URL on darwin/linux/win32 without
                          #   a shell, plus a repo-wide scan: no .mjs reaches one
   test-suite-discovery.mjs # no tracked test-*.mjs sits outside tests/ — the invariant that makes
@@ -1192,7 +1318,8 @@ the **same** number:
 | `plugins/<name>/.tessl-plugin/plugin.json` | `.version` |
 | `.claude-plugin/marketplace.json` | that plugin's `.plugins[*].version` |
 
-Current: eight solo plugins at **1.1.1**, `doc-this` at **1.2.2**, marketplace metadata **7.0.0**.
+Current: seven solo plugins at **1.1.1**, `okf-maintain` at **1.2.0**, `doc-this` at **1.2.3**,
+marketplace metadata **7.1.0**.
 
 Note what earned that 1.1.1: adding `evals/` changes nothing an installed plugin executes, so by the
 table above it is a `test:` change and no bump at all. The bump is not describing the change, it is

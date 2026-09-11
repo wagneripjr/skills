@@ -19,23 +19,36 @@ over documentation it did not write.
 Target: **OKF v0.2**. Read `references/frontmatter.md` for the field families and
 `references/index-format.md` for the frozen index grammar before writing either.
 
-## A declared profile is reported, not obeyed
+## A manifest selects the row shape, never the corpus
 
 `docs/okf.yaml` is not part of OKF v0.2 — it is a convention some toolchains use to declare a
-dialect, and a `profile:` key in it names **which documents must carry which keys**. Read it if it
-exists and say what it declares, because it changes how a conformance verdict should be read.
+dialect. Read it if it exists and say what it declares, and obey exactly one thing in it:
+**`required_keys` naming both `id` and `status` selects the profiled row shape** for every index in
+the bundle, because those two keys are precisely what that row projects. `concept_folders` orders
+its subdirectory rows. Both grammars are in `references/index-format.md`; the selector lives in the
+manifest rather than in a flag so that one bundle cannot end up half-written in each.
 
-It does not change what gets indexed, and this skill no longer refuses a repository for carrying
-one. The refusal it replaces rested on two claims nothing ever checked: that a profile ships its own
-index generator, and that a commit gate somewhere compares the index byte-for-byte and would reject
-v0.2 output. Where those hold, they are worth respecting — so check them rather than assume them: is
-there a generator, and is a gate actually armed? Where they do not hold, refusing means the
-repositories most likely to want an index are the ones guaranteed not to have one, and a guard whose
-condition nothing can satisfy is a defect wearing a guard's clothes.
+A `profile:` key names **which documents must carry which keys** — a statement about conformance,
+so it is reported because it changes how a verdict should be read, and `check` goes on scoping
+required keys by the same rule it always has. A manifest still declaring `okf_version: "0.1"` is
+named as `retired-okf-version:` and otherwise ignored, because a profile changes a row shape and
+never a format version — v0.2 is the only one there is, in both dialects, and the root index is
+stamped with it either way. Neither key decides **which documents are enumerated**: a document is
+indexed because it exists, and no manifest narrows that.
 
-If a repository really does regenerate its index from another tool, that path belongs in
+Carrying a manifest is not a reason to refuse the repository. The refusal that stance replaces
+rested on two claims nothing ever checked: that a profile ships its own index generator, and that a
+commit gate somewhere compares the index byte-for-byte and would reject foreign output. Where those
+hold, they are worth respecting — so check them rather than assume them: is there a generator, and
+is a gate actually armed? Where they do not hold, refusing means the repositories most likely to
+want an index are the ones guaranteed not to have one, and a guard whose condition nothing can
+satisfy is a defect wearing a guard's clothes.
+
+If a repository really does regenerate its index from a live tool, that path belongs in
 `.okfignore`, which is the mechanism for "another tool owns this" and states it per path instead of
-per repository. Full argument: `references/adoption.md`.
+per repository. Where the other tool is the **retired v1 generator**, the answer inverts: nothing
+maintains that catalog any more, so the index is adopted rather than ceded. Full argument:
+`references/adoption.md`.
 
 ## What this skill owns
 
@@ -47,7 +60,7 @@ per repository. Full argument: `references/adoption.md`.
 | Which paths are in scope (`.okfignore`) | Anything another tool generates or owns |
 | Removing `log.md` and in-document history | The repo's existing document templates |
 | Agent-entry wiring in `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` | Navigation and lookup at read time |
-| §11 conformance verdicts | Any profile-specific dialect |
+| §11 conformance verdicts | What a document's `id` or `status` should say |
 
 ## Frontmatter — one required key, and it is `type`
 
@@ -68,7 +81,9 @@ consistently, because **`type` is what the index groups by**. Near-synonyms (`Ru
 `Playbook`) fracture one section into two.
 
 `title` and `description` are optional to the spec but load-bearing here: they are the two fields
-the index projects. A document with no `description` contributes a bare link and answers nothing
+every index projects, joined by `id` and `status` in a bundle whose manifest requires them — where
+those two stop being optional in practice, since a row without them degrades. A document with no
+`description` contributes a bare link and answers nothing
 before it is opened. Derive it from the document's own opening sentence — never invent a summary of
 content you have not read.
 
@@ -99,29 +114,44 @@ node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs index <bundle-roo
 **Pass the repo root as the bundle root.** It walks deepest-first, so a subdirectory's description
 exists by the time its parent is written, and it is idempotent.
 
-Two things it will not touch, both reported rather than done quietly:
+**Which row shape it writes is the manifest's call.** `required_keys` naming both `id` and `status`
+gives the profiled dialect — one heading per directory, an id in the link text and a bolded status
+on every row; everything else gets the default grouping by `type`. Both grammars, and the three
+generation markers that identify them, are in `references/index-format.md`. A profiled document
+missing either key degrades to the default row and is named `unprofiled-document: <path>`, because
+an empty pair of asterisks reads as a complete entry and answers nothing.
+
+Three boundary cases, each reported rather than settled quietly:
 
 - **Another repository's working tree.** A directory holding a `.git` entry is a submodule or a
   nested clone, and the repo you invoked on only pins it. Writing there edits someone else's
   repository, shows up in a `git status` nobody was looking at, and `coverage` cannot catch it
   because git reports a submodule as a single gitlink. The walk stops at the boundary and says
   `separate-repo: <path>/`. If that tree needs an index, generate it from inside that repository.
-- **An `index.md` it did not write.** Every generated index carries the marker in its first
-  content line; one without it is hand-maintained, or another tool's output, and its rows may carry
-  an id, a status or a shape v0.2 does not project. Overwriting is a silent lossy downgrade of the
-  exact catalog the index exists to be. It is left alone and reported as `foreign-index: <path>`.
-  Read it, then either delete it to hand this tool the directory, or name it in `.okfignore` to
-  leave it with its owner. Hand-rendering is the most reliable
-way to introduce drift — sort order, separator and trailing newline vary between one writing and the
-next, and nothing fails when they do. A stale-looking index is a regeneration task, never a reason
-to grep the folder.
+- **An `index.md` it did not write.** A generated index carries a marker naming the generator and
+  the dialect; one carrying none is hand-maintained or a live tool's output, and its rows may hold
+  an id, a status or a shape this renderer does not project. Overwriting is a silent lossy downgrade
+  of the exact catalog the index exists to be. It is left alone and reported as
+  `foreign-index: <path>`. Read it, then either delete it to hand this tool the directory, or name
+  it in `.okfignore` to leave it with its owner.
+- **An index the retired v1 generator wrote** — the one case it takes over rather than cedes: that
+  generator is on no disk, so an `.okfignore` line would freeze its catalog's drift instead of
+  stopping it. It is regenerated under this tool's marker and reported as
+  `adopted-index: <path>` — but only where the renderer can carry the directory losslessly, which
+  `references/adoption.md` states in full. Where it cannot, the file stays `foreign-index:` with the
+  offending paths named.
 
-A `description` over **160 characters** is **dropped** rather than truncated, leaving the bare link
+Hand-rendering is the most reliable way to introduce drift — sort order, separator and trailing
+newline vary between one writing and the next, and nothing fails when they do. A stale-looking index
+is a regeneration task, never a reason to grep the folder.
+
+A `description` over **512 characters** is **dropped** rather than truncated, leaving the bare link
 an absent one would leave, and named on stderr as `long-description: <path>`. A machine-cut
 half-sentence would be a summary no author wrote, planted in the field consumers trust most.
 
-The script cannot summarise a **subdirectory**, so it reports `needs-description: <path>`. Read
-enough of it to write one honest line and supply it:
+The script cannot summarise a **subdirectory**, so it reports `needs-description: <path>` — in the
+default dialect, the only one whose subdirectory rows have a description to hold. Read enough of the
+directory to write one honest line and supply it:
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs index docs --describe requirements="Functional and non-functional requirements."
@@ -222,7 +252,9 @@ ignored wholesale, costing more index reads than it buys.
 ## Workflow — adopting OKF in a repo
 
 1. **Manifest check.** Read `docs/okf.yaml` if it exists and report what it declares. A `profile:`
-   key scopes required keys; it is not a reason to stop.
+   key scopes required keys; it is not a reason to stop. `required_keys` carrying both `id` and
+   `status` is the one declaration that changes the output — every index will be written in the
+   profiled dialect — so say so before generating, not after.
 2. **Survey.** List the markdown present and how it is grouped. Do not restructure directories that
    already make sense; OKF is agnostic about layout. Put anything another tool writes into
    `.okfignore` now, before it produces violations you would try to fix by hand.

@@ -13,7 +13,7 @@ it. Do not stamp a field to look complete — stamp it when there is a fact to r
 |---|---|---|
 | `type` | **yes** | Free string, no central registry. The key the index groups by — keep values consistent within a bundle. |
 | `title` | recommended | Display name. Consumers may fall back to the filename. |
-| `description` | recommended | One sentence, **160 characters or fewer** — the index drops a longer one rather than truncating it. This is what the index projects; derive it from the document, never invent it. |
+| `description` | recommended | One sentence, **512 characters or fewer** — the index drops a longer one rather than truncating it. This is what the index projects; derive it from the document, never invent it. |
 | `resource` | optional | Canonical URI of the underlying asset. Absent for abstract concepts. |
 | `tags` | optional | YAML list of short strings for cross-cutting grouping. |
 
