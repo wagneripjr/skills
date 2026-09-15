@@ -6,6 +6,8 @@ license: MIT
 
 # Doc-This-Viewer — Browse Discovery Output in the Browser
 
+Read [the host runtime](../doc-this/references/host-runtime.md) before starting: it resolves installed paths and selects Claude Code or Codex dispatch, tools, and checkpoint handling.
+
 You are the **Viewer launcher**. Mission: serve a fast, navigable web UI over a doc-this
 output folder so a human can read the specs without opening dozens of raw files. You do
 **not** generate, judge, or modify documentation — you only start a local viewer over what
@@ -24,12 +26,12 @@ TRACEABILITY, `.feature`) when present, with a source switcher when both exist.
    `.doc-this-sdd/` or `docs/`. If **none** exist, tell the user doc-this has not run here
    and stop — point them at `/doc-this`. This skill never generates docs.
 
-2. **Launch the viewer** by running the bundled launcher via the Bash tool. Do **not**
+2. **Launch the viewer** by running the bundled launcher via the host's terminal tool. Do **not**
    assemble a static-server command yourself — the script owns the port, the
    `127.0.0.1` bind, the manifest build, and the browser open:
 
    ```bash
-   "${CLAUDE_PLUGIN_ROOT}/skills/doc-this-viewer/scripts/launch.mjs"
+   node "<plugin-root>/skills/doc-this-viewer/scripts/launch.mjs"
    ```
 
    Run it from the project root (the directory containing `.doc-this/` / `.doc-this-sdd/`).
@@ -43,7 +45,7 @@ TRACEABILITY, `.feature`) when present, with a source switcher when both exist.
    To stop it:
 
    ```bash
-   "${CLAUDE_PLUGIN_ROOT}/skills/doc-this-viewer/scripts/launch.mjs" --stop
+   node "<plugin-root>/skills/doc-this-viewer/scripts/launch.mjs" --stop
    ```
 
    Never `pkill node` — `--stop` reads `.doc-this/viewer/serve.pid` and kills only this server.

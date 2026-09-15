@@ -1,7 +1,7 @@
 {
   "name": "agent-cli",
   "description": "Build and evaluate command-line tools for AI agent consumption: machine-readable output, semantic exit codes, hardened input, and a 0-21 agent-friendliness rubric",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "author": {
     "name": "Wagner Ignacio Pinto Junior",
     "email": "wagneripjr@adustio.com.br"

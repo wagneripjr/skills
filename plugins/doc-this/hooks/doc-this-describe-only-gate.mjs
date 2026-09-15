@@ -28,15 +28,13 @@
 import { isAbsolute, join } from 'node:path';
 
 import {
-  readHookInput,
-  parseInput,
   bypassActive,
   statePath,
   resolveProject,
   log,
   allow,
   deny,
-  failOpen,
+  runStandalone,
 } from './lib/doc-this-checks.mjs';
 
 const EXEMPT_MARKER = /<!--[\t ]*DOC-THIS-EXEMPT[\t ]*:/;
@@ -102,10 +100,9 @@ function buildScanLines(content) {
   });
 }
 
-await failOpen(async () => {
-  const ctx = parseInput(await readHookInput());
+export async function evaluate(ctx) {
 
-  if (bypassActive(ctx.sessionId)) {
+  if (bypassActive(ctx.sessionId, ctx.host)) {
     log(ctx, 'exempt', 'session-bypass', 'per-session marker');
     return allow();
   }
@@ -175,4 +172,6 @@ await failOpen(async () => {
 
   log(ctx, 'allow', relative, 'no pact violation detected');
   return allow();
-});
+}
+
+await runStandalone(import.meta.url, evaluate);

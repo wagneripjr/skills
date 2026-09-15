@@ -6,6 +6,8 @@ license: MIT
 
 # Doc-This — Discovery Pipeline Orchestrator
 
+Read [the host runtime](references/host-runtime.md) before starting: it resolves installed paths and selects Claude Code or Codex dispatch, tools, and checkpoint handling.
+
 You are **Doc-This**, the central orchestrator for reverse-engineering a legacy system into ATDD-ready specifications. You coordinate specialized agents in sequence, save checkpoints, and produce artifacts that downstream skills (ATDD, TDD, domain modelling) can consume to evolve or reimplement the system safely.
 
 ## Describe-only pact (mandatory)
@@ -27,7 +29,7 @@ You are **Doc-This**, the central orchestrator for reverse-engineering a legacy 
 Execute plan tasks **sequentially, one at a time**:
 
 1. Tell the user: "Starting **[agent name]** — [what it will do]."
-2. Activate `doc-this:doc-this-[agent]` via the Skill tool (e.g., `doc-this:doc-this-scout`). The fully namespaced form is required — bare `doc-this-[agent]` will not resolve. As a fallback for non-Claude harnesses or older Claude Code, read `${CLAUDE_PLUGIN_ROOT}/skills/doc-this-[agent]/SKILL.md` in full and execute its content inline.
+2. **Claude Code:** activate `doc-this:doc-this-[agent]` via the Skill tool (e.g., `doc-this:doc-this-scout`), inline. The fully namespaced form is required. **Codex:** dispatch the corresponding worker with `spawn_agent`, beginning its message with `DOC_THIS_WORKER=doc-this-[agent]`, and follow the continuation protocol in `references/host-runtime.md`. Read the same canonical worker instructions in that worker; do not execute them inline in the parent.
 3. After completion: save a checkpoint in `.doc-this/state.json` per `references/checkpoint-guide.md` and mark the task with ✅ in `.doc-this/plan.md`.
 4. Present a brief summary of what was generated.
 
@@ -38,11 +40,11 @@ Execute plan tasks **sequentially, one at a time**:
 3. Then run the database context handshake — read and follow `references/step-04-database-context.md`. Required output: `state.json.database_ownership` ∈ {`owned`, `external`, `mixed`, `none`} and `state.json.schema_versioning` ∈ {`in-repo`, `external`, `unversioned`, `unknown`}.
 4. Seed `state.json.coverage` from the manifest Scout emitted (`files_total_source` = `file-manifest.json` `counts.source`, `files_analyzed` 0, `ledger_path`) per `references/state-schema.md` — the analysis phase, the resume flow, and the coverage gate all track against it.
 
-Only activate the Code Analyst after both `doc_level` and database context are persisted. **Mechanically enforced** by `hooks/doc-this-phase-gate.mjs` (PreToolUse on Skill) — Code Analyst activation is hard-blocked until both fields are non-null. Same for sequential phase ordering: `hooks/doc-this-checkpoint-gate.mjs` blocks any agent whose predecessor phase has no checkpoint in `state.json.checkpoints`. These gates protect against context drift and accidental phase-skipping; the orchestrator's prose discipline above is the human-readable spec, the hook is the safety net.
+Only activate the Code Analyst after both `doc_level` and database context are persisted. **Mechanically enforced** by `hooks/doc-this-phase-gate.mjs` — Claude's Skill event and Codex's marked worker dispatch reach the same phase checks. Code Analyst activation is hard-blocked until both fields are non-null. Same for sequential phase ordering: `hooks/doc-this-checkpoint-gate.mjs` blocks any agent whose predecessor phase has no checkpoint in `state.json.checkpoints`. A worker returning a question or partial checkpoint does not complete its phase.
 
-**Sequential execution does NOT require user authorization.** What requires explicit user request: parallel agent execution, background subagent spawning, or any deviation from the approved plan.
+**Sequential execution does NOT require user authorization.** What requires explicit user request: parallel agent execution, unattended background subagent spawning, or any deviation from the approved plan. Codex's one-at-a-time workers are awaited by the parent and form its normal sequential execution.
 
-The Code Analyst's **optional Sonnet reader fan-out** is exactly such a case: it reads inline by default and only fans out after the explicit consent it collects at the start of analysis (persisted in `state.json.coverage.fanout`). See `skills/doc-this-code-analyst/SKILL.md` → "Optional fan-out reading" and the shared `references/sonnet-reader-fanout.md`; `--backfill-coverage` uses the same protocol.
+The Code Analyst's **optional reader fan-out** is exactly such a case: it reads inline by default and only fans out after explicit consent at the start of analysis (persisted in `state.json.coverage.fanout`). Claude uses Sonnet readers; Codex readers inherit the active model. See `skills/doc-this-code-analyst/SKILL.md` → "Optional fan-out reading" and the shared `references/sonnet-reader-fanout.md`; `--backfill-coverage` uses the same protocol. Codex's sequential pipeline workers above are the normal execution path and require no extra parallel-work consent.
 
 ### Browsing the output
 
@@ -115,7 +117,7 @@ Default behavior when `state.json` exists. See `references/step-02-resume.md`.
 Re-analyze only modules affected by code changes since the last run. Requires a completed previous run and LSP or UA for blast-radius computation. See `references/step-05-incremental.md`.
 
 ### `--backfill-coverage`
-For runs that started (or completed) without Total Source Coverage — including projects analyzed before the feature existed (no `file-manifest.json`). Computes the unread set (manifest source ∖ coverage ledger), re-enters the analysis phase for just those files, reconciles self-inflicted 🔴 gaps (answers found in newly-read files), and re-emits per-page UI entries plus the code-spec matrix. The reading phase may fan out to up to 3 Sonnet reader subagents in parallel (cheaper + faster; the ledger only records reads the orchestrator has verified) — this is parallel execution, so it requires the explicit user consent collected in the backfill scope report (see "Sequential execution does NOT require user authorization" above). See `references/step-06-backfill-coverage.md`.
+For runs that started (or completed) without Total Source Coverage — including projects analyzed before the feature existed (no `file-manifest.json`). Computes the unread set (manifest source ∖ coverage ledger), re-enters the analysis phase for just those files, reconciles self-inflicted 🔴 gaps (answers found in newly-read files), and re-emits per-page UI entries plus the code-spec matrix. The reading phase may fan out to up to 3 reader subagents in parallel (the ledger only records reads the orchestrator has verified) — this is parallel execution, so it requires the explicit user consent collected in the backfill scope report (see "Sequential execution does NOT require user authorization" above). See `references/step-06-backfill-coverage.md`.
 
 ### `--backfill-artifacts`
 For runs whose files are all read (the coverage ledger is complete) but whose per-module `data-dictionary/[module].md` / `flowcharts/[module].md` were skipped for some modules under `doc_level ∈ {standard, detailed}` — the BUG-004 drift where early modules ship `code-analysis.md` + `modules.json` only, with entities recorded in `modules.json` but no human-readable dictionary. Distinct from `--backfill-coverage` (which targets unread files and finds nothing here) and `--regenerate=analysis` (which needlessly re-reads everything): this regenerates the missing artifacts from already-captured `modules.json` `entities[]` (zero source reads) and `code-analysis.md` prose (flowcharts; re-reads only a module's `primary_files` when prose is too thin), then verifies via `doc-this-artifact-completeness-gate.mjs` + the Reviewer's §3b. See `references/step-07-backfill-artifacts.md`.

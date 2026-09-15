@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, existsSync, statSync, realpathSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
@@ -1162,6 +1162,6 @@ export function main(argv) {
 // `process.exit(main(...))` at the tail runs — and terminates the host process — the moment
 // anything imports this file, which is why the regen hook could not reuse the generator it
 // is a client of. argv[1] is absent when Node is fed a script on stdin, so it is checked.
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && existsSync(process.argv[1]) && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   process.exit(main(process.argv.slice(2)));
 }

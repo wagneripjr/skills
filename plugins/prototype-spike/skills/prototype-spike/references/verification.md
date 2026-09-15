@@ -3,17 +3,29 @@
 A prototype is a claim about how something behaves. Reading the source you just wrote does not test
 that claim — it re-reads your own intent. Drive it in a browser.
 
-Use Chrome rather than a test framework: this artifact is disposable and will be frozen when the
-requirement ships, so a retained spec file is maintenance debt on something nobody will run again.
+Use the host's live browser tools: Chrome in Claude Code, or the configured browser/DevTools tools
+in Codex. This artifact is disposable and will be frozen when the requirement ships, so a retained
+spec file is maintenance debt on something nobody will run again.
 
-Load the tools in one call:
+In Claude Code, load the tools in one call:
 
 ```
 ToolSearch select:mcp__claude-in-chrome__navigate,mcp__claude-in-chrome__computer,mcp__claude-in-chrome__read_console_messages,mcp__claude-in-chrome__read_network_requests,mcp__claude-in-chrome__read_page
 ```
 
-If none of those tools resolve, they are not configured here. Report the gate UNVERIFIED and say
-which checks could not run — never infer these results by reading the source.
+In Codex, discover the configured tools and read their schemas. Select capabilities by the evidence
+they expose, not by a Claude-specific name:
+
+| Evidence | Required capability |
+|---|---|
+| Page and rendered state | Navigate the actual served route, operate its controls, capture screenshots |
+| Console errors | Read the browser's console output for the route and exercised states |
+| Foreign requests | Read recorded network requests for the route and exercised states |
+| Accessibility behavior | Operate keyboard focus and configure or inspect reduced-motion behavior |
+
+The checklist below uses Claude's operation names as shorthand for these capabilities. If any capability
+is unavailable, record the corresponding checks as UNVERIFIED and identify what could not run. A
+screenshot does not prove a clean console or absence of foreign requests; source reading proves neither.
 
 ## Checklist
 

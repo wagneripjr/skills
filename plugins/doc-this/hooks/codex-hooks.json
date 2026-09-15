@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "^(?:(?:functions|collaboration|multi_agent_v[12])[.:_]*|mcp__codex__)*(?:spawn_agent|send_input|resume_agent|followup_task|send_message|apply_patch|Edit|Write|edit_file|write_file|LSP)$",
+      "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/codex-hook-adapter.mjs\"", "timeout": 10 }]
+    }],
+    "PostToolUse": [{
+      "matcher": "^(?:(?:functions|collaboration|multi_agent_v[12])[.:_]*|mcp__codex__)*(?:spawn_agent|LSP)$",
+      "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/codex-hook-adapter.mjs\"", "timeout": 10 }]
+    }]
+  }
+}

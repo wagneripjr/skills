@@ -16,21 +16,18 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
-  readHookInput,
-  parseInput,
   bypassActive,
   log,
   allow,
   advise,
-  failOpen,
+  runStandalone,
 } from './lib/doc-this-checks.mjs';
 
 const MANAGED_PATHS = /^docs\/(requirements\/.*\.md|adrs?\/.*\.md|TRACEABILITY\.md)$/;
 
-await failOpen(async () => {
-  const ctx = parseInput(await readHookInput());
+export async function evaluate(ctx) {
 
-  if (bypassActive(ctx.sessionId)) {
+  if (bypassActive(ctx.sessionId, ctx.host)) {
     return allow();
   }
 
@@ -63,4 +60,6 @@ await failOpen(async () => {
     `Hand-editing is allowed (not blocked); just confirm this edit is independent of the staged specs.`;
   log(ctx, 'advise', relative, 'promote-bypass nudge');
   return advise(nudge);
-});
+}
+
+await runStandalone(import.meta.url, evaluate);

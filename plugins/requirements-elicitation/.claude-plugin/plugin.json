@@ -1,7 +1,7 @@
 {
   "name": "requirements-elicitation",
   "description": "Analyse PRDs and feature specs for gaps, generate clarifying questions for PMs and engineers, and assess technical risk before implementation",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "author": {
     "name": "Wagner Ignacio Pinto Junior",
     "email": "wagneripjr@adustio.com.br"

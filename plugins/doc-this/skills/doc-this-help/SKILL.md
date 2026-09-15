@@ -6,9 +6,11 @@ license: MIT
 
 # Doc-This Agents — A Guide With Analogies
 
+Read [the host runtime](../doc-this/references/host-runtime.md) before starting: it resolves installed paths and selects Claude Code or Codex dispatch, tools, and checkpoint handling.
+
 Doc-This is a team of specialists. Each agent does ONE thing and does it well. Below: an analogy + one-line use-when for every agent.
 
-**Discovery (`/doc-this`) is strictly descriptive.** Every Discovery agent obeys the describe-only pact at `${CLAUDE_PLUGIN_ROOT}/skills/doc-this/references/describe-only-pact.md`: documents what exists, never what should be; binary 🟢 (cited) / 🔴 (gap) confidence; no judgment, no proposals, no fabricated ADR sections, no technical-debt registers, no NFRs without written contracts, no bug reports.
+**Discovery (`/doc-this`) is strictly descriptive.** Every Discovery agent obeys the describe-only pact at `<plugin-root>/skills/doc-this/references/describe-only-pact.md`: documents what exists, never what should be; binary 🟢 (cited) / 🔴 (gap) confidence; no judgment, no proposals, no fabricated ADR sections, no technical-debt registers, no NFRs without written contracts, no bug reports.
 
 ---
 

@@ -5,7 +5,7 @@ opening anything. That is **progressive disclosure**, and it is the entire reaso
 formatting: one read answers "which document covers X", "does one for Y exist", and "what is this
 folder", without a grep and without a guess.
 
-Generate these with `${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs index`. This document exists so you can review the output and
+Generate these with `node "<skill-dir>/scripts/okf.mjs" index`. This document exists so you can review the output and
 recognise a hand-edit, not so you can render one by hand.
 
 ## Which dialect — the manifest decides, never a flag
@@ -180,7 +180,7 @@ needs-description: docs/requirements
 Read enough of the directory to write one honest line, then supply it:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs index . --describe docs/requirements="Functional and non-functional requirements."
+node "<skill-dir>/scripts/okf.mjs" index . --describe docs/requirements="Functional and non-functional requirements."
 ```
 
 Two shortcuts avoid asking you unnecessarily:
@@ -226,7 +226,7 @@ because both copies come from the same walk — the document the walk never reac
 each of them, and they match.
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs coverage .
+node "<skill-dir>/scripts/okf.mjs" coverage .
 ```
 
 That runs `git ls-files --cached --others --exclude-standard` from the repository root and names
@@ -251,7 +251,7 @@ A stale-looking index is a regeneration task, never a reason to bypass it and gr
 is a projection of frontmatter: regenerate, then re-read.
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs index . --stdout   # render without writing, to diff against the committed file
+node "<skill-dir>/scripts/okf.mjs" index . --stdout   # render without writing, to diff against the committed file
 ```
 
 Commit a regenerated index **in the same commit as the content change that caused it**. Split into

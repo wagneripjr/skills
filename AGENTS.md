@@ -2,6 +2,8 @@
 
 This project uses `CLAUDE.md` as the single source of truth for all AI coding instructions —
 project structure, plugin conventions, commands, and the reasoning behind the pipeline design.
+Read its FR-HOST-1 section for native Codex routing. Plugin runtime instructions are self-contained;
+public installations do not require the maintainer's global configuration.
 
 **No `docs/` tree:** this repo carries no requirement/ADR corpus, so there is no generated doc index
 to consult here — read `CLAUDE.md` for structure and the per-skill `SKILL.md` for behavior.

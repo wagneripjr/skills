@@ -138,7 +138,7 @@ retired instead of accumulating.
 Run the check **before** writing anything:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs check .
+node "<skill-dir>/scripts/okf.mjs" check .
 ```
 
 A corpus that already has frontmatter rarely lacks descriptions — it has descriptions that are
@@ -219,7 +219,7 @@ timestamp in a field cannot contradict itself; six entries in a prose changelog 
 ## Step 5 — generate
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs index .
+node "<skill-dir>/scripts/okf.mjs" index .
 ```
 
 Run it from the repo root so `./index.md`, `docs/index.md` and every folder index are written as
@@ -242,7 +242,7 @@ An index nobody is told to read saves nothing. This step is what converts the fo
 tokens and fewer wrong answers.
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs wire .
+node "<skill-dir>/scripts/okf.mjs" wire .
 ```
 
 This writes the following into `CLAUDE.md` and `AGENTS.md` at the repo root, creating either file
@@ -284,7 +284,7 @@ overreach and ignored wholesale.
 ## Step 7 — verify
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs check .
+node "<skill-dir>/scripts/okf.mjs" check .
 ```
 
 Exit `0` conformant · `1` violations named · `77` nothing evaluated · `64` usage.
@@ -297,7 +297,7 @@ than a `0` with a footnote.
 Then the half `check` cannot do:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs coverage .
+node "<skill-dir>/scripts/okf.mjs" coverage .
 ```
 
 `check` reads the corpus through the same walk that wrote the index, so a document the walk never

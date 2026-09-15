@@ -18,8 +18,6 @@
 // Skips when .doc-this/state.json doesn't exist (not a doc-this project).
 
 import {
-  readHookInput,
-  parseInput,
   bypassActive,
   bypassHint,
   statePath,
@@ -27,7 +25,7 @@ import {
   log,
   allow,
   deny,
-  failOpen,
+  runStandalone,
 } from './lib/doc-this-checks.mjs';
 
 // Map agent → required predecessor AGENT. Scout has no predecessor.
@@ -46,10 +44,9 @@ const PREDECESSORS = {
   'doc-this:doc-this-reviewer': { agent: 'writer', alt: '', phase: 'generation' },
 };
 
-await failOpen(async () => {
-  const ctx = parseInput(await readHookInput());
+export async function evaluate(ctx) {
 
-  if (bypassActive(ctx.sessionId)) {
+  if (bypassActive(ctx.sessionId, ctx.host)) {
     log(ctx, 'exempt', 'checkpoint-gate', 'bypass marker present');
     return allow();
   }
@@ -83,8 +80,10 @@ await failOpen(async () => {
   const reason =
     `doc-this checkpoint-gate: cannot start ${shortName} — predecessor '${required}'${aliasNote} (phase ${phase}) has no checkpoint in .doc-this/state.json.\n\n` +
     `The doc-this pipeline runs phases sequentially; each agent saves a checkpoint on completion. Run the ${required} agent first, OR if it actually completed but the checkpoint write failed, edit .doc-this/state.json to add an entry under .checkpoints["${required}"].\n\n` +
-    bypassHint(ctx.sessionId);
+    bypassHint(ctx.sessionId, ctx.host);
 
   log(ctx, 'deny', skillName, `missing predecessor checkpoint: ${required}`);
   return deny(reason);
-});
+}
+
+await runStandalone(import.meta.url, evaluate);

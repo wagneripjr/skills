@@ -6,7 +6,8 @@ Read `.doc-this/state.json` and `.doc-this/plan.md`.
 
 ## 1a. Plugin-version skew check (advisory)
 
-Read the installed plugin version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` (`.version` field). Compare with `state.json.plugin_version`:
+Read `.version` from the active host's installed plugin manifest using `references/host-runtime.md`.
+Compare with `state.json.plugin_version`:
 
 - If equal, or if `state.json.plugin_version` is null (legacy state file): proceed silently.
 - If different: print one line — `"⚠️  Doc-This: state was created on plugin v<old>, currently running v<new>. Resume continues; rerun a phase with --regenerate=<phase> if you want it re-done under the new version."` — then proceed. Do NOT block.
@@ -17,7 +18,7 @@ After the check, write the current plugin version into `state.json.plugin_versio
 
 If `state.json.structural_extraction` exists:
 
-- **LSP**: Re-run `ToolSearch("select:LSP")` to ensure the deferred tool is loaded in this session. Run a quick `documentSymbol` on a known file to verify LSP is still responsive. Update `lsp_available` if it changed.
+- **LSP**: Re-run the host's LSP discovery (`ToolSearch("select:LSP")` in Claude Code). Run a quick `documentSymbol` on a known file to verify LSP is still responsive. Update `lsp_available` if it changed.
 - **UA staleness**: If `ua_detected` is true, compare `ua_commit_hash` with current `git rev-parse HEAD`. Update `ua_staleness` flag. If UA was stale before and now matches HEAD (user re-ran `/understand`), clear the staleness flag.
 
 If `structural_extraction` does not exist (legacy state from before this feature), run the full check from `step-01-first-run.md` step 4a.

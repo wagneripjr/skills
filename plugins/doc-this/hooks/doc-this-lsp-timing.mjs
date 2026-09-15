@@ -4,12 +4,9 @@
 // Advisory-only (never denies). No-op in projects without .doc-this/state.json.
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { basename, dirname } from 'node:path';
 
 import {
-  readHookInput,
-  parseInput,
   bypassActive,
   statePath,
   stateField,
@@ -20,13 +17,13 @@ import {
   log,
   allow,
   advisePost,
-  failOpen,
+  runStandalone,
   VERSION,
+  hostLogPath,
 } from './lib/doc-this-checks.mjs';
 
 const SLOW_THRESHOLD_MS = 15000;
 const TOTAL_TIME_THRESHOLD_MS = 300000;
-const LSP_LOG = join(homedir(), '.claude', 'logs', 'doc-this-lsp.log');
 
 const FRESH_TRACKER = () => ({
   calls: { code_analyst: {}, detective: {}, architect: {} },
@@ -35,14 +32,13 @@ const FRESH_TRACKER = () => ({
   slow_calls: [],
 });
 
-await failOpen(async () => {
-  const ctx = parseInput(await readHookInput());
+export async function evaluate(ctx) {
 
   if (!statePath(ctx.cwd)) {
     return allow();
   }
 
-  if (bypassActive(ctx.sessionId)) {
+  if (bypassActive(ctx.sessionId, ctx.host)) {
     return allow();
   }
 
@@ -55,7 +51,7 @@ await failOpen(async () => {
   }
 
   let durationMs = 0;
-  const startFile = lspStartPath(ctx.sessionId);
+  const startFile = lspStartPath(ctx.sessionId, ctx.host);
   if (existsSync(startFile)) {
     let startEpoch = 0;
     try {
@@ -73,7 +69,7 @@ await failOpen(async () => {
     }
   }
 
-  const trackerPath = lspTrackerPath(ctx.sessionId);
+  const trackerPath = lspTrackerPath(ctx.sessionId, ctx.host);
   let tracker = FRESH_TRACKER();
   if (existsSync(trackerPath)) {
     try {
@@ -92,10 +88,11 @@ await failOpen(async () => {
   writeFileSync(trackerPath, JSON.stringify(tracker));
 
   try {
-    mkdirSync(dirname(LSP_LOG), { recursive: true });
+    const logFile = hostLogPath(ctx.host, 'doc-this-lsp.log');
+    mkdirSync(dirname(logFile), { recursive: true });
     const ts = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
     appendFileSync(
-      LSP_LOG,
+      logFile,
       `${ts} | ${VERSION} | ${ctx.sessionId || 'none'} | ${projectName(ctx.cwd)} | ${operation} | ${filePath} | ${durationMs} | ${totalTime} | ${agent}\n`,
     );
   } catch {
@@ -124,4 +121,6 @@ await failOpen(async () => {
   }
 
   return allow();
-});
+}
+
+await runStandalone(import.meta.url, evaluate);

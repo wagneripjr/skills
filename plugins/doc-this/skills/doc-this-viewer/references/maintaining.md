@@ -52,7 +52,7 @@ re-rendered on toggle.
 After changing anything under `app/`:
 
 ```bash
-bash scripts/build.mjs          # npm ci + vite build → refresh assets/viewer/
+node scripts/build.mjs          # npm ci + vite build → refresh assets/viewer/
 ```
 
 Then commit the refreshed `assets/viewer/`. Validate Svelte components with the Svelte MCP

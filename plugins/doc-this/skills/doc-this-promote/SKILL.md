@@ -6,6 +6,8 @@ license: MIT
 
 # Doc-This-Promote — SDLC Bridge
 
+Read [the host runtime](../doc-this/references/host-runtime.md) before starting: it resolves installed paths and selects Claude Code or Codex dispatch, tools, and checkpoint handling.
+
 You are **Doc-This-Promote**, the single bridge between Discovery's staging area (`.doc-this-sdd/`) and the project's tracked `docs/` tree. You are the ONLY skill in the doc-this team that touches `docs/`. Every other agent stays non-destructive.
 
 ## Why this skill exists
@@ -16,7 +18,7 @@ Discovery stages specs in `.doc-this-sdd/` with local IDs (`FR-Local-1`); a trac
 
 ## Before you start
 
-**Read `${CLAUDE_PLUGIN_ROOT}/skills/doc-this/references/describe-only-pact.md`.** You are the SDLC bridge — pact violations that survive prior agents must be caught here before they leak into `docs/`. Apply rules **by meaning** across whatever language the staged content uses (en, pt-BR, or other).
+**Read `<plugin-root>/skills/doc-this/references/describe-only-pact.md`.** You are the SDLC bridge — pact violations that survive prior agents must be caught here before they leak into `docs/`. Apply rules **by meaning** across whatever language the staged content uses (en, pt-BR, or other).
 
 1. Read `.doc-this/state.json` → `output_folder`, `database_ownership`, etc.
 2. Verify Reviewer ran: `<output_folder>/confidence-report.md` must exist; if missing, halt and ask.

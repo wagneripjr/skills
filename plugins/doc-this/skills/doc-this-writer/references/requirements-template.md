@@ -1,6 +1,6 @@
 # Template — `<unit>/requirements.md`
 
-This template implements the describe-only pact (`${CLAUDE_PLUGIN_ROOT}/skills/doc-this/references/describe-only-pact.md`). Every claim is 🟢 (cited) or 🔴 (gap recorded in questions.md). No 🟡 INFERRED. NFRs only when a written non-functional contract exists; if there's no contract, the NFR section is **omitted entirely** — never invented to fill a template slot.
+This template implements the describe-only pact (`<plugin-root>/skills/doc-this/references/describe-only-pact.md`). Every claim is 🟢 (cited) or 🔴 (gap recorded in questions.md). No 🟡 INFERRED. NFRs only when a written non-functional contract exists; if there's no contract, the NFR section is **omitted entirely** — never invented to fill a template slot.
 
 The template's body language follows `doc_language` (commonly English or Portuguese (pt-BR) for your projects). The describe-only rules apply by **meaning**, regardless of output language.
 

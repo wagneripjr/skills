@@ -29,14 +29,12 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
-  readHookInput,
-  parseInput,
   bypassActive,
   bypassHint,
   log,
   allow,
   deny,
-  failOpen,
+  runStandalone,
 } from './lib/doc-this-checks.mjs';
 
 const WORKERS = new Set([
@@ -49,10 +47,9 @@ const WORKERS = new Set([
   'doc-this:doc-this-reviewer',
 ]);
 
-await failOpen(async () => {
-  const ctx = parseInput(await readHookInput());
+export async function evaluate(ctx) {
 
-  if (bypassActive(ctx.sessionId)) {
+  if (bypassActive(ctx.sessionId, ctx.host)) {
     log(ctx, 'exempt', 'dispatch-gate', 'bypass marker present');
     return allow();
   }
@@ -74,8 +71,10 @@ await failOpen(async () => {
   const reason =
     `doc-this dispatch-gate: ${shortName} is a pipeline worker dispatched programmatically by the /doc-this orchestrator — it must not run from circumstantial phrasing. No pipeline state found at .doc-this/state.json; running here would be unanchored (no manifest, no coverage ledger, no ordering gates), which is the BUG-003 failure mode.\n\n` +
     `Start the pipeline with /doc-this (doc-this supports --resume and --backfill-coverage). Direct worker invocation is for resume/debug INSIDE an initialized pipeline.\n\n` +
-    bypassHint(ctx.sessionId);
+    bypassHint(ctx.sessionId, ctx.host);
 
   log(ctx, 'deny', skillName, 'unanchored worker activation (no .doc-this/state.json)');
   return deny(reason);
-});
+}
+
+await runStandalone(import.meta.url, evaluate);

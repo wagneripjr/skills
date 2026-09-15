@@ -6,8 +6,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 import {
-  readHookInput,
-  parseInput,
   bypassActive,
   bypassHint,
   statePath,
@@ -19,7 +17,7 @@ import {
   allow,
   deny,
   advise,
-  failOpen,
+  runStandalone,
 } from './lib/doc-this-checks.mjs';
 
 const HARD_LIMITS = {
@@ -55,14 +53,13 @@ const FRESH_TRACKER = () => ({
   slow_calls: [],
 });
 
-await failOpen(async () => {
-  const ctx = parseInput(await readHookInput());
+export async function evaluate(ctx) {
 
   if (!statePath(ctx.cwd)) {
     return allow();
   }
 
-  if (bypassActive(ctx.sessionId)) {
+  if (bypassActive(ctx.sessionId, ctx.host)) {
     log(ctx, 'exempt', 'LSP', 'bypass-marker');
     return allow();
   }
@@ -85,7 +82,7 @@ await failOpen(async () => {
   }
   const soft = hard === 0 ? 0 : Math.floor((hard + 1) / 2);
 
-  const trackerPath = lspTrackerPath(ctx.sessionId);
+  const trackerPath = lspTrackerPath(ctx.sessionId, ctx.host);
   let tracker = FRESH_TRACKER();
   if (existsSync(trackerPath)) {
     try {
@@ -103,7 +100,7 @@ await failOpen(async () => {
     const reason =
       `LSP budget exhausted: ${agent} used ${current}/${hard} ${operation} calls. ` +
       `This budget limits LSP CALLS, never FILE COVERAGE — read the file directly with Read and continue. ` +
-      `Do NOT skip the file or record its contents as a gap. ${bypassHint(ctx.sessionId)}`;
+      `Do NOT skip the file or record its contents as a gap. ${bypassHint(ctx.sessionId, ctx.host)}`;
     log(ctx, 'deny', `LSP:${operation}`, `hard-limit ${current}/${hard} for ${agent}`);
     return deny(reason);
   }
@@ -114,7 +111,7 @@ await failOpen(async () => {
   writeFileSync(trackerPath, JSON.stringify(tracker));
 
   // Record call start time for the timing hook.
-  writeFileSync(lspStartPath(ctx.sessionId), String(Math.floor(Date.now() / 1000)));
+  writeFileSync(lspStartPath(ctx.sessionId, ctx.host), String(Math.floor(Date.now() / 1000)));
 
   const remaining = hard - next;
   if (next >= soft) {
@@ -126,4 +123,6 @@ await failOpen(async () => {
   }
 
   return advise(`LSP call ${next}/${hard}: ${operation} for ${agent}. Remaining: ${remaining}.`);
-});
+}
+
+await runStandalone(import.meta.url, evaluate);

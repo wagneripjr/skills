@@ -31,8 +31,6 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
-  readHookInput,
-  parseInput,
   bypassActive,
   bypassHint,
   statePath,
@@ -43,14 +41,13 @@ import {
   allow,
   deny,
   advise,
-  failOpen,
+  runStandalone,
   capList,
 } from './lib/doc-this-checks.mjs';
 
-await failOpen(async () => {
-  const ctx = parseInput(await readHookInput());
+export async function evaluate(ctx) {
 
-  if (bypassActive(ctx.sessionId)) {
+  if (bypassActive(ctx.sessionId, ctx.host)) {
     log(ctx, 'exempt', 'artifact-completeness-gate', 'bypass marker present');
     return allow();
   }
@@ -120,11 +117,13 @@ await failOpen(async () => {
     const reason =
       `doc-this artifact-completeness gate: cannot start ${shortName} — doc_level=${docLevel} requires per-module artifacts, but ${missing.length} module artifact(s) are missing (showing up to 20):\n${capList(missing)}\n\n` +
       `When doc_level is standard or detailed, each module needs data-dictionary/[module].md (iff it has entities) and flowcharts/[module].md (iff it has functions or algorithms). A module that read every file but skipped these is NOT complete — entities recorded only in modules.json do not substitute for data-dictionary/[module].md. Resume the Code Analyst to emit the missing artifacts, or run '/doc-this --backfill-artifacts' to regenerate them from modules.json + code-analysis.md.\n\n` +
-      bypassHint(ctx.sessionId);
+      bypassHint(ctx.sessionId, ctx.host);
     log(ctx, 'deny', skillName, `artifact completeness incomplete: ${missing.length} missing per-module artifacts`);
     return deny(reason);
   }
 
   log(ctx, 'allow', skillName, `per-module artifact completeness verified (doc_level=${docLevel})`);
   return allow();
-});
+}
+
+await runStandalone(import.meta.url, evaluate);

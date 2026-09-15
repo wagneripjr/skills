@@ -20,7 +20,10 @@ tessl.json
 # Per-agent symlink farms `tessl install` points at .tessl/plugins/ above. Committing them would
 # publish dangling symlinks, because their targets are ignored. `.github/skills/` matters most:
 # unlike the others it sits inside a directory this repo does track.
-.agents/
+.agents/*
+!.agents/plugins/
+.agents/plugins/*
+!.agents/plugins/marketplace.json
 .codex/
 .cursor/
 .vscode/

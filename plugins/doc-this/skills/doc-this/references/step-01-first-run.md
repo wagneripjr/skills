@@ -9,7 +9,7 @@ If `.doc-this/state.json` does not exist, create it with the bootstrap defaults:
 ```json
 {
   "version": "1.0.0",
-  "plugin_version": "<read from ${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json .version, fallback null>",
+  "plugin_version": "<read .version from the active host's installed plugin manifest; fallback null>",
   "project": null,
   "user_name": null,
   "chat_language": "en-us",
@@ -31,7 +31,9 @@ If `.doc-this/state.json` does not exist, create it with the bootstrap defaults:
 }
 ```
 
-`version` is the **state schema** version. `plugin_version` is the **doc-this plugin** version that initialized this state — used by `/doc-this --resume` to warn (not block) on plugin upgrades between sessions, so the user can decide whether to rerun a phase under the new version.
+`version` is the **state schema** version. Resolve `plugin_version` using the manifest path in
+`references/host-runtime.md`. It is the **doc-this plugin** version that initialized this state — used
+on resume to warn (not block) on upgrades, so the user can decide whether to rerun a phase.
 
 If the file exists but `phase` is `null`, read it and continue with the existing values.
 
@@ -124,7 +126,7 @@ Check whether `.doc-this/plan.md` already exists.
 Detect available structural extraction sources so downstream agents can use deterministic analysis instead of pure LLM code reading. See `references/lsp-structural-extraction.md` and `references/ua-integration-guide.md` for full details.
 
 **LSP check** (primary):
-1. Run `ToolSearch("select:LSP")` to load the deferred LSP schema
+1. Discover LSP using the host mapping in `references/host-runtime.md` (`ToolSearch("select:LSP")` in Claude Code)
 2. Pick a known source file from the project root (any `.cs`, `.ts`, `.py`, `.go`, `.rs` file)
 3. Run `documentSymbol` on that file
 4. If it returns symbols: LSP is available. Record the language. Try other primary languages if the project is multi-language.
@@ -196,4 +198,4 @@ add_ignore "${out_folder%/}/"
 
 Ask: "[Name], shall we start with **Scout** — mapping the project surface?"
 
-After confirmation, activate the `doc-this-scout` skill.
+After confirmation, dispatch `doc-this-scout` through the host runtime's pipeline dispatch.

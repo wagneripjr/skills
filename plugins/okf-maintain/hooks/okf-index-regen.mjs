@@ -15,6 +15,7 @@
 import { existsSync, realpathSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import {
   OKF_VERSION, cmdIndex, declaredOkfVersion, ignoredFile, readIgnores,
 } from '../skills/okf-maintain/scripts/okf.mjs';
@@ -102,15 +103,7 @@ export function decide(root, filePath) {
   return [true, ''];
 }
 
-async function main() {
-  const raw = await readInput();
-  const payload = raw && typeof raw === 'object' ? raw : {};
-  const input = payload.tool_input && typeof payload.tool_input === 'object' ? payload.tool_input : {};
-  const cwd = typeof payload.cwd === 'string' && payload.cwd ? payload.cwd : process.cwd();
-  const given = typeof input.file_path === 'string' ? input.file_path : '';
-  if (!given) return;
-
-  const filePath = isAbsolute(given) ? given : resolve(cwd, given);
+export function regenerateFile(filePath) {
   const root = repoRootFor(filePath);
   const [run, reason] = decide(root, filePath);
   if (!run) {
@@ -123,9 +116,16 @@ async function main() {
   cmdIndex(root, false, new Map(), readIgnores(root));
 }
 
-try {
-  await main();
-} catch (err) {
-  process.stderr.write(`okf-index-regen: ${err && err.message ? err.message : err}\n`);
+if (process.argv[1] && existsSync(process.argv[1]) && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
+  try {
+    const payload = await readInput();
+    const given = payload?.tool_input?.file_path;
+    if (typeof given === 'string' && given) {
+      const cwd = typeof payload.cwd === 'string' && payload.cwd ? payload.cwd : process.cwd();
+      regenerateFile(resolve(cwd, given));
+    }
+  } catch (err) {
+    process.stderr.write(`okf-index-regen: ${err && err.message ? err.message : err}\n`);
+  }
+  process.stdout.write('{}\n');
 }
-process.stdout.write('{}\n');

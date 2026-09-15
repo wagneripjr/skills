@@ -9,23 +9,25 @@
 //
 // Caller contract:
 //   1. const ctx = parseInput(await readHookInput()) once per gate.
-//   2. Emit helpers (allow/deny/advise/advisePost) WRITE the JSON envelope and
-//      SET process.exitCode — they do not call process.exit(), so stdout always
-//      flushes. Gates `return` immediately after calling one.
+//   2. Decision helpers return an envelope and exit code. runStandalone emits
+//      once at the host boundary; imports execute no hook work.
 //   3. Exit codes: allow/advise = 0, deny = 2 (harnesses assert these).
 //
 // Log format (one line per gate decision):
 //   TIMESTAMP | VERSION | SESSION | PROJECT | DECISION | TARGET | REASON | DUR_S
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, realpathSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
-import { basename, dirname, isAbsolute, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = join(HERE, '..', '..');
-const LOG_FILE = join(homedir(), '.claude', 'logs', 'doc-this-gates.log');
 const START_MS = Date.now();
+
+export function hostLogPath(host, name) {
+  return join(host === 'codex' ? process.env.CODEX_HOME || join(homedir(), '.codex') : join(homedir(), '.claude'), 'logs', name);
+}
 
 export const VERSION = (() => {
   try {
@@ -62,20 +64,20 @@ export function parseInput(raw) {
 // Per-session bypass marker. The legacy /tmp path keeps every existing doc and
 // memory instruction true on unix; the os.tmpdir() path is the portable home
 // (macOS /var/folders/…, Windows %TEMP%). Both are honored.
-function bypassMarkerName(sessionId) {
-  return `.claude-doc-this-bypass-${sessionId}`;
+function bypassMarkerName(sessionId, host = 'claude') {
+  return `.${host}-doc-this-bypass-${encodeURIComponent(sessionId)}`;
 }
 
-export function bypassActive(sessionId) {
+export function bypassActive(sessionId, host = 'claude') {
   if (!sessionId) return false;
-  const name = bypassMarkerName(sessionId);
+  const name = bypassMarkerName(sessionId, host);
   return existsSync(join('/tmp', name)) || existsSync(join(tmpdir(), name));
 }
 
 // Portable bypass instruction interpolated into denial messages. Falls back to
 // the $CLAUDE_SESSION_ID placeholder when the payload carried no session id.
-export function bypassHint(sessionId) {
-  const marker = join(tmpdir(), bypassMarkerName(sessionId || '$CLAUDE_SESSION_ID'));
+export function bypassHint(sessionId, host = 'claude') {
+  const marker = join(tmpdir(), sessionId ? bypassMarkerName(sessionId, host) : `.${host}-doc-this-bypass-$${host === 'codex' ? 'CODEX_SESSION_ID' : 'CLAUDE_SESSION_ID'}`);
   return `Bypass (this session only): touch ${marker}`;
 }
 
@@ -124,11 +126,12 @@ export function projectName(cwd) {
 
 export function log(ctx, decision, target, reason) {
   try {
+    const logFile = hostLogPath(ctx.host, 'doc-this-gates.log');
     const ts = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
     const dur = Math.floor((Date.now() - START_MS) / 1000);
-    mkdirSync(dirname(LOG_FILE), { recursive: true });
+    mkdirSync(dirname(logFile), { recursive: true });
     appendFileSync(
-      LOG_FILE,
+      logFile,
       `${ts} | ${VERSION} | ${ctx.sessionId || 'none'} | ${projectName(ctx.cwd)} | ${decision} | ${target} | ${reason} | ${dur}\n`,
     );
   } catch {
@@ -142,43 +145,42 @@ function emit(obj, code) {
 }
 
 export function allow() {
-  process.stdout.write('{}\n');
-  process.exitCode = 0;
+  return { output: {}, code: 0 };
 }
 
 export function deny(reason) {
-  emit(
-    {
+  return {
+    output: {
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
         permissionDecision: 'deny',
         permissionDecisionReason: reason,
       },
     },
-    2,
-  );
+    code: 2,
+  };
 }
 
 export function advise(text) {
-  emit({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: text } }, 0);
+  return { output: { hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: text } }, code: 0 };
 }
 
 export function advisePost(text) {
-  emit({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text } }, 0);
+  return { output: { hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text } }, code: 0 };
 }
 
 // Per-session LSP tracker. New writes land in os.tmpdir(); an existing legacy
 // /tmp tracker from an in-flight pre-port session is still read (unix only).
-export function lspTrackerPath(sessionId) {
-  const name = `.claude-doc-this-lsp-${sessionId || 'unknown'}.json`;
+export function lspTrackerPath(sessionId, host = 'claude') {
+  const name = `.${host}-doc-this-lsp-${encodeURIComponent(sessionId || 'unknown')}.json`;
   const portable = join(tmpdir(), name);
   const legacy = join('/tmp', name);
   if (!existsSync(portable) && existsSync(legacy)) return legacy;
   return portable;
 }
 
-export function lspStartPath(sessionId) {
-  const name = `.claude-doc-this-lsp-start-${sessionId || 'unknown'}`;
+export function lspStartPath(sessionId, host = 'claude') {
+  const name = `.${host}-doc-this-lsp-start-${encodeURIComponent(sessionId || 'unknown')}`;
   const portable = join(tmpdir(), name);
   const legacy = join('/tmp', name);
   if (!existsSync(portable) && existsSync(legacy)) return legacy;
@@ -232,9 +234,20 @@ export function capList(lines, cap = 20) {
 // problems never hard-block).
 export async function failOpen(mainFn) {
   try {
-    await mainFn();
+    const decision = await mainFn() || allow();
+    emit(decision.output, decision.code);
   } catch {
     process.stdout.write('{}\n');
     process.exitCode = 0;
+  }
+}
+
+export async function runStandalone(url, evaluate, parse = parseInput) {
+  if (process.argv[1] && existsSync(process.argv[1]) && url === pathToFileURL(realpathSync(process.argv[1])).href) {
+    if (process.argv.includes('--version')) {
+      process.stdout.write(`${VERSION}\n`);
+      return;
+    }
+    await failOpen(async () => evaluate(parse(await readHookInput())));
   }
 }

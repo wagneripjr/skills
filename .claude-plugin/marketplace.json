@@ -6,62 +6,62 @@
   },
   "metadata": {
     "description": "One plugin per skill: install only what you need. Plus doc-this, a reverse-engineering pipeline whose skills share a hook set and therefore ship as one package.",
-    "version": "7.1.0"
+    "version": "7.2.0"
   },
   "plugins": [
     {
       "name": "agent-cli",
       "source": "./plugins/agent-cli",
       "description": "Build and evaluate command-line tools for AI agent consumption: machine-readable output, semantic exit codes, hardened input, and a 0-21 agent-friendliness rubric",
-      "version": "1.1.1"
+      "version": "1.2.0"
     },
     {
       "name": "airflow-dags",
       "source": "./plugins/airflow-dags",
       "description": "Author, debug and configure Apache Airflow 3 DAGs: TaskFlow API, scheduling and assets, XCom, sensors, dynamic task mapping, and multi-layer test suites",
-      "version": "1.1.1"
+      "version": "1.2.0"
     },
     {
       "name": "doc-this",
       "source": "./plugins/doc-this",
       "description": "Reverse-engineer a legacy codebase into ATDD-ready, traceable specifications",
-      "version": "1.2.3"
+      "version": "1.3.0"
     },
     {
       "name": "human-cli",
       "source": "./plugins/human-cli",
       "description": "Design and evaluate command-line tools for human users: naming and grammar, interactive prompts, colour and progress output, error messages, and a 0-21 usability rubric",
-      "version": "1.1.1"
+      "version": "1.2.0"
     },
     {
       "name": "okf-maintain",
       "source": "./plugins/okf-maintain",
       "description": "Adopt and maintain an Open Knowledge Format v0.2 documentation bundle: frontmatter, generated indexes, a fail-closed conformance check, and coverage that names every unindexed document",
-      "version": "1.2.0"
+      "version": "1.3.0"
     },
     {
       "name": "platform-sre-kubernetes",
       "source": "./plugins/platform-sre-kubernetes",
       "description": "SRE-focused Kubernetes specialist for production deployments: deploy to Kubernetes, review manifests, establish reliability practices",
-      "version": "1.1.1"
+      "version": "1.2.0"
     },
     {
       "name": "postmortem",
       "source": "./plugins/postmortem",
       "description": "Write a production-incident postmortem that reads well for humans and stays parseable by tooling: machine-read frontmatter, a numbered spine, and strict evidence rules",
-      "version": "1.1.1"
+      "version": "1.2.0"
     },
     {
       "name": "prototype-spike",
       "source": "./plugins/prototype-spike",
       "description": "Turn a requirement or an unproven technique into a single self-contained HTML prototype that doubles as a design spike, rebuilt at high fidelity from the app's own source",
-      "version": "1.1.1"
+      "version": "1.2.0"
     },
     {
       "name": "requirements-elicitation",
       "source": "./plugins/requirements-elicitation",
       "description": "Analyse PRDs and feature specs for gaps, generate clarifying questions for PMs and engineers, and assess technical risk before implementation",
-      "version": "1.1.1"
+      "version": "1.2.0"
     }
   ]
 }

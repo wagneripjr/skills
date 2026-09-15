@@ -4,7 +4,7 @@ The Reviewer runs through this checklist before finalizing the confidence report
 
 ## A0. Describe-only pact compliance (BLOCKING — reject, do not just demote)
 
-These are the rules from `${CLAUDE_PLUGIN_ROOT}/skills/doc-this/references/describe-only-pact.md`. Any failure REJECTS the offending content (removes it; the underlying gap, if any, becomes a 🔴 in `questions.md`). Log every rejection in `confidence-report.md` under "Pact violations rejected".
+These are the rules from `<plugin-root>/skills/doc-this/references/describe-only-pact.md`. Any failure REJECTS the offending content (removes it; the underlying gap, if any, becomes a 🔴 in `questions.md`). Log every rejection in `confidence-report.md` under "Pact violations rejected".
 
 - [ ] No 🟡 markers anywhere in any spec file
 - [ ] No content whose meaning is "should be / recommend / propose / consider / better approach", judged by meaning in whatever language the file was produced in

@@ -4,8 +4,10 @@ Doc-this agents use LSP language servers for deterministic cross-file analysis w
 
 ## Prerequisites
 
-- `ENABLE_LSP_TOOL=1` in Claude Code settings.json `env` block
-- LSP is a deferred tool — run `ToolSearch("select:LSP")` before the first LSP call
+- Claude Code: `ENABLE_LSP_TOOL=1` in settings.json `env`. Codex: an available configured LSP tool;
+  no Claude setting is required.
+- Discover LSP using `references/host-runtime.md`: Claude loads the deferred schema with
+  `ToolSearch("select:LSP")`; Codex discovers an available native LSP tool and uses its actual schema.
 - A language server binary on PATH for the project's primary language:
 
 | Language | Server | Install |
@@ -121,7 +123,10 @@ LSP results are compact symbol lists (name + kind + line range), much smaller th
 
 ## LSP call budgets
 
-A PreToolUse hook (`hooks/doc-this-lsp-budget.mjs`) and PostToolUse hook (`hooks/doc-this-lsp-timing.mjs`) enforce per-agent call budgets and timing limits. These prevent unbounded call-graph traversal that consumed 2+ hours on medium-to-large projects.
+A PreToolUse hook (`hooks/doc-this-lsp-budget.mjs`) and PostToolUse hook (`hooks/doc-this-lsp-timing.mjs`)
+enforce per-agent budgets and timing for mapped `LSP` events. If a native navigation tool has a different
+name or schema, track the limits below manually and report that automatic enforcement is unavailable
+for that tool. These limits prevent unbounded call-graph traversal on medium-to-large projects.
 
 ### Budget table (per-agent, per-session, hard limits)
 

@@ -6,6 +6,14 @@ license: MIT
 
 # okf-maintain — Adopt and Maintain an OKF Documentation Bundle
 
+## Host and installed paths
+
+Claude Code invokes `okf-maintain:okf-maintain` through its Skill tool; Codex invokes `$okf-maintain:okf-maintain`.
+Resolve `<skill-dir>` to the absolute directory containing this installed `SKILL.md`, and substitute
+that path in every command below. Resolve `references/` relative to the same directory. Run the shared
+Node CLI through the host's terminal tool from the target repository; use native file/search tools for
+inspection and edits. No personal configuration or Claude environment variable is required.
+
 The Open Knowledge Format is a directory of markdown files with YAML frontmatter. That is the whole
 format: no schema registry, no central authority, no runtime. Its value is not the frontmatter — it
 is that a corpus becomes **enumerable**, so an agent answers "which document covers X" from one
@@ -108,7 +116,7 @@ question, answered by `check` and unchanged.
 Generate them with the bundled script, always:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs index <bundle-root>
+node "<skill-dir>/scripts/okf.mjs" index <bundle-root>
 ```
 
 **Pass the repo root as the bundle root.** It walks deepest-first, so a subdirectory's description
@@ -154,7 +162,7 @@ default dialect, the only one whose subdirectory rows have a description to hold
 directory to write one honest line and supply it:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs index docs --describe requirements="Functional and non-functional requirements."
+node "<skill-dir>/scripts/okf.mjs" index docs --describe requirements="Functional and non-functional requirements."
 ```
 
 It then persists by round-tripping through the generated index, so it is written once. A directory
@@ -219,7 +227,7 @@ and point at `git log --follow`.
 An index nobody is told to read saves nothing.
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs wire <bundle-root>
+node "<skill-dir>/scripts/okf.mjs" wire <bundle-root>
 ```
 
 That writes a marker-delimited block into `CLAUDE.md` and `AGENTS.md`, creating either if absent and
@@ -258,7 +266,7 @@ ignored wholesale, costing more index reads than it buys.
 2. **Survey.** List the markdown present and how it is grouped. Do not restructure directories that
    already make sense; OKF is agnostic about layout. Put anything another tool writes into
    `.okfignore` now, before it produces violations you would try to fix by hand.
-3. **Triage.** `node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs check .` *before* writing anything. It prints one `note:` per
+3. **Triage.** `node "<skill-dir>/scripts/okf.mjs" check .` *before* writing anything. It prints one `note:` per
    `description` the index will refuse — **that is the worklist**, shorten each to a sentence. A
    corpus that already has frontmatter needs this, not a pass that overwrites it.
 4. **Frontmatter pass.** For documents with none, add `type`, `title`, and a `description` drawn
@@ -267,8 +275,8 @@ ignored wholesale, costing more index reads than it buys.
 5. **History pass.** `git rm` any `log.md`; strip history sections and `Last updated:` lines.
 6. **Generate.** `okf.mjs index` at the repo root, so `./index.md`, `docs/index.md` and every folder
    index are written as one chain. Supply `--describe` for each reported directory.
-7. **Wire.** `node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs wire .`
-8. **Verify.** `node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs check .` must exit 0,
+7. **Wire.** `node "<skill-dir>/scripts/okf.mjs" wire .`
+8. **Verify.** `node "<skill-dir>/scripts/okf.mjs" check .` must exit 0,
    and `okf.mjs coverage .` must exit 0 too. `check` alone cannot tell you a document was never
    walked — it and the index are the same projection.
 9. **Report** what was created, what was deleted, every `.okfignore` line and why, and any
@@ -297,7 +305,7 @@ Delete a removed document's file and regenerate; leave no tombstone entry. A sup
 ## Conformance
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs check <bundle-root>
+node "<skill-dir>/scripts/okf.mjs" check <bundle-root>
 ```
 
 It checks §11 and nothing stricter: parseable frontmatter, non-empty `type`, reserved filenames used
@@ -321,7 +329,7 @@ hand-rolled reader is never the syntax it rejects, which is loud, but the syntax
 ## Coverage — the check `check` cannot perform
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/skills/okf-maintain/scripts/okf.mjs coverage <bundle-root>
+node "<skill-dir>/scripts/okf.mjs" coverage <bundle-root>
 ```
 
 `check` and "regenerate, then diff against the committed index" both read the corpus through the

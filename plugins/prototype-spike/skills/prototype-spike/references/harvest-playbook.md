@@ -29,7 +29,8 @@ prototype-only group with a written justification, or drop the element.
 
 ## LSP first
 
-Navigation goes through LSP (`ToolSearch select:LSP`) because it resolves across files and follows
+Navigation goes through available LSP (Claude: `ToolSearch select:LSP`; Codex: native tool discovery)
+because it resolves across files and follows
 re-exports, which grep cannot. Grep stays the right tool for string literals — hex codes, route
 paths, config keys, user-visible copy — because those *are* text.
 

@@ -1,21 +1,24 @@
 # Wagner Skills
 
-Repo hosting **nine plugins**, published to two channels at the same granularity: the Claude Code
-marketplace `wagner-skills-marketplace`, and the Tessl registry (FR-TESSL-3). Eight are one skill
+Repo hosting **nine plugins**, published at the same granularity to native Claude Code and Codex
+marketplaces named `wagner-skills-marketplace`, and the Tessl registry (FR-TESSL-3). Eight are one skill
 each; `doc-this` bundles fourteen because they share nine gates and a `hooks/lib/`.
 
 | Channel | Published by |
 |---|---|
 | Claude Code marketplace | `git push` + `claude plugin marketplace update` + `claude plugin update` |
+| Codex marketplace | `git push` + `codex plugin marketplace upgrade` + `codex plugin add` |
 | Tessl registry | `.github/workflows/tessl-publish.yml`, **never the CLI** |
 
-### FR-LAYOUT-1 · One directory per plugin, serving both channels
+### FR-LAYOUT-1 · One directory per plugin, serving every channel
 
 Every plugin is a root under `plugins/`, the layout Tessl documents for a repository holding more
 than one (`docs.tessl.io/creating-skills-and-plugins/create-a-plugin.md`, asked for the monorepo
 shape): `plugins/<name>/` holding `.tessl-plugin/plugin.json`, `skills/`, `evals/` and
 `.tesslignore`. The `.claude-plugin/plugin.json` sits beside them, and the repo-root
 `marketplace.json` points at each with `"source": "./plugins/<name>"`.
+The sibling `.codex-plugin/plugin.json` selects Codex entry points and hook registration;
+`.agents/plugins/marketplace.json` catalogs the same nine roots.
 
 **Why the granularities had to converge.** Claude Code plugin path fields (`skills`, `hooks`,
 `commands`, …) must be relative, must start with `./`, reject `../`, and support no globs — so a
@@ -140,10 +143,10 @@ loader it models and let payload straight back in — reported from claude-code-
 and check), `tests/test-okf-coverage.mjs` AC-42 (the two enumerators must agree, or payload becomes
 permanent unindexed findings — the deliberate dot-directory disagreement must not gain a second).
 
-Consequence for this repository, and it is the honest one: `check` now evaluates **zero** concept
-documents and exits 77. Its markdown is entirely plugin payload plus project meta; there is no
-documentation bundle here, which is what the `FR-`/`BUG-` note above already says. The root
-`index.md` lists the seven project-meta files and no subdirectories.
+At FR-OKF-4 adoption, `check` evaluated zero concept documents and exited 77: the tree was entirely
+plugin payload and project meta. FR-HOST-1 adds one indexed migration handoff, which `check` now
+evaluates. There is still no requirements/ADR corpus or `docs/` tree; rule identifiers remain
+defined in this file. The root index lists the project-meta files and the handoff.
 
 ### FR-OKF-5 · An index nothing links to may not vouch for a document
 
@@ -665,11 +668,46 @@ Re-running the audit sweeps: use `$(git rev-list --all)` **inline**, never a `$V
 word-split an unquoted variable, so `git grep <pat> $REVS` passes one bogus rev, finds nothing, and
 reports clean. Pair every sweep with a control term that must match.
 
+### FR-HOST-1 · Shared behavior with native host entry points
+
+The public plugins must work without a personal configuration repository, global instruction
+file, or Tessl installation. Claude retains its fully namespaced inline `Skill` dispatch and
+existing hook registrations. Codex discovers eight standalone skills and four doc-this entry
+points; its ten workers remain bundled files, loaded by native subagents through the orchestrator.
+Skill instructions are shared, with host differences in progressively disclosed references.
+Native Codex text invocation uses the full `$plugin:skill` name, for example `$doc-this:doc-this`;
+the loader prefixes plugin skills and explicit selection matches that exact name.
+
+Codex worker dispatch starts with `DOC_THIS_WORKER=<full-skill-name>` on the first message line.
+The parent owns interactive questions and `.doc-this/state.json`; workers return results,
+checkpoints, pending input, or failures. Core workers run sequentially and inherit the selected
+model. Reader fan-out retains user consent and the existing three-reader maximum. Support the
+native v1 and v2 tool protocols; never substitute an ungated inline run for unavailable subagents.
+
+`hooks/codex-hooks.json` registers native hooks in doc-this and okf-maintain. Gate evaluators run
+in-process behind host-specific I/O; Claude's standalone wrappers retain their behavior. Codex
+records successful worker identities and checks continuations, normalizes every file in an
+`apply_patch` call, and denies the whole tool call when an applicable gate refuses an edit.
+Removed lines are not new content. OKF regeneration resolves the repository from each edited
+file, including move source and destination, rather than the session working directory.
+
+Author transport normalization in `scripts/lib/codex-tools.mjs`; distribute identical copies with
+`node scripts/sync-host-adapters.mjs`. Installed plugins import only their own payload. The tests
+reject drift, preserve Claude contracts, and exercise Codex dispatch, patches, and regeneration.
+Run `node scripts/verify-native-hosts.mjs` separately for native CLI installation and loader
+checks. Hook trust is a host prerequisite; do not persist trust bypasses in user configuration.
+
+Tessl's generic hook dispatcher can translate Codex blocking output, but preserves raw patch and
+worker payloads (verified with Tessl 0.109.0). Its `nativeHooks` manages installation wiring; it
+does not implement this pipeline's semantics. Keep the existing Tessl distribution/review channel
+optional, and do not add its runtime to native hook commands.
+
 ## Repository Structure
 
 ```
 .claude-plugin/          # marketplace.json ONLY — 9 entries, each source ./plugins/<name>.
                          #   There is no plugin.json here: the repo root is not a plugin root
+.agents/plugins/        # Codex marketplace.json; other .agents content remains local/ignored
 scripts/
   tessl-publish.mjs      # FR-TESSL-3 — git-anchored plugin discovery + idempotent publish.
                          #   --dry-run exists because its other mode is irreversible
@@ -678,7 +716,7 @@ scripts/
                          #   run/workspace/user ids and the local cwd are dropped. Importable
                          #   core behind an import.meta.url guard, as okf.mjs is
 plugins/                 # ONE DIRECTORY PER PLUGIN (FR-LAYOUT-1). Each holds .tessl-plugin/,
-                         #   .claude-plugin/, skills/, .tesslignore, and evals/.
+                         #   .claude-plugin/, .codex-plugin/, skills/, .tesslignore, and evals/.
                          #   EVERY solo plugin carries evals/ with exactly THREE scenario dirs —
                          #   the coverage threshold that lifts the registry's 80% no-eval discount.
                          #   Named by slug, never scenario-N: a re-download merges over those.
@@ -1309,17 +1347,18 @@ the plugin cache, so a bump is mandatory to ship anything: `update` silently no-
 
 ### Version Files
 
-**One granularity since FR-LAYOUT-1.** A change to one plugin touches three fields, all carrying
+**One granularity since FR-LAYOUT-1.** A change to one plugin touches four fields, all carrying
 the **same** number:
 
 | File | Field |
 |---|---|
 | `plugins/<name>/.claude-plugin/plugin.json` | `.version` |
 | `plugins/<name>/.tessl-plugin/plugin.json` | `.version` |
+| `plugins/<name>/.codex-plugin/plugin.json` | `.version` |
 | `.claude-plugin/marketplace.json` | that plugin's `.plugins[*].version` |
 
-Current: seven solo plugins at **1.1.1**, `okf-maintain` at **1.2.0**, `doc-this` at **1.2.3**,
-marketplace metadata **7.1.0**.
+Current: seven solo plugins at **1.2.0**, `okf-maintain` at **1.3.0**, `doc-this` at **1.3.0**,
+Claude marketplace metadata **7.2.0**.
 
 Note what earned that 1.1.1: adding `evals/` changes nothing an installed plugin executes, so by the
 table above it is a `test:` change and no bump at all. The bump is not describing the change, it is
@@ -1327,7 +1366,7 @@ the **mechanism** — the registry is version-keyed, `already published, nothing
 unbumped plugin, and the scenarios would therefore never upload. When shipping is the point, bump
 even where the mapping says otherwise.
 
-The two manifests must agree: `manifestOf` in `scripts/tessl-publish.mjs` refuses to publish a
+The manifests must agree: `manifestOf` in `scripts/tessl-publish.mjs` refuses to publish a
 plugin whose `.claude-plugin` twin declares a different version, and
 `tests/test-tessl-publish.mjs` mutation-tests that guard. `version` is **required** in a Tessl
 manifest — `tessl plugin pack` hard-refuses without it, stricter than lint, which only warns.
@@ -1351,7 +1390,7 @@ repackaging hit, on all nine plugins at once. `classifyInfo` accepts both; AC-7f
 
 Local development:
 ```bash
-claude plugin add /path/to/this/repo
+claude --plugin-dir ./plugins/doc-this --plugin-dir ./plugins/okf-maintain
 ```
 
 Via marketplace — install only what you want; there is no bundle:
@@ -1360,20 +1399,28 @@ claude plugin marketplace add wagneripjr/skills
 claude plugin install postmortem@wagner-skills-marketplace
 claude plugin install okf-maintain@wagner-skills-marketplace
 claude plugin install doc-this@wagner-skills-marketplace     # only for a discovery run
+
+codex plugin marketplace add wagneripjr/skills --ref master
+codex plugin add doc-this@wagner-skills-marketplace
 ```
 
 ## Updating After Changes
 
-Each plugin is version-keyed in the cache — bump its two manifests and its `marketplace.json`
+Each plugin is version-keyed in the cache — bump its three manifests and its Claude `marketplace.json`
 entry, or `update` no-ops.
 
 ```bash
 claude plugin marketplace update wagner-skills-marketplace
 claude plugin update <name>@wagner-skills-marketplace
+
+codex plugin marketplace upgrade wagner-skills-marketplace
+codex plugin add <name>@wagner-skills-marketplace
 ```
 
 Then restart Claude Code to apply. After a rename or a layout change, `claude plugin uninstall`
 the old entries first — the cache is keyed on the old name and will not migrate itself.
+Restart Codex after its updates and review changed hooks with `/hooks`. See README for prerequisites
+and CODEX-MIGRATION.md for the handoff from copied configuration adaptations.
 
 ## Commands
 

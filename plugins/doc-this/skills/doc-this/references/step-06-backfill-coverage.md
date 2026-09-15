@@ -7,10 +7,10 @@ Brings a run into Total Source Coverage compliance after the fact. Two audiences
 
 The backfill reads ONLY the unread set — it never re-reads what the ledger already records, and it is non-destructive outside `.doc-this/` + `<output_folder>/` (the absolute rule applies unchanged).
 
-All deterministic shell work goes through ONE bundled script — define it once and use it for every set-math, chunking, and verification step:
+All deterministic set-math, chunking, and verification work goes through ONE bundled Node script:
 
 ```bash
-SCRIPT="${CLAUDE_PLUGIN_ROOT}/skills/doc-this/scripts/backfill-coverage.mjs"
+SCRIPT="<plugin-root>/skills/doc-this/scripts/backfill-coverage.mjs"
 ```
 
 Do NOT improvise compound bash (redirects to /tmp, `cd … && …`, `while read` loops, `xargs`, process substitution) for any of these operations: each ad-hoc command is a unique shape that matches no permission allow-rule, producing denial-and-retry thrash in real sessions. The script is a single stable command path — the first call may prompt once, and the user can allowlist it permanently. Run it from the project root.
@@ -22,24 +22,26 @@ If `.doc-this/context/file-manifest.json` is missing, run **only Scout's manifes
 ## 2. Compute the unread set
 
 ```bash
-"$SCRIPT" unread --counts   # scope summary (total + per-subclass)
-"$SCRIPT" unread            # the path list itself, when needed
+node "$SCRIPT" unread --counts   # scope summary (total + per-subclass)
+node "$SCRIPT" unread            # the path list itself, when needed
 ```
 
 The script computes manifest source ∖ ledger `files_analyzed` (`comm -23` on sorted jq slices). A missing ledger means nothing is recorded as read — for a legacy run that is the honest starting point even if some files were actually read before: the ledger is the record, and re-reading is cheaper than trusting recall (recall is the failure mode that created the debt).
 
-Seed `state.json.coverage` (`files_total_source`, `files_analyzed` from the ledger count, `files_pending`, `ledger_path`) per `state-schema.md`. Report the size to the user and — when the harness exposes an Agent tool with a `model` parameter — fold in the fan-out offer (this is where the explicit consent for parallel execution required by the orchestrator SKILL.md is collected):
+Seed `state.json.coverage` (`files_total_source`, `files_analyzed` from the ledger count, `files_pending`, `ledger_path`) per `state-schema.md`. Report the size to the user and — when native reader dispatch and spare capacity are available — fold in the fan-out offer (this is where the explicit consent for parallel execution required by the orchestrator SKILL.md is collected):
 
-> "Backfill scope: N unread source files (~M markup, K sql, J code). I can dispatch up to 3 Sonnet reader subagents in parallel (cheaper and faster; everything they produce is verified before it counts) — confirm, or say INLINE for the classic single-session path. Either way I checkpoint after every module slice."
+> "Backfill scope: N unread source files (~M markup, K sql, J code). I can dispatch up to 3 reader subagents in parallel (everything they produce is verified before it counts) — confirm, or say INLINE for reading without fan-out. Either way I checkpoint after every module slice."
 
 ## 3. Re-enter analysis for the unread set only
 
-Two paths. Fan-out (3a) is the default when the Agent tool with a `model` parameter is available and the user consented in step 2; inline (3b) otherwise.
+Two paths. Fan-out (3a) is the default when native reader dispatch and spare capacity are available and
+the user consented in step 2; inline reading (3b) otherwise. Core pipeline dispatch still follows the
+host runtime: Codex uses a marked Code Analyst worker even when that worker reads without fan-out.
 
-### 3a. Fan-out — Sonnet reader subagents
+### 3a. Fan-out — reader subagents
 
-Follow the shared fan-out reading protocol in `references/sonnet-reader-fanout.md` — it covers why a cheaper
-model is safe here, the consent precondition, `chunk`, the reader prompt template, and the verify-before-merge
+Follow the shared fan-out reading protocol in `references/sonnet-reader-fanout.md` — it covers host model
+selection, the consent precondition, `chunk`, the reader prompt template, and the verify-before-merge
 discipline (the orchestrator stays the single writer of the ledger and the artifacts). Backfill specifics for
 the protocol's bracketed parts:
 
@@ -73,7 +75,7 @@ For every existing 🔴 in the global and per-unit `questions.md`:
 1. Does the answer now exist in a freshly-read file? → convert 🔴→🟢 with the `file:line`, update the owning spec, and remove the question. **Every conversion must include a short verbatim fragment from the cited line**, and the fragment must verify mechanically — a conversion that fails the check stays 🔴 (a false 🟢 is worse than an honest gap):
 
    ```bash
-   "$SCRIPT" check-frag <file> <line> "<verbatim fragment>"   # exit 0 = found within ±2 lines
+   node "$SCRIPT" check-frag <file> <line> "<verbatim fragment>"   # exit 0 = found within ±2 lines
    ```
 
 2. Delete every sampling-phrase disclosure — any statement meaning the sources were read by sampling, by outline, or not in full, in whatever language the file was written. After the backfill they are false, and Rule 7 of the describe-only gate blocks rewriting them anyway.
@@ -94,11 +96,12 @@ The backfill's cost is dominated by step 3's reading volume; its quality is prot
 | Step | Work | Model |
 |---|---|---|
 | 1–2 | Manifest + set math | none (bash/jq) |
-| 3 | Read the unread set | **Sonnet** (reader subagents, 3a) — transcription with citations; structural failures are gate-caught |
-| 4 | Detective/Architect/Writer incremental | session model — runs inline via the Skill tool on the (smaller) delta |
+| 3 | Read the unread set | Claude: **Sonnet**; Codex: active model (reader subagents, 3a) |
+| 4 | Detective/Architect/Writer incremental | session model — Claude inline Skill dispatch; Codex marked sequential workers on the delta |
 | 5 | Gap reconciliation | session model (strong) — "does this file answer Q-X?" is semantic judgment; a wrong 🔴→🟢 manufactures a false citation |
 | 6 | Reviewer | session model (strong) — it IS the quality gate; running it cheap defeats the design |
 
-The one failure mode no gate catches mechanically is a 🟢 citation pointing at the wrong `file:line`. Mitigate at merge time with `"$SCRIPT" check-cites` (`sonnet-reader-fanout.md` §3, the verify-before-merge step) and at conversion time with `"$SCRIPT" check-frag` (step 5). The residual risk — a real line that does not support the claim — is the same residual the pipeline carries on the strong model, and the Reviewer's citation-quality section covers it.
+The one failure mode no gate catches mechanically is a 🟢 citation pointing at the wrong `file:line`. Mitigate at merge time with `node "$SCRIPT" check-cites` (`sonnet-reader-fanout.md` §3, the verify-before-merge step) and at conversion time with `node "$SCRIPT" check-frag` (step 5). The residual risk — a real line that does not support the claim — is the same residual the pipeline carries on the strong model, and the Reviewer's citation-quality section covers it.
 
-**No Agent-tool `model` parameter in this harness?** Fall back to session-model switching: run step-3 reading sessions on a cheaper session model (the multi-session design already supports this), and switch back to the strong model **before step 5** — reconciliation and review must not run on the cheap tier.
+**No reader dispatch or spare capacity?** Read inline in the analysis assignment. Claude readers use
+Sonnet when available; Codex inherits the active model throughout and makes no cost-reduction claim.

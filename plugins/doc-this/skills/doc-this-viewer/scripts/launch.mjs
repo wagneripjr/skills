@@ -14,7 +14,7 @@
 //
 // Output contract: prints a single  VIEWER_URL=...  line on success.
 
-import { existsSync, mkdirSync, cpSync, readFileSync, rmSync, openSync, closeSync } from 'node:fs';
+import { existsSync, mkdirSync, cpSync, readFileSync, rmSync, openSync, closeSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
@@ -163,7 +163,7 @@ async function main() {
   return 0;
 }
 
-if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+if (process.argv[1] && existsSync(process.argv[1]) && pathToFileURL(realpathSync(process.argv[1])).href === import.meta.url) {
   main().then((code) => process.exit(code)).catch((err) => {
     process.stderr.write(`error: ${err?.message ?? err}\n`);
     process.exit(1);

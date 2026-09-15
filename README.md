@@ -2,7 +2,8 @@
 
 A marketplace of **nine plugins** — eight standalone engineering skills you install one at a
 time, and a reverse-engineering pipeline that turns a legacy codebase into traceable, ATDD-ready
-specifications.
+specifications. Each plugin supports **Claude Code and Codex natively**, using the same skill
+instructions and enforcement logic. Neither host requires Tessl or the maintainer's configuration.
 
 Each plugin is a root under [`plugins/`](plugins), the layout Tessl documents for a repository
 holding more than one:
@@ -11,6 +12,7 @@ holding more than one:
 plugins/<name>/
 ├─ .tessl-plugin/plugin.json     # Tessl registry manifest
 ├─ .claude-plugin/plugin.json    # Claude Code manifest
+├─ .codex-plugin/plugin.json     # Codex manifest and public skill selection
 ├─ skills/<name>/SKILL.md
 ├─ evals/                        # scenarios, when the skill has them
 └─ .tesslignore
@@ -18,7 +20,11 @@ plugins/<name>/
 
 ## Install
 
-Install only what you want:
+Install only what you want. Runtime prerequisites are Node ≥18 and Git. The doc-this discovery
+recipes additionally use `jq` and a POSIX-compatible shell. CI exercises Node 22 on Linux and
+macOS; the discovery recipes are not a native Windows portability guarantee.
+
+### Claude Code
 
 ```bash
 claude plugin marketplace add wagneripjr/skills
@@ -30,6 +36,45 @@ claude plugin install doc-this@wagner-skills-marketplace
 
 Restart Claude Code to apply. There is no bundle to install and nothing to disable afterwards —
 a plugin you did not install costs no context and spawns no hooks.
+
+### Codex
+
+```bash
+codex plugin marketplace add wagneripjr/skills --ref master
+codex plugin add postmortem@wagner-skills-marketplace
+codex plugin add okf-maintain@wagner-skills-marketplace
+codex plugin add doc-this@wagner-skills-marketplace
+```
+
+Restart Codex, review and enable the installed hooks with `/hooks`, and invoke
+`$postmortem:postmortem`, `$okf-maintain:okf-maintain`, or `$doc-this:doc-this`.
+Native plugin skills use `$plugin:skill`; short names do not explicitly select them.
+Codex exposes four doc-this entry points: `doc-this`,
+`doc-this-help`, `doc-this-promote`, and `doc-this-viewer`. The ten workers are bundled instructions
+dispatched by the orchestrator, not independently discoverable skills. Enable Codex subagent
+support for discovery runs; the pipeline does not silently run workers inline when it is absent.
+
+Host hook trust and Node availability are prerequisites for mechanical enforcement. Review hooks
+again after an update when their commands change. The CLI verification baseline is Codex 0.154.0
+and Claude Code 2.1.273; run the host smoke check below against other versions.
+
+### Updates and removal
+
+```bash
+claude plugin marketplace update wagner-skills-marketplace
+claude plugin update doc-this@wagner-skills-marketplace
+
+codex plugin marketplace upgrade wagner-skills-marketplace
+codex plugin add doc-this@wagner-skills-marketplace
+```
+
+Repeat the last command for each installed plugin, then restart that host. Codex uses `add` again
+to install the refreshed plugin; `plugin update` is not a command in the tested version.
+Remove with `claude plugin uninstall <name>@wagner-skills-marketplace` or
+`codex plugin remove <name>@wagner-skills-marketplace`.
+
+Existing users of the copied Codex adaptations should follow
+[the configuration migration handoff](CODEX-MIGRATION.md) to avoid duplicate skills and hooks.
 
 ### On the Tessl registry
 
@@ -44,6 +89,11 @@ tessl install wagneripjr/doc-this        # the whole pipeline
 Publishing is automatic on every push to `master` (`.github/workflows/tessl-publish.yml`) and is a
 maintainer step — it needs a workspace API key stored as the `TESSL_TOKEN` repository secret.
 Contributors never need one.
+
+Tessl remains optional. Its generic hooks use a `tessl hook run` dispatcher; `nativeHooks` can
+install host-specific registrations. Neither translates this pipeline's worker protocol or
+multi-file patch checks. Use the native marketplace installation above for the hook integrations
+described here; the existing Tessl manifests do not install these hooks.
 
 ## The skills
 
@@ -60,7 +110,8 @@ Contributors never need one.
 
 ## doc-this
 
-Reverse-engineers a legacy codebase into ATDD-ready, traceable specs. Run `/doc-this` in any
+Reverse-engineers a legacy codebase into ATDD-ready, traceable specs. Run `/doc-this` in Claude Code
+or `$doc-this:doc-this` in Codex in any
 legacy project; the orchestrator handles the first-run handshake and dispatches the pipeline.
 
 ```
@@ -74,7 +125,9 @@ SPA over localhost to browse the output. `/doc-this-help` explains every agent b
 It is the one plugin that bundles many skills, because its 14 skills share nine enforcement
 hooks and a common `hooks/lib/` — machinery that has no per-skill home. Install it only while
 reverse-engineering something: it costs roughly 3.4k tokens of skill descriptions per session
-plus five Node hook spawns per `Skill` call and two per `Edit`/`Write`.
+plus five Node hook spawns per `Skill` call and two per `Edit`/`Write` in Claude Code. Codex loads
+only the four entry descriptions and uses one adapter per matching hook event. Both run the same
+pipeline gates; Codex also checks worker continuations and each file in a patch.
 
 ### The design choices that matter
 
@@ -110,6 +163,12 @@ hand-writing the indexes and says so.
 git clone https://github.com/wagneripjr/skills
 cd skills
 node tests/run-all.mjs
+
+# Local Claude plugin development (one directory per plugin):
+claude --plugin-dir ./plugins/doc-this --plugin-dir ./plugins/okf-maintain
+
+# Native host installation/loader smoke checks, isolated from user settings:
+node scripts/verify-native-hosts.mjs
 ```
 
 Editing a skill needs nothing but a text editor. One thing is worth having installed:
@@ -139,10 +198,27 @@ node tests/test-eval-record.mjs          # the recorded eval runs + the non-acti
 node tests/test-suite-discovery.mjs      # no harness sits where run-all.mjs cannot find it
 node tests/test-doc-this-dispatch-gate.mjs  # one of the five doc-this gate harnesses
 node tests/test-publication-safety.mjs   # repo-wide scan for credential-shaped material
+node tests/test-native-plugins.mjs      # native packaging and public entry points
+node tests/test-codex-tools.mjs         # shared patch transport and shipped-copy consistency
+node tests/test-codex-doc-this.mjs      # worker gates and Codex tool integration
+node tests/test-codex-okf.mjs           # multi-file index regeneration
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers the version-bump rules, skill authoring conventions, and
 what a PR should say.
+
+The native host smoke check is separate from the default suite because it requires both CLIs.
+It installs all nine plugins into temporary homes, checks discovery, updates, and removal, and drives a
+real Codex tool call through a localhost mock model to prove a forbidden patch is blocked.
+It also verifies that untrusted hooks stay inactive. Only the vetted temporary fixture uses an
+invocation-only trust bypass; no trust approval is saved. No paid or external model request runs.
+The enclosing sandbox may prevent the untrusted control's file write; the verifier reports this
+and checks that native patch execution was reached. Claude skills/hooks are verified by its
+native component loader and the direct hook suites; a logged-in Claude model-loop check remains
+outside this account-free verifier.
+Shared transport code is authored in `scripts/lib/codex-tools.mjs`; run
+`node scripts/sync-host-adapters.mjs` after editing it. Each plugin ships its own copy so an
+installation never reaches outside its plugin root; the default suite rejects drift.
 
 ### Skill quality review (optional)
 

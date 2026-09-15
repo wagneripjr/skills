@@ -28,8 +28,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
-  readHookInput,
-  parseInput,
   bypassActive,
   bypassHint,
   statePath,
@@ -39,7 +37,7 @@ import {
   allow,
   deny,
   advise,
-  failOpen,
+  runStandalone,
   sortedUnique,
   setDifference,
   capList,
@@ -51,10 +49,9 @@ const CHECKS = {
   'doc-this:doc-this-reviewer': 'matrix',
 };
 
-await failOpen(async () => {
-  const ctx = parseInput(await readHookInput());
+export async function evaluate(ctx) {
 
-  if (bypassActive(ctx.sessionId)) {
+  if (bypassActive(ctx.sessionId, ctx.host)) {
     log(ctx, 'exempt', 'coverage-gate', 'bypass marker present');
     return allow();
   }
@@ -98,7 +95,7 @@ await failOpen(async () => {
     outputFolder = '.doc-this-sdd';
   }
 
-  const hint = bypassHint(ctx.sessionId);
+  const hint = bypassHint(ctx.sessionId, ctx.host);
 
   if (check === 'analysis') {
     const ledgerPath = join(ctx.cwd, '.doc-this', 'context', 'coverage-ledger.json');
@@ -224,4 +221,6 @@ await failOpen(async () => {
   }
 
   return allow();
-});
+}
+
+await runStandalone(import.meta.url, evaluate);

@@ -31,6 +31,7 @@ more than one:
 plugins/<name>/
 ├─ .tessl-plugin/plugin.json     # Tessl registry manifest
 ├─ .claude-plugin/plugin.json    # Claude Code manifest
+├─ .codex-plugin/plugin.json     # Codex manifest
 ├─ skills/<name>/SKILL.md
 ├─ evals/                        # scenarios, when the skill has them
 └─ .tesslignore
@@ -55,10 +56,11 @@ is no hook automation — every field is edited by hand.
 | `feat!:` / `BREAKING CHANGE:` | major |
 | `docs:`, `chore:`, `ci:`, `test:` | none |
 
-A change to one plugin touches three fields, all carrying the **same** number:
+A change to one plugin touches four fields, all carrying the **same** number:
 
 - `plugins/<name>/.claude-plugin/plugin.json` → `.version`
 - `plugins/<name>/.tessl-plugin/plugin.json` → `.version`
+- `plugins/<name>/.codex-plugin/plugin.json` → `.version`
 - `.claude-plugin/marketplace.json` → that plugin's `.plugins[*].version`
 
 `tests/test-tessl-publish.mjs` fails the build if the two manifests drift, and
@@ -74,7 +76,7 @@ Publishing to Tessl happens automatically on push to `master` and needs a mainta
 
 1. `plugins/<plugin>/skills/<name>/SKILL.md` with YAML frontmatter: `name` (must equal the
    directory name), `description`, `license`. A new standalone skill is a new plugin root, with
-   the two manifests and a `.tesslignore` beside them.
+   the three manifests and a `.tesslignore` beside them. Register it in both host marketplaces.
 2. **Description**: third person, listing every trigger condition explicitly. **Hard limit 1024
    characters** — past it, review tooling aborts before it evaluates anything.
 3. **Body**: imperative ("Log to…", not "You should log to…"), 1,500–2,000 words. Push detail into
@@ -88,19 +90,30 @@ Two conventions that surprise people:
   Adding a same-named command file suppresses that slot entirely, leaving only
   `/<plugin>:<name>` — the wrapper makes the skill *less* reachable. No plugin here ships a
   `commands/` directory.
-- **Dispatching between skills uses the fully namespaced name**, prefixed by the *plugin*. For a
+- **Claude dispatch between skills uses the fully namespaced name**, prefixed by the *plugin*. For a
   solo plugin the two are the same word: `postmortem:postmortem`, `okf-maintain:okf-maintain`,
   and `doc-this:<name>` inside the pipeline. Bare short names do not resolve.
+- **Codex invokes public skills with `$plugin:skill`**, such as `$doc-this:doc-this`.
+  Short names do not explicitly select native plugin skills. Doc-this worker instructions are read by native
+  subagents through the shared host-routing reference. Keep worker identifiers and the adapter's
+  dispatch contract in sync; do not publish worker directories as Codex entry points.
+- Keep host differences in adapters and references. Installed code must resolve paths inside its
+  own plugin, without repository-root imports, private globals, or a Tessl runtime dependency.
 
 ## Tests
 
 ```bash
 node tests/run-all.mjs                    # every suite; the one command CI runs
 node tests/test-publication-safety.mjs    # repo-wide scan for credential-shaped material
+node scripts/verify-native-hosts.mjs      # optional local check; requires both native CLIs
 ```
 
 A suite that cannot run its prerequisites exits **77**, and the runner reports INCOMPLETE with a
 non-zero status. That is deliberate: a suite that asserted nothing is not a pass.
+
+When changing the shared Codex transport, edit `scripts/lib/codex-tools.mjs` and run
+`node scripts/sync-host-adapters.mjs`. The installed copies are checked for drift. Hook handlers
+call shared evaluators in-process; runtime hooks may spawn only Git, with an argument array.
 
 If you add a check that asserts the *absence* of something, prove it in both directions — it must
 flag a planted canary and must not flag benign text. An absence check that silently reads nothing

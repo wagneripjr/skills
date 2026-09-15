@@ -6,6 +6,10 @@ license: MIT
 
 # Prototype Spike
 
+Invoke as `prototype-spike:prototype-spike` in Claude Code or `$prototype-spike:prototype-spike` in Codex.
+Resolve `references/` from this installed `SKILL.md` directory. Use the host's native file,
+search, edit, and terminal tools; browser evidence follows `references/verification.md`.
+
 Build one self-contained HTML file that executes a requirement's interpretation against the real
 system, for two audiences at once.
 
@@ -70,7 +74,8 @@ settle under `Still open:`. Every later phase moves lines out of that list.
 
 ### 1. HARVEST — *G1: zero uncited constants; UI inventory complete*
 
-LSP first (`ToolSearch select:LSP`). Grep only for string literals. Full recipes:
+LSP first when available: Claude uses `ToolSearch select:LSP`; Codex discovers its available LSP
+tool and reads its schema. When unavailable, use the table's source-search fallbacks. Full recipes:
 `references/harvest-playbook.md`.
 
 | What | LSP | Fallback |
@@ -135,17 +140,19 @@ Treat the dev proxy as a first-class artifact: it is where a **proposed edge con
 
 ### 4. DRIVE — *G4: every matrix cell observed; the app is recognizable*
 
-Use Chrome, not Playwright: this artifact is disposable and will be frozen, so a retained spec file
-is maintenance debt. Load in one call:
+Use live browser tools: Claude Code uses Chrome; Codex uses its configured browser or DevTools tools.
+This artifact is disposable and will be frozen, so do not create a retained test suite just to inspect
+it. In Claude Code, load in one call:
 
 ```
 ToolSearch select:mcp__claude-in-chrome__navigate,mcp__claude-in-chrome__computer,mcp__claude-in-chrome__read_console_messages,mcp__claude-in-chrome__read_network_requests,mcp__claude-in-chrome__read_page
 ```
 
-If `ToolSearch` returns none of these, the Chrome tools are not configured in this environment.
-Do not skip the gate silently and do not substitute reading the source: finish the build, then
-report G4 as UNVERIFIED, naming which checks could not run. Steps 2 and 3 below are mechanical
-proofs that source reading cannot supply.
+In Codex, discover the equivalent capabilities from the actual tool catalog; no Claude tool name or
+personal plugin is required. If browser control, console logs, or network requests are unavailable,
+finish the build and report those G4 checks as UNVERIFIED. Do not substitute reading the source:
+steps 2 and 3 below require observed browser evidence. The names below are Claude's tool names;
+the verification reference defines the equivalent evidence for either host.
 
 Full checklist: `references/verification.md`. All mandatory:
 

@@ -6,9 +6,11 @@ license: MIT
 
 # Doc-This-Reviewer — Critical Review
 
+Read [the host runtime](../doc-this/references/host-runtime.md) before starting: it resolves installed paths and selects Claude Code or Codex dispatch, tools, and checkpoint handling.
+
 You are the **Reviewer**, the review phase. Mission: validate that Writer's specs faithfully describe the legacy system without judgment, inference, or invention. Enforce the public/private API discipline, cross-layer coverage, the database coverage rules, **and the describe-only pact**.
 
-**Read `${CLAUDE_PLUGIN_ROOT}/skills/doc-this/references/describe-only-pact.md` before starting.** You **reject** outputs that violate the pact — you do not silently downgrade them. Apply rules by **meaning** across whatever language `doc_language` selected (en, pt-BR, or other); judgment-shaped content in pt-BR is rejected just as judgment-shaped content in English is.
+**Read `<plugin-root>/skills/doc-this/references/describe-only-pact.md` before starting.** You **reject** outputs that violate the pact — you do not silently downgrade them. Apply rules by **meaning** across whatever language `doc_language` selected (en, pt-BR, or other); judgment-shaped content in pt-BR is rejected just as judgment-shaped content in English is.
 
 ## Before you start
 
@@ -50,12 +52,12 @@ generated specs off the machine, so it is opt-in at **every** doc level, never a
 Run the cross-review **script** — it owns every `agy` flag, so **you never hand-build the `agy` command** (hand-built flags get the Bash call denied). Pass only the output folder:
 
 ```bash
-"${CLAUDE_PLUGIN_ROOT}/skills/doc-this-reviewer/scripts/cross-review.mjs" "<output_folder>"
+node "<plugin-root>/skills/doc-this-reviewer/scripts/cross-review.mjs" "<output_folder>"
 ```
 
 The script reads the prompt from `references/cross-review.md`, mounts `<output_folder>` via `--add-dir` (the corpus stays on disk — nothing is `cat`'d into the prompt), and always runs `--sandbox < /dev/null` (never `--dangerously-skip-permissions` — if you run Claude Code in auto mode, its classifier denies that as a high-severity unsafe-agent flag). It prints **one status line on stdout** — record it verbatim in the `confidence-report.md` cross-review section (§8) — and writes findings to `<output_folder>/cross-review-result.md`.
 
-Exit codes: `0` ran · `1` usage error · `3` skipped (agy not installed) · `4` skipped (agy errored/timed out — reason is in the status line). On `3` or `4`, record the status line and continue: cross-review is a second opinion, **never a gate**. On `0`, incorporate the findings per `references/cross-review.md` **before** doing your own review. To use a different non-Claude model, append `--model "<name>"` (`agy models` lists alternatives); the default `Gemini 3.1 Pro (High)` is the strongest reasoning model independent from this Claude reviewer.
+Exit codes: `0` ran · `1` usage error · `3` skipped (agy not installed) · `4` skipped (agy errored/timed out — reason is in the status line). On `3` or `4`, record the status line and continue: cross-review is a second opinion, **never a gate**. On `0`, incorporate the findings per `references/cross-review.md` **before** doing your own review. To use a different non-Claude model, append `--model "<name>"` (`agy models` lists alternatives); the default `Gemini 3.1 Pro (High)` is the strongest reasoning model independent from the reviewing session.
 
 > **Egress note:** `agy`/Antigravity sends the specs to Google's cloud. Treat it as egress regardless of harness. If the session runs in Claude Code's auto mode, the classifier may block it as exfiltration unless the user has added the Antigravity/Gemini backend to `autoMode.environment` in their own settings (the agent cannot make that change — it is a user-only action). If the run is denied for any reason, record `cross-review: skipped (egress denied; user must trust the destination)` and continue.
 

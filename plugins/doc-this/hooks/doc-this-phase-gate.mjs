@@ -11,8 +11,6 @@
 // (i.e., .doc-this/state.json exists in cwd). Pure no-op everywhere else.
 
 import {
-  readHookInput,
-  parseInput,
   bypassActive,
   bypassHint,
   statePath,
@@ -20,7 +18,7 @@ import {
   log,
   allow,
   deny,
-  failOpen,
+  runStandalone,
 } from './lib/doc-this-checks.mjs';
 
 const GATED_SKILLS = new Set([
@@ -28,10 +26,9 @@ const GATED_SKILLS = new Set([
   'doc-this:doc-this-archaeologist',
 ]);
 
-await failOpen(async () => {
-  const ctx = parseInput(await readHookInput());
+export async function evaluate(ctx) {
 
-  if (bypassActive(ctx.sessionId)) {
+  if (bypassActive(ctx.sessionId, ctx.host)) {
     log(ctx, 'exempt', 'phase-gate', 'bypass marker present');
     return allow();
   }
@@ -63,7 +60,7 @@ await failOpen(async () => {
         `doc-this phase-gate: cannot start the Code Analyst — required state fields are missing.\n\n` +
         `Missing:\n${missing.join('\n')}\n\n` +
         `The doc-this orchestrator (skills/doc-this/SKILL.md, "Special action after Scout") is supposed to run these handshakes. If they were skipped, run /doc-this and follow the prompts after Scout.\n\n` +
-        bypassHint(ctx.sessionId);
+        bypassHint(ctx.sessionId, ctx.host);
       log(ctx, 'deny', skillName, `missing prerequisites: ${missing.join(',')}`);
       return deny(reason);
     }
@@ -71,4 +68,6 @@ await failOpen(async () => {
 
   log(ctx, 'allow', skillName, 'phase-gate clean');
   return allow();
-});
+}
+
+await runStandalone(import.meta.url, evaluate);
