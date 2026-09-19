@@ -1,7 +1,8 @@
 # Third-Party Notices
 
 This repository is MIT licensed (see [LICENSE](LICENSE)). It also ships one prebuilt artifact that
-embeds third-party code, and loads two libraries from a CDN at runtime. Their notices follow.
+embeds third-party code, one plugin ported from a third-party project, and loads two libraries
+from a CDN at runtime. Their notices follow.
 
 ## Bundled into `doc-this/skills/doc-this-viewer/assets/dist/`
 
@@ -56,6 +57,40 @@ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPO
 NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+## Ported into `plugins/farley-score/`
+
+`farley-score` is a port of Bernard McCarty's Farley Score plugin
+(https://github.com/cd-training-courses/farley_score_plugin). The calculator in
+`skills/farley-score/scripts/`, the scoring and signal-detection references, the bundled sample
+project, and much of both skills' text derive from it. Its scoring methodology and signal-detection
+patterns are Andrea Laforgia's test-design-reviewer
+(https://github.com/andlaf-ak/claude-code-agents/tree/main/test-design-reviewer), used in the
+original with permission. The framework is Dave Farley's Properties of Good Tests.
+
+```
+MIT License
+
+Copyright (c) 2025 Bernard McCarty
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
 ## Loaded at runtime from a CDN (not bundled)

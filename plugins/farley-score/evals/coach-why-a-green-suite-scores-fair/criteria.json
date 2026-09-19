@@ -1,0 +1,51 @@
+{
+  "context": "A learner asks to be coached, not reviewed, on one Python test. test_quote is a mega-test: it verifies at least three unrelated outcomes (price calculation, currency, caching behaviour), asserts on exact mock call counts and arguments, and reaches into the private _cache attribute. The weaknesses map mainly to Granular (multiple outcomes in one test), Maintainable (private-state and exact-interaction coupling), and Understandable (the name 'test_quote' says nothing about the behaviour). Coverage measures what runs, not whether the tests are well designed. The learner explicitly asked for a Socratic, beginner-level session and a notes file.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "socratic_not_lecture",
+      "description": "The coach asks the learner at least one genuine question to reason about (for example which property the test violates, or what would happen if the caching were refactored) before or instead of simply listing all the problems.",
+      "max_score": 3
+    },
+    {
+      "name": "coverage_vs_quality",
+      "description": "The coaching explains that coverage measures which code runs, not how well the tests are designed, so a 94% covered, green suite can still score Fair.",
+      "max_score": 2
+    },
+    {
+      "name": "granular_mega_test",
+      "description": "The test is identified as verifying several distinct outcomes (price, currency, caching) in one test, which hurts Granular because a failure no longer pinpoints what broke.",
+      "max_score": 2
+    },
+    {
+      "name": "private_state_coupling",
+      "description": "Asserting on engine._cache is identified as testing implementation rather than behaviour, which hurts Maintainable because a behaviour-preserving refactor of the cache would break the test.",
+      "max_score": 2
+    },
+    {
+      "name": "over_specified_mock",
+      "description": "The exact call_count / assert_called_once_with checks on the rates mock are discussed as coupling the test to how the code works rather than what it produces, with the observable alternative (the second quote not triggering a new lookup, stated as a behaviour) or equivalent.",
+      "max_score": 2
+    },
+    {
+      "name": "name_does_not_describe_behaviour",
+      "description": "The name test_quote is noted as not describing the behaviour under test, with an example of a behaviour-describing name.",
+      "max_score": 1
+    },
+    {
+      "name": "beginner_pacing",
+      "description": "The session is paced for a beginner: it focuses on one or a few properties at a time rather than dumping all eight properties' theory at once.",
+      "max_score": 1
+    },
+    {
+      "name": "notes_file_written",
+      "description": "coaching-notes.md exists and summarises the properties discussed and the concrete weaknesses of test_quote.",
+      "max_score": 2
+    },
+    {
+      "name": "test_not_rewritten_for_them",
+      "description": "test_quote.py itself was not modified; any improved version appears only as an illustration in the conversation or notes.",
+      "max_score": 1
+    }
+  ]
+}

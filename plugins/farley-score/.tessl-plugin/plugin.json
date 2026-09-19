@@ -1,0 +1,6 @@
+{
+  "name": "wagneripjr/farley-score",
+  "version": "1.0.0",
+  "description": "Score test quality with Dave Farley's 8 Properties of Good Tests: a weighted 0-10 Farley Index, tautology-theatre and mock anti-pattern detection, prioritised recommendations, and a Socratic coach",
+  "private": false
+}

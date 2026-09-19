@@ -124,7 +124,7 @@ try {
     run(claude, ['plugin', 'install', `${plugin.name}@${catalog.name}`]);
   }
   const installed = JSON.parse(run(claude, ['plugin', 'list', '--json']));
-  check(catalog.plugins.every(plugin => installed.some(item => item.id === `${plugin.name}@${catalog.name}` && item.version === plugin.version && item.enabled && item.installPath.startsWith(temp))), 'Claude discovers all nine enabled plugins from temporary home');
+  check(catalog.plugins.every(plugin => installed.some(item => item.id === `${plugin.name}@${catalog.name}` && item.version === plugin.version && item.enabled && item.installPath.startsWith(temp))), 'Claude discovers every enabled plugin from temporary home');
   const claudeDocThis = run(claude, ['plugin', 'details', `doc-this@${catalog.name}`]);
   check(/^\s*Skills \(14\)/m.test(claudeDocThis) && /^\s*Hooks \(2\)\s+PostToolUse, PreToolUse\b/m.test(claudeDocThis), 'Claude component loader discovers fourteen doc-this skills and both hook events');
   const claudeOkf = run(claude, ['plugin', 'details', `okf-maintain@${catalog.name}`]);

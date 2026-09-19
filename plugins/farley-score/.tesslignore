@@ -1,0 +1,3 @@
+# Eval scenarios grade this plugin. Packed, they become input to the judge that reviews it —
+# a review reads the whole bundle — so the rubric would be marking its own answer key.
+evals/

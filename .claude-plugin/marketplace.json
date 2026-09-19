@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "One plugin per skill: install only what you need. Plus doc-this, a reverse-engineering pipeline whose skills share a hook set and therefore ship as one package.",
-    "version": "7.2.0"
+    "version": "7.3.0"
   },
   "plugins": [
     {
@@ -26,6 +26,12 @@
       "source": "./plugins/doc-this",
       "description": "Reverse-engineer a legacy codebase into ATDD-ready, traceable specifications",
       "version": "1.3.0"
+    },
+    {
+      "name": "farley-score",
+      "source": "./plugins/farley-score",
+      "description": "Score test quality with Dave Farley's 8 Properties of Good Tests: a weighted 0-10 Farley Index, tautology-theatre and mock anti-pattern detection, prioritised recommendations, and a Socratic coach",
+      "version": "1.0.0"
     },
     {
       "name": "human-cli",

@@ -1,0 +1,46 @@
+{
+  "context": "A seven-test pytest suite over a small library-loans class. The problems are repeatability and isolation, not tautology: a module-level shared LoanDesk makes test_return_removes_loan depend on test_lend_then_return having run first; test_due_date_is_today_plus_21 reads the real clock (date.today) so it can fail across midnight; test_overdue_after_waiting sleeps 1.5 seconds and its assertion accepts both outcomes, so it can never fail; test_loans_export writes a fixed path under /tmp, colliding under parallel runs, while ignoring the tmp_path_factory fixture it requests. Two tests are good models: they inject a fixed clock. A good review localises each defect to its test, attributes it to the right properties, computes the index rather than asserting it, and changes nothing.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "report_file_written",
+      "description": "farley-score-report.md exists at the repository root with an overall 0-10 index, a rating band, and a per-property breakdown covering all eight properties.",
+      "max_score": 2
+    },
+    {
+      "name": "index_consistent_with_weights",
+      "description": "The overall index equals (U*1.5 + M*1.5 + R*1.25 + A + N + G + F*0.75 + T) / 9 computed from the property scores the report shows, within 0.1.",
+      "max_score": 3
+    },
+    {
+      "name": "shared_state_order_dependency",
+      "description": "The module-level `desk` is identified as shared mutable state, and the review states that test_return_removes_loan depends on test_lend_then_return running first (order dependency), affecting Atomic and/or Repeatable.",
+      "max_score": 3
+    },
+    {
+      "name": "real_clock_dependency",
+      "description": "test_due_date_is_today_plus_21 is flagged for depending on the real system date, making it non-deterministic (Repeatable).",
+      "max_score": 2
+    },
+    {
+      "name": "sleep_and_unfalsifiable_assertion",
+      "description": "test_overdue_after_waiting is flagged both for time.sleep (Fast and Repeatable) and for an assertion that accepts either outcome and therefore cannot fail (Necessary).",
+      "max_score": 3
+    },
+    {
+      "name": "fixed_tmp_path",
+      "description": "test_loans_export is flagged for writing a fixed shared file path, which collides under parallel runs, and for ignoring the temporary-directory fixture it already requests.",
+      "max_score": 2
+    },
+    {
+      "name": "good_tests_recognised",
+      "description": "The review recognises that the tests injecting a fixed clock (test_lend_sets_due_date_three_weeks_out, test_overdue_lists_only_past_due_loans_in_isbn_order) are the pattern to follow, rather than flagging them.",
+      "max_score": 1
+    },
+    {
+      "name": "read_only",
+      "description": "Neither tests/test_loans.py nor src/loans.py was modified.",
+      "max_score": 2
+    }
+  ]
+}

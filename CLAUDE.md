@@ -1,8 +1,9 @@
 # Wagner Skills
 
-Repo hosting **nine plugins**, published at the same granularity to native Claude Code and Codex
+Repo hosting **ten plugins**, published at the same granularity to native Claude Code and Codex
 marketplaces named `wagner-skills-marketplace`, and the Tessl registry (FR-TESSL-3). Eight are one skill
-each; `doc-this` bundles fourteen because they share nine gates and a `hooks/lib/`.
+each; `farley-score` ships a scorer and its coach, and `doc-this` bundles fourteen because they
+share nine gates and a `hooks/lib/`.
 
 | Channel | Published by |
 |---|---|
@@ -18,7 +19,7 @@ shape): `plugins/<name>/` holding `.tessl-plugin/plugin.json`, `skills/`, `evals
 `.tesslignore`. The `.claude-plugin/plugin.json` sits beside them, and the repo-root
 `marketplace.json` points at each with `"source": "./plugins/<name>"`.
 The sibling `.codex-plugin/plugin.json` selects Codex entry points and hook registration;
-`.agents/plugins/marketplace.json` catalogs the same nine roots.
+`.agents/plugins/marketplace.json` catalogs the same ten roots.
 
 **Why the granularities had to converge.** Claude Code plugin path fields (`skills`, `hooks`,
 `commands`, …) must be relative, must start with `./`, reject `../`, and support no globs — so a
@@ -702,6 +703,31 @@ worker payloads (verified with Tessl 0.109.0). Its `nativeHooks` manages install
 does not implement this pipeline's semantics. Keep the existing Tessl distribution/review channel
 optional, and do not add its runtime to native hook commands.
 
+### FR-FARLEY-1 · A ported plugin keeps its runtime, and loses its dead links
+
+`plugins/farley-score/` ports Bernard McCarty's MIT Farley Score plugin (the upstream `msec`,
+now `cd-training-courses/farley_score_plugin`); the notice and Laforgia's methodology attribution
+are in `THIRD-PARTY-NOTICES.md`. Four decisions, each a departure from the rest of this tree or
+from upstream:
+
+1. **It ships Python.** The calculator stays the upstream stdlib-only `cli_calculator.py`, run by
+   `python3`. This is a scoped exception to ADR-014 granted for this plugin only — not a rule that
+   a Python original may stay Python. `tests/test-farley-score-calc.mjs` owns its own 77 when
+   `python3` is absent, and asserts every `scripts/*.py` a skill document names, because
+   FR-CORPUS-1 scans only `.mjs` and would never see one renamed.
+2. **The name is `farley-score`, never `msec`.** `msec` now names Continuous Delivery Ltd's paid
+   course plugin; installing both would collide.
+3. **Upstream's `/msec:tdd` and `/msec:tdd-coach` are gone.** No public source defines them, so
+   they were steering into nothing; they became prose naming no tool (BUG-006 rule 1).
+4. **Upstream's path lookup is gone.** `find ~/.claude/plugins -name cli_calculator.py | head -1`
+   picked whichever installed copy sorted first and could not work under Codex; paths resolve
+   from the installed `SKILL.md` (`references/host-runtime.md`).
+
+Two upstream claims are recorded rather than fixed: the scoring reference promises P90 for
+negative signals, while the CLI's `aggregate-file` computes a mean and its P90 variant is
+unexposed (`references/calculator.md`); and `aggregate-suite` used to `zip`-truncate mismatched
+inputs, which now refuses. The calculator's `--version` reads the plugin manifest.
+
 ## Repository Structure
 
 ```
@@ -796,6 +822,13 @@ plugins/                 # ONE DIRECTORY PER PLUGIN (FR-LAYOUT-1). Each holds .t
                          #   are pruned (FR-OKF-4). Renders TWO dialects from one generator, chosen
                          #   by the manifest's required_keys, and adopts a retired-marker catalog
                          #   only where every concept document is expressible (FR-OKF-7)
+ farley-score/           # Test-quality scoring against Farley's 8 Properties (FR-FARLEY-1) — a port
+  skills/farley-score/   # Read-only reviewer: signals per method, static+semantic legs, Farley Index
+    scripts/             # cli_calculator.py + core.py + scoring.py — stdlib Python, the ONLY place
+                         #   the index is computed. The one non-Node runtime in the tree
+    references/          # scoring rubric, signal patterns, report format, calculator, host-runtime
+    assets/examples/     # upstream's deliberately flawed sample suite + its report (demo, quizzes)
+  skills/farley-score-coach/ # Socratic coach; reads farley-score's references by relative path
  postmortem/             # Production-incident postmortems — numbered spine, machine-readable frontmatter
   evals/                 # postmortem-checkout-latency-spike — the first tessl eval scenario.
                          #   Inside the plugin root, so `tessl eval run ./plugins/postmortem`
@@ -1358,7 +1391,7 @@ the **same** number:
 | `.claude-plugin/marketplace.json` | that plugin's `.plugins[*].version` |
 
 Current: seven solo plugins at **1.2.0**, `okf-maintain` at **1.3.0**, `doc-this` at **1.3.0**,
-Claude marketplace metadata **7.2.0**.
+`farley-score` at **1.0.0**, Claude marketplace metadata **7.3.0**.
 
 Note what earned that 1.1.1: adding `evals/` changes nothing an installed plugin executes, so by the
 table above it is a `test:` change and no bump at all. The bump is not describing the change, it is

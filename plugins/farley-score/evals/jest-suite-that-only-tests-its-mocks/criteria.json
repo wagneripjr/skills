@@ -1,0 +1,56 @@
+{
+  "context": "A seven-test Jest suite over a small invoice service. Two tests genuinely exercise production behaviour (total, applyLateFee). Four are tautology theatre: 'repo returns saved invoice' asserts a value the test itself configured on a mock (mock tautology); 'mailer works' calls a mock directly and never constructs InvoiceService (mock-only); 'arrays work' tests Array.prototype.includes (framework test); 'sanity' is expect(true).toBe(true) (trivial tautology). The 'issue' test is the only one exercising issue() and it is over-specified: exact call counts, call ordering, and a captured argument's internal field (AP3/AP4). A good review scores the suite with a computed weighted index, names each tautology type against the right test, and does not edit anything.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "report_file_written",
+      "description": "A file named farley-score-report.md exists at the repository root and contains an overall index on a 0-10 scale together with a named rating band (for example Fair, Poor, Good).",
+      "max_score": 2
+    },
+    {
+      "name": "all_eight_properties_scored",
+      "description": "The report scores each of the eight properties - Understandable, Maintainable, Repeatable, Atomic, Necessary, Granular, Fast, First/TDD - individually, not just an overall number.",
+      "max_score": 2
+    },
+    {
+      "name": "index_consistent_with_weights",
+      "description": "The overall index equals the weighted mean of the reported property scores using weights U 1.5, M 1.5, R 1.25, A 1, N 1, G 1, F 0.75, T 1 divided by 9, within 0.1. An index that does not follow from the property scores shown fails this.",
+      "max_score": 3
+    },
+    {
+      "name": "mock_tautology_identified",
+      "description": "The 'repo returns saved invoice' test is identified as a mock tautology: it asserts the value it configured on the mock, with no production code exercised.",
+      "max_score": 2
+    },
+    {
+      "name": "mock_only_identified",
+      "description": "The 'mailer works' test is identified as exercising no production code - it invokes a mock directly and never constructs InvoiceService.",
+      "max_score": 2
+    },
+    {
+      "name": "trivial_and_framework_identified",
+      "description": "'sanity' is identified as a trivial tautology and 'arrays work' as testing language/framework behaviour rather than application code.",
+      "max_score": 2
+    },
+    {
+      "name": "over_specification_identified",
+      "description": "The 'issue' test is called out for coupling to implementation: exact call counts, call ordering between repo.save and mailer.send, or asserting on a captured argument's field - with the point that a behaviour-preserving refactor could break it.",
+      "max_score": 2
+    },
+    {
+      "name": "genuine_tests_not_flagged",
+      "description": "The 'total sums quantity times unit price' and 'late fee is capped at thirty dollars' tests are NOT classified as tautology theatre.",
+      "max_score": 2
+    },
+    {
+      "name": "evidence_has_locations",
+      "description": "Findings cite the test file with a line number or the exact test name for each flagged test, so a reader can go straight to it.",
+      "max_score": 1
+    },
+    {
+      "name": "read_only",
+      "description": "Neither test/invoice.test.js nor src/invoice.js was modified.",
+      "max_score": 2
+    }
+  ]
+}

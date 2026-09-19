@@ -2,8 +2,9 @@
 
 ## Scope
 
-This repository ships nine plugins, one directory each under `plugins/`. They are
-Markdown skill definitions plus zero-dependency Node hooks and scripts that run
+This repository ships ten plugins, one directory each under `plugins/`. They are
+Markdown skill definitions plus zero-dependency Node hooks and scripts (and, in `farley-score`,
+a stdlib-only Python calculator) that run
 **locally, inside your own Claude Code session**. There is no hosted service and no
 telemetry.
 

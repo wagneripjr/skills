@@ -1,6 +1,6 @@
 # wagner-skills
 
-A marketplace of **nine plugins** — eight standalone engineering skills you install one at a
+A marketplace of **ten plugins** — nine standalone engineering tools you install one at a
 time, and a reverse-engineering pipeline that turns a legacy codebase into traceable, ATDD-ready
 specifications. Each plugin supports **Claude Code and Codex natively**, using the same skill
 instructions and enforcement logic. Neither host requires Tessl or the maintainer's configuration.
@@ -78,7 +78,7 @@ Existing users of the copied Codex adaptations should follow
 
 ### On the Tessl registry
 
-The same nine plugins are published to the [Tessl](https://tessl.io) registry, versioned
+The same ten plugins are published to the [Tessl](https://tessl.io) registry, versioned
 independently so a fix to one ships without republishing the rest:
 
 ```bash
@@ -104,6 +104,7 @@ described here; the existing Tessl manifests do not install these hooks.
 | `airflow-dags` | Apache Airflow 3 DAG authoring — TaskFlow API, asset-driven scheduling, XCom, deferrable operators, dynamic task mapping, multi-layer test suites. 12 reference docs. |
 | `platform-sre-kubernetes` | SRE-focused Kubernetes production deployments and manifest review. |
 | `okf-maintain` | Adopts the [Open Knowledge Format](https://github.com/GoogleCloudPlatform/open-knowledge-format) v0.2 in a repo and keeps the bundle healthy — frontmatter repair, generated `index.md` chained from the project root, `log.md` and in-document changelogs removed because git already holds history, and `CLAUDE.md`/`AGENTS.md`/`GEMINI.md` pointed at the index so `docs/` is never grepped for a document's identity. Ships one hook: in a repository that has adopted OKF (an `okf.yaml` is the opt-in), editing a document regenerates the indexes above it, so the catalog cannot drift from the corpus between manual runs. |
+| `farley-score` | Scores test-suite **quality**, not coverage, against Dave Farley's 8 Properties of Good Tests: a weighted 0–10 Farley Index with per-property evidence, tautology-theatre and mock anti-pattern detection, and the five worst tests. Read-only; the arithmetic runs in a bundled `python3` calculator. Includes `farley-score-coach` for Socratic practice. A port of Bernard McCarty's MIT plugin — see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). |
 | `postmortem` | Production-incident postmortems with a numbered spine — impact and blast radius with per-service evidence, timeline, root cause with mechanism plus five whys plus discarded hypotheses, empirical proof, palliative vs root fix. |
 | `prototype-spike` | Turns a requirement into one self-contained clickable HTML file that doubles as a design spike. Rebuilds existing screens at high fidelity from real source with `file:line` citations; the control panel *is* the set of open questions. |
 | `requirements-elicitation` | Analyzes PRDs and feature specs for gaps, generates clarifying questions for PMs and engineers, assesses technical risk. |
@@ -208,7 +209,7 @@ node tests/test-codex-okf.mjs           # multi-file index regeneration
 what a PR should say.
 
 The native host smoke check is separate from the default suite because it requires both CLIs.
-It installs all nine plugins into temporary homes, checks discovery, updates, and removal, and drives a
+It installs every plugin into temporary homes, checks discovery, updates, and removal, and drives a
 real Codex tool call through a localhost mock model to prove a forbidden patch is blocked.
 It also verifies that untrusted hooks stay inactive. Only the vetted temporary fixture uses an
 invocation-only trust bypass; no trust approval is saved. No paid or external model request runs.
