@@ -80,6 +80,8 @@ Read [signal-detection-patterns.md](references/signal-detection-patterns.md) now
 
 A signal that bears on several properties counts toward each of them: `sleep` affects both R and F. **Gate:** the signal inventory covers all eight properties, and every signal has a location.
 
+**Optional Jev judge.** Steps 3-5 are judgment calls made method by method. When `TYPESAFE_API_KEY` is set, `uv` is available and the user agrees to send test source to TypeSafe on this run, the bundled judge can make those calls instead. It returns calibrated per-method answers, and code turns them into counts. It never touches the semantic leg. Follow [jev-judge.md](references/jev-judge.md) exactly, including which methods come back to you. Without all three conditions, skip this and continue.
+
 ### Phase 3: Scoring
 
 Read [farley-properties-and-scoring.md](references/farley-properties-and-scoring.md) for the rubrics.

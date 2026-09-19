@@ -91,6 +91,7 @@ Tests that verify language or framework behavior, not application code.
 
 - Static/LLM blend: 60/40
 - LLM model: {model_id}
+- Signal judge: {host model | jev-1.13.0 ({escalated} of {total} methods escalated to the host model)}
 - Files analyzed: {count} ({sampling_note})
 - Test methods analyzed: {count}
 - Language: {language}

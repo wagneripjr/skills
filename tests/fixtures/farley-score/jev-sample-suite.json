@@ -1,0 +1,342 @@
+{
+  "description": "Real Jev answers for the bundled sample suite (plugins/farley-score/skills/farley-score/assets/examples/sample-project/tests), captured 2026-09-19 with jev_judge.py. Recorded, never regenerated from the implementation: only the per-method answers are kept, and compose() is re-run over them in the test.",
+  "model": "jev-1.13.0",
+  "methods": [
+    {
+      "file": "tests/test_calculator.py",
+      "line": 22,
+      "name": "test_should_add_two_positive_numbers",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.96,
+        "mock_tautology": 0.03,
+        "mock_only": 0.03,
+        "framework_test": 0.05,
+        "over_specified_interactions": 0.06,
+        "inspects_internal_details": 0.03,
+        "name_states_behaviour": 0.96,
+        "single_outcome": 0.97
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 27,
+      "name": "test_should_subtract_larger_from_smaller",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.96,
+        "mock_tautology": 0.03,
+        "mock_only": 0.03,
+        "framework_test": 0.05,
+        "over_specified_interactions": 0.04,
+        "inspects_internal_details": 0.03,
+        "name_states_behaviour": 0.96,
+        "single_outcome": 0.97
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 32,
+      "name": "test_should_raise_error_when_dividing_by_zero",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.92,
+        "mock_tautology": 0.03,
+        "mock_only": 0.03,
+        "framework_test": 0.07,
+        "over_specified_interactions": 0.05,
+        "inspects_internal_details": 0.04,
+        "name_states_behaviour": 0.97,
+        "single_outcome": 0.97
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 39,
+      "name": "test_history_internal_structure",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.96,
+        "mock_tautology": 0.03,
+        "mock_only": 0.03,
+        "framework_test": 0.04,
+        "over_specified_interactions": 0.19,
+        "inspects_internal_details": 0.95,
+        "name_states_behaviour": 0.45,
+        "single_outcome": 0.46
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 47,
+      "name": "test_all_operations",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.97,
+        "mock_tautology": 0.03,
+        "mock_only": 0.02,
+        "framework_test": 0.05,
+        "over_specified_interactions": 0.25,
+        "inspects_internal_details": 0.05,
+        "name_states_behaviour": 0.12,
+        "single_outcome": 0.12
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 59,
+      "name": "test_true_is_true",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.06,
+        "mock_tautology": 0.03,
+        "mock_only": 0.07,
+        "framework_test": 0.96,
+        "over_specified_interactions": 0.04,
+        "inspects_internal_details": 0.03,
+        "name_states_behaviour": 0.72,
+        "single_outcome": 0.97
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 62,
+      "name": "test_one_equals_one",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.05,
+        "mock_tautology": 0.03,
+        "mock_only": 0.15,
+        "framework_test": 0.87,
+        "over_specified_interactions": 0.04,
+        "inspects_internal_details": 0.03,
+        "name_states_behaviour": 0.78,
+        "single_outcome": 0.97
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 67,
+      "name": "test_add_with_delay",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.97,
+        "mock_tautology": 0.03,
+        "mock_only": 0.03,
+        "framework_test": 0.06,
+        "over_specified_interactions": 0.06,
+        "inspects_internal_details": 0.04,
+        "name_states_behaviour": 0.7,
+        "single_outcome": 0.96
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 77,
+      "name": "test_shared_state_add",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.95,
+        "mock_tautology": 0.04,
+        "mock_only": 0.03,
+        "framework_test": 0.05,
+        "over_specified_interactions": 0.05,
+        "inspects_internal_details": 0.03,
+        "name_states_behaviour": 0.37,
+        "single_outcome": 0.97
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 81,
+      "name": "test_shared_state_history",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.89,
+        "mock_tautology": 0.04,
+        "mock_only": 0.03,
+        "framework_test": 0.05,
+        "over_specified_interactions": 0.07,
+        "inspects_internal_details": 0.18,
+        "name_states_behaviour": 0.33,
+        "single_outcome": 0.96
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 91,
+      "name": "test_mock_returns_configured_value",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.05,
+        "mock_tautology": 0.98,
+        "mock_only": 0.95,
+        "framework_test": 0.96,
+        "over_specified_interactions": 0.06,
+        "inspects_internal_details": 0.04,
+        "name_states_behaviour": 0.92,
+        "single_outcome": 0.95
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 99,
+      "name": "test_python_addition",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.06,
+        "mock_tautology": 0.02,
+        "mock_only": 0.6,
+        "framework_test": 0.96,
+        "over_specified_interactions": 0.04,
+        "inspects_internal_details": 0.03,
+        "name_states_behaviour": 0.39,
+        "single_outcome": 0.97
+      }
+    },
+    {
+      "file": "tests/test_calculator.py",
+      "line": 102,
+      "name": "test_python_string_methods",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.09,
+        "mock_tautology": 0.03,
+        "mock_only": 0.51,
+        "framework_test": 0.98,
+        "over_specified_interactions": 0.04,
+        "inspects_internal_details": 0.03,
+        "name_states_behaviour": 0.08,
+        "single_outcome": 0.97
+      }
+    },
+    {
+      "file": "tests/test_user_service.py",
+      "line": 19,
+      "name": "test_should_save_user_to_database_on_registration",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.94,
+        "mock_tautology": 0.1,
+        "mock_only": 0.08,
+        "framework_test": 0.07,
+        "over_specified_interactions": 0.56,
+        "inspects_internal_details": 0.92,
+        "name_states_behaviour": 0.98,
+        "single_outcome": 0.86
+      }
+    },
+    {
+      "file": "tests/test_user_service.py",
+      "line": 31,
+      "name": "test_should_send_welcome_email_on_registration",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.93,
+        "mock_tautology": 0.09,
+        "mock_only": 0.08,
+        "framework_test": 0.08,
+        "over_specified_interactions": 0.53,
+        "inspects_internal_details": 0.33,
+        "name_states_behaviour": 0.98,
+        "single_outcome": 0.94
+      }
+    },
+    {
+      "file": "tests/test_user_service.py",
+      "line": 42,
+      "name": "test_should_reject_registration_without_username",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.82,
+        "mock_tautology": 0.05,
+        "mock_only": 0.07,
+        "framework_test": 0.05,
+        "over_specified_interactions": 0.07,
+        "inspects_internal_details": 0.05,
+        "name_states_behaviour": 0.97,
+        "single_outcome": 0.96
+      }
+    },
+    {
+      "file": "tests/test_user_service.py",
+      "line": 50,
+      "name": "test_should_reject_registration_with_invalid_email",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.83,
+        "mock_tautology": 0.05,
+        "mock_only": 0.07,
+        "framework_test": 0.05,
+        "over_specified_interactions": 0.07,
+        "inspects_internal_details": 0.05,
+        "name_states_behaviour": 0.97,
+        "single_outcome": 0.96
+      }
+    },
+    {
+      "file": "tests/test_user_service.py",
+      "line": 64,
+      "name": "test_register_calls_everything_in_order",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.95,
+        "mock_tautology": 0.1,
+        "mock_only": 0.07,
+        "framework_test": 0.1,
+        "over_specified_interactions": 0.86,
+        "inspects_internal_details": 0.15,
+        "name_states_behaviour": 0.94,
+        "single_outcome": 0.8
+      }
+    },
+    {
+      "file": "tests/test_user_service.py",
+      "line": 81,
+      "name": "test_mock_only_no_real_code",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.06,
+        "mock_tautology": 0.98,
+        "mock_only": 0.96,
+        "framework_test": 0.87,
+        "over_specified_interactions": 0.53,
+        "inspects_internal_details": 0.1,
+        "name_states_behaviour": 0.6,
+        "single_outcome": 0.37
+      }
+    },
+    {
+      "file": "tests/test_user_service.py",
+      "line": 92,
+      "name": "test_deactivate_sets_active_false",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.94,
+        "mock_tautology": 0.18,
+        "mock_only": 0.05,
+        "framework_test": 0.06,
+        "over_specified_interactions": 0.17,
+        "inspects_internal_details": 0.94,
+        "name_states_behaviour": 0.97,
+        "single_outcome": 0.77
+      }
+    },
+    {
+      "file": "tests/test_user_service.py",
+      "line": 107,
+      "name": "test_it_works",
+      "setup_supplied": true,
+      "nouls": {
+        "production_code_drives_assertions": 0.93,
+        "mock_tautology": 0.16,
+        "mock_only": 0.07,
+        "framework_test": 0.06,
+        "over_specified_interactions": 0.08,
+        "inspects_internal_details": 0.06,
+        "name_states_behaviour": 0.03,
+        "single_outcome": 0.95
+      }
+    }
+  ]
+}

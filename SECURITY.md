@@ -21,6 +21,11 @@ Worth knowing before you install:
 - `doc-this-reviewer`'s optional cross-review step invokes the `agy` (Antigravity) CLI, which
   sends the generated specs to a third-party model. It is opt-in, skips cleanly when `agy` is
   not installed, and is never required — but treat it as egress when you do enable it.
+- `farley-score`'s optional Jev signal judge sends each test method's source, setup and imports
+  to `api.typesafe.ai`. It runs only when `TYPESAFE_API_KEY` is set, `uv` is installed, **and**
+  you agree to it on that run. A key already present in your environment is not treated as
+  consent. The first run downloads `typesafe-sdk` from PyPI into uv's cache. Without the judge,
+  the plugin sends nothing anywhere.
 
 ## Contributor tooling
 

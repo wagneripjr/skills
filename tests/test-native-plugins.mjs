@@ -14,13 +14,13 @@ const names = value => value.plugins.map(item => item.name).sort().join(',');
 h.equal('Claude marketplace carries all ten plugins', names(claude), expected.join(','));
 h.equal('Codex marketplace carries the same ten plugins', names(codex), names(claude));
 h.equal('marketplace identity is shared', codex.name, claude.name);
-h.equal('marketplace release is current', claude.metadata.version, '7.3.0');
+h.equal('marketplace release is current', claude.metadata.version, '7.4.0');
 const contained = (base, path) => typeof path === 'string' && path.startsWith('./') && resolve(base, path).startsWith(`${resolve(base)}/`);
 h.check('path guard rejects escape canary', !contained(root, './../outside'));
 h.check('path guard accepts packaged path', contained(root, './plugins/doc-this'));
 for (const entry of claude.plugins) {
   const base = join(root, entry.source);
-  const version = { 'doc-this': '1.3.0', 'okf-maintain': '1.3.0', 'farley-score': '1.0.0' }[entry.name] ?? '1.2.0';
+  const version = { 'doc-this': '1.3.0', 'okf-maintain': '1.3.0', 'farley-score': '1.1.0' }[entry.name] ?? '1.2.0';
   const native = codex.plugins.find(item => item.name === entry.name);
   h.equal(`${entry.name} uses local public source`, native?.source?.source, 'local');
   h.equal(`${entry.name} source is shared`, native?.source?.path, entry.source);

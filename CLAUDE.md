@@ -728,6 +728,44 @@ negative signals, while the CLI's `aggregate-file` computes a mean and its P90 v
 unexposed (`references/calculator.md`); and `aggregate-suite` used to `zip`-truncate mismatched
 inputs, which now refuses. The calculator's `--version` reads the plugin manifest.
 
+### FR-FARLEY-2 · Jev judges signals per method; it never produces a score
+
+`farley-score/skills/farley-score/scripts/jev_judge.py` is an opt-in step inside Phase 2. It asks
+TypeSafe's Jev eight Noul questions per test method, and code turns the answers into signal counts
+for the calculator's **static** leg. Six parts:
+
+1. **Signals only, never scores.** The first design also asked Jev for five per-method 0-10
+   Scores and blended them into the LLM leg. That was cut after a Codex review. Jev's own
+   documentation warns against reading magnitudes between Score levels, and feeding one model into
+   both legs would erase the deterministic/semantic separation the 60/40 blend rests on
+   (`scoring.py:77`).
+2. **Consent is per run, not per key.** The judge requires `TYPESAFE_API_KEY`, `uv` and an explicit
+   yes on that run, because a global key would otherwise ship client test source off-machine.
+   `SECURITY.md` names the egress.
+3. **Python with a real dependency, through PEP 723.** `typesafe-sdk` is pinned inline and resolved by
+   `uv run` into uv's own cache, never into the analysed project. This is part of FR-FARLEY-1's
+   scoped Python exception. Pure functions (`build_questions`, `state_for`, `compose`) import
+   nothing from the SDK, so `tests/test-farley-score-jev.mjs` runs on stdlib Python with no uv,
+   no SDK, no network, and no key.
+4. **Codex-review corrections, all kept.**
+   - The "delete all production code" counterfactual became "would the assertions fail if the
+     real code under test did nothing", because Jev reads literally and deleting code breaks
+     imports. The first live run proved the wording matters. An earlier draft asked whether the
+     assertions checked "a real production object's result", and it fired on
+     interaction-verifying tests that do run production code. Those tests took N and T tautology
+     penalties they had not earned. Assertions on how real code called its mocks now count as
+     dependent. The corrected run's answers are recorded in
+     `tests/fixtures/farley-score/jev-sample-suite.json`, and AC-9 re-runs `compose` over them.
+     Result: all six planted tautologies are labelled, with 7 of 21 methods escalated.
+   - Setup and fixtures are part of the state.
+   - Trivial tautologies stay in regex.
+   - Redundancy, test-first chronology, R, A and F are never asked of Jev.
+5. **One defect counts once.** A property gains at most one Jev negative and one positive per
+   method, so the three overlapping tautology questions cannot triple-count one test. Any answer in
+   [0.35, 0.65], or a method sent without setup, escalates to the host model and stays out of the
+   counts. AC-8 mutation-tests both the dedup and the escalation gate.
+6. **Pinned `jev-1.13.0`, not `jev-latest`.** An alias move would silently change counts.
+
 ## Repository Structure
 
 ```
@@ -1391,7 +1429,7 @@ the **same** number:
 | `.claude-plugin/marketplace.json` | that plugin's `.plugins[*].version` |
 
 Current: seven solo plugins at **1.2.0**, `okf-maintain` at **1.3.0**, `doc-this` at **1.3.0**,
-`farley-score` at **1.0.0**, Claude marketplace metadata **7.3.0**.
+`farley-score` at **1.1.0**, Claude marketplace metadata **7.4.0**.
 
 Note what earned that 1.1.1: adding `evals/` changes nothing an installed plugin executes, so by the
 table above it is a `test:` change and no bump at all. The bump is not describing the change, it is
