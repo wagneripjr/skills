@@ -5,9 +5,9 @@
       "skill": "learning-capture",
       "plugin_version": "1.0.0",
       "scenario": "correction-lands-as-the-next-entry",
-      "scenario_tree": null,
-      "skill_tree": null,
-      "context_commit": "b601f4f",
+      "scenario_tree": "42549ccbcb16e3fe5c0dfba15c57b5d103f9093b",
+      "skill_tree": "676cd5ee912e167a9b94c1a64796211a43222b9c",
+      "context_commit": "401463e",
       "model_reported": "claude:deepseek-v4.1-flash",
       "forced_activation": true,
       "runs": 1,
@@ -19,35 +19,35 @@
       ],
       "status": "completed",
       "classification": null,
-      "t": "2026-09-30T21:55:00.260Z"
+      "t": "2026-09-30T22:06:15.929Z"
     },
     {
       "skill": "learning-capture",
       "plugin_version": "1.0.0",
       "scenario": "gitignored-corpus-stays-absent",
-      "scenario_tree": null,
-      "skill_tree": null,
-      "context_commit": "b601f4f",
+      "scenario_tree": "836ebb1c9b5dad941199d2b9716a6beb33fdc98b",
+      "skill_tree": "676cd5ee912e167a9b94c1a64796211a43222b9c",
+      "context_commit": "401463e",
       "model_reported": "claude:deepseek-v4.1-flash",
       "forced_activation": true,
       "runs": 1,
       "baseline": 47.1,
-      "with_plugin": 35.3,
-      "lift_pp": -11.8,
+      "with_plugin": 47.1,
+      "lift_pp": 0,
       "activated": [
         "tessl__learning-capture"
       ],
       "status": "completed",
       "classification": null,
-      "t": "2026-09-30T21:55:00.260Z"
+      "t": "2026-09-30T22:06:15.929Z"
     },
     {
       "skill": "learning-capture",
       "plugin_version": "1.0.0",
       "scenario": "review-finding-filed-with-its-fix",
-      "scenario_tree": null,
-      "skill_tree": null,
-      "context_commit": "b601f4f",
+      "scenario_tree": "7a8910674e580523d84a54a15da16fea7abecec8",
+      "skill_tree": "676cd5ee912e167a9b94c1a64796211a43222b9c",
+      "context_commit": "401463e",
       "model_reported": "claude:deepseek-v4.1-flash",
       "forced_activation": true,
       "runs": 1,
@@ -59,7 +59,7 @@
       ],
       "status": "completed",
       "classification": null,
-      "t": "2026-09-30T21:55:00.260Z"
+      "t": "2026-09-30T22:06:15.929Z"
     }
   ]
 }
