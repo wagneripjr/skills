@@ -16,6 +16,7 @@ plugins/airflow-dags/evals/
 plugins/doc-this/evals/
 plugins/farley-score/evals/
 plugins/human-cli/evals/
+plugins/learning-capture/evals/
 plugins/okf-maintain/evals/
 plugins/platform-sre-kubernetes/evals/
 plugins/postmortem/evals/

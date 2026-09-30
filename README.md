@@ -1,6 +1,6 @@
 # wagner-skills
 
-A marketplace of **ten plugins** — nine standalone engineering tools you install one at a
+A marketplace of **eleven plugins** — ten standalone engineering tools you install one at a
 time, and a reverse-engineering pipeline that turns a legacy codebase into traceable, ATDD-ready
 specifications. Each plugin supports **Claude Code and Codex natively**, using the same skill
 instructions and enforcement logic. Neither host requires Tessl or the maintainer's configuration.
@@ -78,7 +78,7 @@ Existing users of the copied Codex adaptations should follow
 
 ### On the Tessl registry
 
-The same ten plugins are published to the [Tessl](https://tessl.io) registry, versioned
+The same eleven plugins are published to the [Tessl](https://tessl.io) registry, versioned
 independently so a fix to one ships without republishing the rest:
 
 ```bash
@@ -100,6 +100,7 @@ described here; the existing Tessl manifests do not install these hooks.
 | Plugin | What it does |
 |---|---|
 | `agent-cli` | Design and score CLIs meant for **AI agents** — JSON on stdout, diagnostics on stderr, `--help-json` introspection, semantic exit codes. Scores 0–21 across 7 axes. |
+| `learning-capture` | Captures errors, corrections, missing capabilities and better approaches as structured entries in `.learnings/`, so the next session inherits what this one learned. The entry grammar is a published contract with a fixture corpus any reader can test against. Ships one hook: in a repository that has opted in (a `.learnings/` directory exists), a failing shell command gets a nudge to log it. A repository that gitignores `.learnings/` and has no such directory is left alone, and capture goes to machine-local memory. |
 | `human-cli` | The sibling for **human** CLIs — naming grammar, prompts with flag bypasses, colors, progress, error messages with resolution URLs, XDG paths, shell completions. Same 0–21 rubric. |
 | `airflow-dags` | Apache Airflow 3 DAG authoring — TaskFlow API, asset-driven scheduling, XCom, deferrable operators, dynamic task mapping, multi-layer test suites. 12 reference docs. |
 | `platform-sre-kubernetes` | SRE-focused Kubernetes production deployments and manifest review. |

@@ -1,0 +1,6 @@
+{
+  "name": "wagneripjr/learning-capture",
+  "version": "1.0.0",
+  "description": "Capture errors, corrections, missing capabilities and better approaches as structured .learnings/ entries under a pinned entry-format contract, with a nudge when a shell command fails",
+  "private": false
+}

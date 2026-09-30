@@ -152,7 +152,8 @@ try {
   const hookEntry = hooks.data.find(item => item.cwd === fixture);
   check(hookEntry && hookEntry.errors.length === 0 && hookEntry.warnings.length === 0, 'Codex hook loader reports no errors or warnings');
   const nativeHooks = hookEntry.hooks.filter(hook => hook.pluginId?.endsWith(`@${catalog.name}`));
-  check(nativeHooks.length === 3 && nativeHooks.every(hook => hook.enabled && hook.trustStatus === 'untrusted' && hook.sourcePath.endsWith('/hooks/codex-hooks.json') && hook.sourcePath.startsWith(temp)), 'Codex loads all three native hooks and requires first-use trust');
+  check(nativeHooks.length === 4 && nativeHooks.every(hook => hook.enabled && hook.trustStatus === 'untrusted' && hook.sourcePath.endsWith('/hooks/codex-hooks.json') && hook.sourcePath.startsWith(temp)), 'Codex loads all four native hooks and requires first-use trust');
+  check(nativeHooks.some(hook => hook.pluginId.startsWith('learning-capture@') && hook.eventName === 'postToolUse'), 'Codex loads the learning-capture fault nudge');
   check(nativeHooks.filter(hook => hook.pluginId.startsWith('doc-this@')).map(hook => hook.eventName).sort().join(',') === 'postToolUse,preToolUse', 'Codex loads doc-this pre/post tool integration');
   check(nativeHooks.some(hook => hook.pluginId.startsWith('okf-maintain@') && hook.eventName === 'postToolUse'), 'Codex loads OKF post tool integration');
   await verifyCodexHookExecution(false);

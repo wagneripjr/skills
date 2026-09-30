@@ -1,0 +1,17 @@
+{
+  "entries": [
+    {
+      "id": "LRN-20250212-004",
+      "heading": "review_finding",
+      "fields": {
+        "Logged": "2025-02-12T08:05:00Z",
+        "Priority": "medium",
+        "Status": "resolved",
+        "Area": "backend",
+        "Skill": "acme-tools:api-handler",
+        "Fix-type": "Skill",
+        "Review": "task-a1b2c3, task-d4e5f6"
+      }
+    }
+  ]
+}

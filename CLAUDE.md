@@ -1,7 +1,7 @@
 # Wagner Skills
 
-Repo hosting **ten plugins**, published at the same granularity to native Claude Code and Codex
-marketplaces named `wagner-skills-marketplace`, and the Tessl registry (FR-TESSL-3). Eight are one skill
+Repo hosting **eleven plugins**, published at the same granularity to native Claude Code and Codex
+marketplaces named `wagner-skills-marketplace`, and the Tessl registry (FR-TESSL-3). Nine are one skill
 each; `farley-score` ships a scorer and its coach, and `doc-this` bundles fourteen because they
 share nine gates and a `hooks/lib/`.
 
@@ -19,7 +19,7 @@ shape): `plugins/<name>/` holding `.tessl-plugin/plugin.json`, `skills/`, `evals
 `.tesslignore`. The `.claude-plugin/plugin.json` sits beside them, and the repo-root
 `marketplace.json` points at each with `"source": "./plugins/<name>"`.
 The sibling `.codex-plugin/plugin.json` selects Codex entry points and hook registration;
-`.agents/plugins/marketplace.json` catalogs the same ten roots.
+`.agents/plugins/marketplace.json` catalogs the same eleven roots.
 
 **Why the granularities had to converge.** Claude Code plugin path fields (`skills`, `hooks`,
 `commands`, …) must be relative, must start with `./`, reject `../`, and support no globs — so a
@@ -766,6 +766,40 @@ for the calculator's **static** leg. Six parts:
    counts. AC-8 mutation-tests both the dedup and the escalation gate.
 6. **Pinned `jev-1.13.0`, not `jev-latest`.** An alias move would silently change counts.
 
+### FR-LEARN-1 · Learning capture is reachable without the lifecycle plugin
+
+`plugins/learning-capture/` carries the capture half of a learnings system: the workflow, the three
+`.learnings/` templates, the examples, the skill-extraction scaffold, and one `PostToolUse` Bash
+nudge, self-gated on `.learnings/`. Scoring, surfacing and reconciliation belong to whichever
+consumer reads the entries, not to this plugin. Five rules:
+
+1. **The name is not `self-improving-agent`.** `tests/test-fr-bundle-3.mjs` asserts that directory
+   absent as a core skill that left. A name that flipped that assertion would say the core skill
+   came back.
+2. **It names no consumer.** Its description, body, scripts and hooks never name the plugin that
+   scores or reconciles entries. `tests/test-learning-capture.mjs` scans the plugin tree for those
+   names, with a canary and a read-count control. `**Skill**` is still recorded as
+   `<plugin>:<name>`, because a finding against any plugin's skill is recorded the same way.
+3. **The entry format is a contract.** `skills/learning-capture/references/entry-format.md` states
+   the grammar, and `references/fixtures/` holds one case per shape, each with an expected parse
+   written by hand. A consumer vendors that corpus at a commit. The contract suite asserts count,
+   ids and fields per fixture. It also runs a broken reader that must fail, because a parser that
+   drops an unrecognised heading returns nothing rather than failing. `Scenario`, `Verdict` and
+   `Activation` are reserved: a consumer writes them and capture never does.
+4. **An absent, gitignored corpus is a decision.** `scripts/bootstrap.mjs` refuses to create
+   `.learnings/` when `.gitignore` lists it and the directory is missing (exit 3), and the skill
+   captures to machine-local memory instead. The rule is stated and enforced here, with no import.
+5. **One hook, two hosts, no session-start hook.** Both `hooks.json` and `codex-hooks.json`
+   register `hooks/error-detector.mjs` on `Bash`. Codex maps its shell to `Bash`, but sends
+   `tool_response` as a bare output string with no exit code. There the nudge therefore rests on
+   output patterns alone: the exit-code silence BUG-005 added cannot apply. The description is
+   already read at session start, and injecting more there costs every session.
+
+The regressions travelled with the code. The source repository's error-detector assertions
+(BUG-005's exit-code and isError silence, BUG-031's subagent silence, the self-gate, fail-open, and
+the nudge naming all three attribution fields) are ported to Node in
+`tests/test-learning-capture.mjs`.
+
 ## Repository Structure
 
 ```
@@ -867,6 +901,14 @@ plugins/                 # ONE DIRECTORY PER PLUGIN (FR-LAYOUT-1). Each holds .t
     references/          # scoring rubric, signal patterns, report format, calculator, host-runtime
     assets/examples/     # upstream's deliberately flawed sample suite + its report (demo, quizzes)
   skills/farley-score-coach/ # Socratic coach; reads farley-score's references by relative path
+ learning-capture/       # Structured .learnings/ capture (FR-LEARN-1); no scorer, names no consumer
+  hooks/                 # error-detector.mjs on PostToolUse Bash, registered for Claude and Codex
+  skills/learning-capture/
+    references/          # entry-format.md (THE contract) + fixtures/ (hand-written expectations),
+                         #   examples, host-runtime
+    scripts/             # entries.mjs (reader + next-id), bootstrap.mjs (absent-by-decision),
+                         #   extract-skill.mjs
+    assets/              # the three corpus templates
  postmortem/             # Production-incident postmortems — numbered spine, machine-readable frontmatter
   evals/                 # postmortem-checkout-latency-spike — the first tessl eval scenario.
                          #   Inside the plugin root, so `tessl eval run ./plugins/postmortem`
@@ -1429,7 +1471,7 @@ the **same** number:
 | `.claude-plugin/marketplace.json` | that plugin's `.plugins[*].version` |
 
 Current: seven solo plugins at **1.2.0**, `okf-maintain` at **1.3.0**, `doc-this` at **1.3.0**,
-`farley-score` at **1.1.0**, Claude marketplace metadata **7.4.0**.
+`farley-score` at **1.1.0**, `learning-capture` at **1.0.0**, Claude marketplace metadata **7.5.0**.
 
 Note what earned that 1.1.1: adding `evals/` changes nothing an installed plugin executes, so by the
 table above it is a `test:` change and no bump at all. The bump is not describing the change, it is

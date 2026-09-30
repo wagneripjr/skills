@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "One plugin per skill: install only what you need. Plus doc-this, a reverse-engineering pipeline whose skills share a hook set and therefore ship as one package.",
-    "version": "7.4.0"
+    "version": "7.5.0"
   },
   "plugins": [
     {
@@ -38,6 +38,12 @@
       "source": "./plugins/human-cli",
       "description": "Design and evaluate command-line tools for human users: naming and grammar, interactive prompts, colour and progress output, error messages, and a 0-21 usability rubric",
       "version": "1.2.0"
+    },
+    {
+      "name": "learning-capture",
+      "source": "./plugins/learning-capture",
+      "description": "Capture errors, corrections, missing capabilities and better approaches as structured .learnings/ entries under a pinned entry-format contract, with a nudge when a shell command fails",
+      "version": "1.0.0"
     },
     {
       "name": "okf-maintain",

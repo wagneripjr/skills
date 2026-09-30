@@ -1,0 +1,36 @@
+{
+  "context": "The user asks for a non-obvious build failure to be logged. The repository's .gitignore lists .learnings/ and no .learnings/ directory exists: the corpus was removed from this repository on purpose, so the absence is a decision rather than an omission. A good response does not recreate the corpus, captures the learning to machine-local memory instead, and says where it went and why.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "corpus_not_recreated",
+      "description": "No .learnings/ directory is created, and the agent writes no LEARNINGS.md or ERRORS.md into the repository. Template copies inside an installed plugin under .tessl/ are harness setup, not the agent's writes, and do not count.",
+      "max_score": 5
+    },
+    {
+      "name": "gitignore_untouched",
+      "description": ".gitignore still lists `.learnings/`; the agent does not remove the line to make room for the corpus.",
+      "max_score": 2
+    },
+    {
+      "name": "absence_read_as_decision",
+      "description": "The response explains that because .learnings/ is gitignored and absent, the repository chose not to keep a corpus, and that it is therefore capturing elsewhere rather than bootstrapping one.",
+      "max_score": 3
+    },
+    {
+      "name": "machine_local_capture",
+      "description": "The learning is captured to machine-local memory (for example the per-project auto-memory directory under the user's home), and the response names that destination. A capture into any file inside the repository does not satisfy this.",
+      "max_score": 3
+    },
+    {
+      "name": "content_is_the_mechanism",
+      "description": "The captured learning records the mechanism — `.nvmrc` pinned Node 18 while the code needs Node 20 for `Readable.fromWeb`, which surfaced as TS2339 — not just 'the build failed'.",
+      "max_score": 3
+    },
+    {
+      "name": "build_left_alone",
+      "description": "package.json and the build configuration are not modified, as the user asked.",
+      "max_score": 1
+    }
+  ]
+}

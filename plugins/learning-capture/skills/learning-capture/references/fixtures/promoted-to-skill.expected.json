@@ -1,0 +1,16 @@
+{
+  "entries": [
+    {
+      "id": "LRN-20250118-001",
+      "heading": "best_practice",
+      "fields": {
+        "Logged": "2025-01-18T11:00:00Z",
+        "Priority": "high",
+        "Status": "promoted_to_skill",
+        "Skill-Path": "skills/docker-arm64-fixes",
+        "Skill": "none",
+        "Area": "infra"
+      }
+    }
+  ]
+}

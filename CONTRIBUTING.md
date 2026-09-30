@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for taking a look. This repo is a **marketplace** holding ten plugins, so most
+Thanks for taking a look. This repo is a **marketplace** holding eleven plugins, so most
 contributions are Markdown — a new skill, or a fix to an existing one.
 
 `CLAUDE.md` is the architecture reference: plugin conventions, the full hook table, and the

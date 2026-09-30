@@ -1,0 +1,6 @@
+{
+  "entries": [
+    { "id": "LRN-20250115-003", "heading": "best_practice", "fields": { "Logged": "2025-01-15T16:00:00Z", "Status": "promoted", "Promoted": "CLAUDE.md" } },
+    { "id": "LRN-20250116-001", "heading": "best_practice", "fields": { "Logged": "2025-01-16T09:00:00Z", "Status": "promoted", "Promoted": "auto memory (patterns.md)" } }
+  ]
+}

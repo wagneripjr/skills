@@ -1,0 +1,17 @@
+{
+  "entries": [
+    {
+      "id": "LRN-20250310-001",
+      "heading": "best_practice",
+      "fields": {
+        "Logged": "2025-02-01T10:00:00Z",
+        "Status": "resolved",
+        "Applications": "4 (last three sessions)",
+        "Confirmations": "2",
+        "Contradictions": "0",
+        "Confidence": "0.85",
+        "Last-Observed": "2025-03-10T08:00:00Z"
+      }
+    }
+  ]
+}

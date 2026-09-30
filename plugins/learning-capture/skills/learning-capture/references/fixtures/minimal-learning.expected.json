@@ -1,0 +1,14 @@
+{
+  "entries": [
+    {
+      "id": "LRN-20250115-001",
+      "heading": "correction",
+      "fields": {
+        "Logged": "2025-01-15T10:30:00Z",
+        "Priority": "high",
+        "Status": "pending",
+        "Area": "tests"
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "entries": [
+    {
+      "id": "LRN-20250220-002",
+      "heading": "correction",
+      "fields": {
+        "Logged": "2025-02-20T10:00:00Z",
+        "Status": "promoted",
+        "Skill": "acme-tools:api-handler",
+        "Fix-type": "skill",
+        "Promoted": "skills/api-handler/SKILL.md",
+        "Scenario": "handler-echoes-correlation-header",
+        "Verdict": "fixed",
+        "Activation": "activated"
+      }
+    }
+  ]
+}

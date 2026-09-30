@@ -16,7 +16,7 @@ cpSync(join(ROOT, 'plugins'), installed, {
 });
 const skills = walk(installed).filter((path) => path.endsWith(`${sep}SKILL.md`));
 
-h.equal('the complete shared skill corpus is inspected', skills.length, 24);
+h.equal('the complete shared skill corpus is inspected', skills.length, 25);
 for (const skill of skills) {
   const source = readFileSync(skill, 'utf8');
   const name = source.match(/^name: (.+)$/m)?.[1];
@@ -60,7 +60,7 @@ for (const pluginRoot of pluginRoots) {
     catalog.add(`${manifest.name}:${name}`);
   }
 }
-h.equal('the native manifests expose fourteen public plugin skill names', catalog.size, 14);
+h.equal('the native manifests expose fifteen public plugin skill names', catalog.size, 15);
 
 function invocationFindings(source) {
   return [...source.matchAll(/\$([a-z][a-z0-9-]*(?::[a-z][a-z0-9-]*)?)/g)]

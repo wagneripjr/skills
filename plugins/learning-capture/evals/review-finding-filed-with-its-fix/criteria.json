@@ -1,0 +1,41 @@
+{
+  "context": "An adversarial review finding is applied. A good response fixes the defect and, in the same turn, files a review_finding learning entry that attributes the finding to the skill whose text should have prevented it, records which kind of change closes it, and cites the review job id — all as field lines a downstream reader can parse.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "bug_fixed",
+      "description": "syncBatch awaits each request (or awaits them together) and no longer swallows rejections: a failed POST is surfaced to the caller, and the returned count no longer claims rows that failed.",
+      "max_score": 3
+    },
+    {
+      "name": "review_finding_header",
+      "description": "An entry is appended to .learnings/LEARNINGS.md with a heading of the exact form `## [LRN-YYYYMMDD-NNN] review_finding`, below the existing preamble, which is left intact.",
+      "max_score": 3
+    },
+    {
+      "name": "review_id_cited",
+      "description": "The entry carries the line `**Review**: review-job-7731` at the start of a line.",
+      "max_score": 3
+    },
+    {
+      "name": "skill_attributed",
+      "description": "The entry carries `**Skill**: quillmark-conventions:error-handling` — the `<plugin>:<name>` form — rather than `none`, a bare skill name, or prose.",
+      "max_score": 3
+    },
+    {
+      "name": "fix_type_skill",
+      "description": "The entry carries `**Fix-type**: skill`, since the change that closes the finding is to that skill's text; the code fix alone does not stop the next session repeating it.",
+      "max_score": 2
+    },
+    {
+      "name": "field_lines_parseable",
+      "description": "`**Logged**:`, `**Priority**:`, `**Status**:` and `**Area**:` appear as bold field lines at the start of their own lines, and no field-shaped line is placed inside a fenced code block of the entry.",
+      "max_score": 2
+    },
+    {
+      "name": "no_reserved_fields",
+      "description": "The entry does not carry `**Scenario**`, `**Verdict**` or `**Activation**` lines, which a reconciling consumer writes, not capture.",
+      "max_score": 1
+    }
+  ]
+}

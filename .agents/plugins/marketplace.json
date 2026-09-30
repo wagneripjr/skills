@@ -65,6 +65,18 @@
       "category": "Productivity"
     },
     {
+      "name": "learning-capture",
+      "source": {
+        "source": "local",
+        "path": "./plugins/learning-capture"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
       "name": "okf-maintain",
       "source": {
         "source": "local",

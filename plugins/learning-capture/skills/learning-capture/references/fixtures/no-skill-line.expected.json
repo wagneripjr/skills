@@ -1,0 +1,7 @@
+{
+  "entries": [
+    { "id": "LRN-20250301-001", "heading": "insight", "fields": { "Status": "resolved", "Fix-type": "rule" } },
+    { "id": "LRN-20250301-002", "heading": "insight", "fields": { "Status": "resolved", "Skill": "" } },
+    { "id": "LRN-20250301-003", "heading": "insight", "fields": { "Status": "resolved", "Skill": "None" } }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "entries": [
+    { "id": "ERR-20250308-001", "heading": "npm_install", "fields": { "Status": "resolved", "Area": "config" } },
+    {
+      "id": "LRN-20250308-002",
+      "heading": "review_finding [second pass]",
+      "fields": { "Status": "pending", "Skill": "acme-tools:package-manager", "Review": "task-0f1e2d task-3c4b5a,task-6978ab" }
+    },
+    { "id": "FEAT-20250308-003", "heading": "offline_install", "fields": { "Status": "wont_fix", "Priority": "low" } },
+    { "id": "LRN-20250308-004", "heading": "knowledge_gap", "fields": { "Status": "in_progress" } }
+  ]
+}

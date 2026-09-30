@@ -1,0 +1,41 @@
+{
+  "context": "The user corrects the agent and explicitly asks that no future session repeat the mistake. The repository already has a .learnings/ corpus with one entry. A good response fixes the README, appends a correctly shaped correction entry to the existing corpus without disturbing the entry already there, and — because the user flagged it and it is a project convention every session needs — promotes a distilled rule into the project's CLAUDE.md with a back-reference to the entry.",
+  "type": "weighted_checklist",
+  "checklist": [
+    {
+      "name": "readme_fixed",
+      "description": "README.md now tells the reader to run `make db-migrate` (and no longer tells them to run `npm run migrate` as the way to apply migrations).",
+      "max_score": 2
+    },
+    {
+      "name": "appended_to_existing_corpus",
+      "description": "The new entry is appended to the existing .learnings/LEARNINGS.md. The file is not recreated from a template, and the existing LRN-20260112-001 entry is still present with its content unchanged.",
+      "max_score": 3
+    },
+    {
+      "name": "header_grammar",
+      "description": "The new entry starts with a level-two heading of the exact form `## [LRN-YYYYMMDD-NNN] correction`, where the date is the date of writing and the id does not collide with any id already in the file.",
+      "max_score": 3
+    },
+    {
+      "name": "field_lines",
+      "description": "Directly under the header the entry carries bold field lines `**Logged**:` (an ISO-8601 timestamp), `**Priority**:`, `**Status**:` and `**Area**:`, each at the start of its own line, followed by Summary, Details and Suggested Action subsections.",
+      "max_score": 3
+    },
+    {
+      "name": "specific_not_vague",
+      "description": "The entry states the concrete mechanism — `npm run migrate` skips the currency-code seed, which breaks the foreign key for non-USD royalty rows — and the concrete rule (`make db-migrate`), not a generic 'double-check commands' lesson.",
+      "max_score": 2
+    },
+    {
+      "name": "promoted_with_back_reference",
+      "description": "A concise rule is added to a CLAUDE.md at the repository root, preceded by an HTML comment of the form `<!-- source: LRN-YYYYMMDD-NNN | promoted: YYYY-MM-DD -->` naming the new entry's id; and the entry itself reads `**Status**: promoted` with a `**Promoted**:` line naming CLAUDE.md.",
+      "max_score": 4
+    },
+    {
+      "name": "no_reserved_fields",
+      "description": "The new entry does not carry `**Scenario**`, `**Verdict**` or `**Activation**` lines — those belong to a consumer that reconciles entries into skills, not to capture.",
+      "max_score": 1
+    }
+  ]
+}
