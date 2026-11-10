@@ -800,6 +800,29 @@ The regressions travelled with the code. The source repository's error-detector 
 the nudge naming all three attribution fields) are ported to Node in
 `tests/test-learning-capture.mjs`.
 
+### ADR-014 · Every executable this repository ships or runs is zero-dependency Node `.mjs`
+
+Binds every contributor, human or agent. `ADR-014` is a stable label like the others in this file;
+the rule is defined here and enforced by the harness named below. Hooks, CLI utilities, test
+harnesses, skill scripts, and setup and release helpers are all `.mjs` using only Node built-ins.
+**Do not author a new `.sh`**, and do not move the same shell into Node: the rule is about the
+runtime, not the filename.
+
+- **Allowed:** `spawn`/`spawnSync`/`execFile`/`execFileSync` with an executable and an `argv` array,
+  `shell` absent or `false`. Inside a runtime hook the executable may only be `git`.
+- **Forbidden:** `exec`/`execSync` in any form; `shell: true`; a shell as the executable (`sh`,
+  `bash`, `zsh`, `cmd`, `powershell`, `pwsh`, or `env` used to reach one); a single command string
+  with operators, pipes or redirection in place of an `argv` array; a wrapper that reaches a shell
+  indirectly.
+- **One scoped exception:** `plugins/farley-score/` ships Python (FR-FARLEY-1, FR-FARLEY-2). It is
+  granted to that plugin only, not to "a Python original may stay Python".
+
+`tests/test-no-shell-invocation.mjs` enforces part of it: over tracked `.mjs` files, line by line, it
+rejects a `shell:` option not followed by `false`, a literal shell as the first argument of the four
+spawn functions, and a bare `exec(`/`execSync(`. It cannot see a new `.sh` file, a shell reached
+through a variable or an absolute path, a call split across lines, a pipe inside a command string,
+`promisify(exec)` or an aliased import, or the hooks' `git`-only rule. Those rest on review.
+
 ## Repository Structure
 
 ```

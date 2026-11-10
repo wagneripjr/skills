@@ -41,7 +41,8 @@ Eight are one skill each. `plugins/doc-this/` is the exception and bundles 14, b
 nine enforcement gates and a common `hooks/lib/` that has no per-skill home.
 
 New scripts are **zero-dependency `.mjs`** (`node:fs`, `node:path`, `node:os`, `node:url`,
-`node:child_process`). The tree is shell-free — do not add any.
+`node:child_process`). The tree is shell-free — do not add any. `plugins/farley-score/` is the one
+exception and ships Python; it does not extend to anything else.
 
 ## Version bumping — read this before opening a PR
 
