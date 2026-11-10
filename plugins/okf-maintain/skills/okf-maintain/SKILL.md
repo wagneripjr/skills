@@ -240,8 +240,11 @@ leaving existing content alone:
 Start at [index.md](index.md). Every documentation folder carries a generated `index.md` listing
 each document's title and one-line description — answer "which doc covers X" and "does a doc for Y
 exist" from that index in one read, and open a document only after the index names it. Do not grep
-`docs/` for a document's identity; grep stays correct only for a literal phrase inside a body that
-the index cannot carry.
+`docs/` for a document's identity, and do not dispatch a search subagent to look one up; grep stays
+correct only for a literal phrase inside a body that the index cannot carry.
+
+`okf-maintain`'s `wire` step writes this block and replaces it on every run, so an edit between its
+markers does not survive.
 <!-- /okf:entry -->
 ```
 
@@ -254,8 +257,9 @@ It writes those files **into the bundle root**, so the bundle root must be the r
 docs` produces a `docs/CLAUDE.md` nothing reads. Chained roots are the design — `./index.md` is the
 address you give agents, and it links `docs/` onward.
 
-Keep the block's second half. Without the stated grep exception the rule reads as overreach and is
-ignored wholesale, costing more index reads than it buys.
+Keep the stated grep exception. Without it the rule reads as overreach and is ignored wholesale,
+costing more index reads than it buys. The closing line is what makes the block self-sufficient: a
+session reading it learns who owns it, so no instruction outside the block has to say so.
 
 ## Workflow — adopting OKF in a repo
 

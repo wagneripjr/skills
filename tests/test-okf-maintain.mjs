@@ -291,6 +291,18 @@ run('wire', R);
   const bad = want ? docs.filter((d) => pat.exec(read(d))?.[0]?.trim() !== want) : docs;
   h.check('AC-17 SKILL.md and adoption.md show the block okf.mjs actually writes', bad.length === 0,
     bad.join(', '));
+
+  // ---------- AC-66 the wired block is the whole lookup contract ----------
+  const states = (b) => typeof b === 'string'
+    && /do not dispatch a search subagent/.test(b)
+    && /`wire` step writes this block/.test(b);
+  h.check('AC-66 the wired block forbids a search subagent and names wire as its writer', states(want),
+    want ?? 'no block written');
+  h.check('AC-66 canary: a block missing the subagent clause fails',
+    !states(want?.replace(', and do not dispatch a search subagent to look one up', '')));
+  h.check('AC-66 canary: a block missing the authorship line fails',
+    !states(want?.replace(/`okf-maintain`'s `wire` step writes this block[\s\S]*?survive\./, '')));
+  h.check('AC-66 control: the profiled-repository exception is gone', !/by hand|halts?/.test(want ?? ''));
 }
 
 // ---------- AC-18 the frontmatter reader fails closed, without false positives ----------

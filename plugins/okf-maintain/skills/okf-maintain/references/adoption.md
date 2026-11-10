@@ -255,8 +255,11 @@ if it does not exist and leaving whatever is already there untouched:
 Start at [index.md](index.md). Every documentation folder carries a generated `index.md` listing
 each document's title and one-line description — answer "which doc covers X" and "does a doc for Y
 exist" from that index in one read, and open a document only after the index names it. Do not grep
-`docs/` for a document's identity; grep stays correct only for a literal phrase inside a body that
-the index cannot carry.
+`docs/` for a document's identity, and do not dispatch a search subagent to look one up; grep stays
+correct only for a literal phrase inside a body that the index cannot carry.
+
+`okf-maintain`'s `wire` step writes this block and replaces it on every run, so an edit between its
+markers does not survive.
 <!-- /okf:entry -->
 ```
 

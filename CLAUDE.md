@@ -1470,7 +1470,7 @@ the **same** number:
 | `plugins/<name>/.codex-plugin/plugin.json` | `.version` |
 | `.claude-plugin/marketplace.json` | that plugin's `.plugins[*].version` |
 
-Current: seven solo plugins at **1.2.0**, `okf-maintain` at **1.3.0**, `doc-this` at **1.3.0**,
+Current: seven solo plugins at **1.2.0**, `okf-maintain` at **1.3.1**, `doc-this` at **1.3.0**,
 `farley-score` at **1.1.0**, `learning-capture` at **1.0.0**, Claude marketplace metadata **7.5.0**.
 
 Note what earned that 1.1.1: adding `evals/` changes nothing an installed plugin executes, so by the
@@ -1563,8 +1563,11 @@ node scripts/eval-record.mjs <run-id> [<run-id>...]
 Start at [index.md](index.md). Every documentation folder carries a generated `index.md` listing
 each document's title and one-line description — answer "which doc covers X" and "does a doc for Y
 exist" from that index in one read, and open a document only after the index names it. Do not grep
-`docs/` for a document's identity; grep stays correct only for a literal phrase inside a body that
-the index cannot carry.
+`docs/` for a document's identity, and do not dispatch a search subagent to look one up; grep stays
+correct only for a literal phrase inside a body that the index cannot carry.
+
+`okf-maintain`'s `wire` step writes this block and replaces it on every run, so an edit between its
+markers does not survive.
 <!-- /okf:entry -->
 
 @AGENTS.md
