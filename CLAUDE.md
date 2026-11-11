@@ -146,8 +146,9 @@ permanent unindexed findings — the deliberate dot-directory disagreement must 
 
 At FR-OKF-4 adoption, `check` evaluated zero concept documents and exited 77: the tree was entirely
 plugin payload and project meta. FR-HOST-1 adds one indexed migration handoff, which `check` now
-evaluates. There is still no requirements/ADR corpus or `docs/` tree; rule identifiers remain
-defined in this file. The root index lists the project-meta files and the handoff.
+evaluates. There is still no requirements/ADR corpus; `docs/` holds only `okf.yaml`, which declares
+`okf_version` and the agentic-sdlc hub sibling the graduation lock reads, and no concept folder.
+Rule identifiers remain defined in this file. The root index lists the project-meta files and the handoff.
 
 ### FR-OKF-5 · An index nothing links to may not vouch for a document
 

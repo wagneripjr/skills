@@ -3,7 +3,11 @@ node_modules/
 __pycache__/
 .DS_Store
 .agentic-sdlc/
-.claude/
+.claude/*
+# The two declarations agentic-sdlc's shell-authoring gate and graduation lock read from the root.
+# Everything else under .claude/ stays machine-local.
+!.claude/sdlc-repo-id
+!.claude/sdlc-phases
 .learnings/
 .sdlc/
 *-workspace/
