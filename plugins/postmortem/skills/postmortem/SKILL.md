@@ -1,6 +1,6 @@
 ---
 name: postmortem
-description: "Write a production-incident postmortem that reads well for humans and stays parseable by tooling. Produces docs/postmortems/YYYY-MM-DD-<slug>.md with machine-read YAML frontmatter (severity critical|high|medium|low), a stable H1 + filename date that together form a finding-id, and a numbered spine — executive summary, impact/blast radius with per-service evidence, timeline, root cause (mechanism + 5 whys + discarded hypotheses), empirical proof, detection, remediation (palliative vs root fix), action items, lessons learned, read-only appendices. Triggers: 'write a postmortem', 'post-incident review', 'incident record', 'document this outage', 'RCA document', or right after resolving/mitigating any production incident. NOT for reconciling a postmortem with the decision it contradicted. NOT for bug reports. NOT for live incident response."
+description: "Write a production-incident postmortem that reads well for humans and stays parseable by tooling. Produces docs/postmortems/YYYY-MM-DD-<slug>.md with machine-read YAML frontmatter (severity critical|high|medium|low), a stable H1 + filename date that together form a finding-id, and a numbered spine — executive summary, impact/blast radius with per-service evidence, timeline, root cause (mechanism + 5 whys + discarded hypotheses), empirical proof, detection, remediation (palliative vs root fix), action items, lessons learned, read-only appendices. Triggers: 'write a postmortem', 'post-incident review', 'incident record', 'document this outage', 'RCA document', or right after resolving/mitigating any production incident. Also publishes it to Confluence when asked ('put the postmortem on Confluence'). NOT for reconciling a postmortem with the decision it contradicted. NOT for bug reports. NOT for live incident response."
 license: MIT
 ---
 
@@ -162,3 +162,14 @@ allowed the mistake is the thing you can fix.
 - Action items that are code defects become tracked bugs or issues, per project convention —
   link them from the action-items table.
 - Commit as `docs: postmortem <slug>` — a postmortem is documentation, not a code change.
+
+## Publishing to Confluence (only when asked)
+
+When the user asks for the postmortem on Confluence, follow `references/confluence-publish.md`
+after the file is written — the file stays the record, the page is a copy. In short: every
+postmortem of a project goes under the parent page recorded in `docs/postmortems/confluence.json`
+(asked once and saved when missing); the page title is `YYYY-MM-DD <H1>` with the filename date; the body is the file's Markdown sent as
+Markdown, with only the frontmatter, leading comments and H1 removed; the returned page URL goes
+back into the frontmatter as `confluence:` so the next publish updates instead of duplicating.
+Without a connected Confluence tool, write the file, say publishing was not possible, and never
+print a page link a tool did not return.
