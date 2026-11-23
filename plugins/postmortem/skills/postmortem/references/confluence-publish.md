@@ -48,13 +48,23 @@ each postmortem still names the parent page in the confirmation.
 ## Title
 
 ```
-YYYY-MM-DD <H1>
+YYYY-MM-DD HH:MM <H1>
 ```
 
-The date is the **filename** date (the incident date) and the rest is the H1, verbatim — e.g.
-`2026-03-14 checkout-api — p99 latency spike during flash sale`. That is the same pair that forms
-the finding-id, so the same freeze applies: never retitle the page on its own. If the H1 changes,
-the page title changes with it, through a republish.
+- `YYYY-MM-DD` is the **filename** date (the incident date).
+- `HH:MM` is the **start of the incident window** from the body's metadata table, in the
+  timezone the document declares. Do not convert it again, and do not add the timezone to the
+  title.
+- The rest is the H1, verbatim.
+
+Example: `2026-03-14 21:07 checkout-api — p99 latency spike during flash sale`. Date and time first
+make a parent page's children sort chronologically.
+
+If the document has no window start, ask the user for it. Never fill in `00:00` or a time recalled
+from memory: a made-up time in a title is an unsourced number in the most-read line of the page.
+
+Date and H1 are the pair that forms the finding-id, so the same freeze applies: never retitle the
+page on its own. If the H1 changes, the page title changes with it, through a republish.
 
 ## Body — the file's Markdown, preserved
 

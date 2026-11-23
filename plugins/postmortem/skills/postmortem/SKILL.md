@@ -168,7 +168,8 @@ allowed the mistake is the thing you can fix.
 When the user asks for the postmortem on Confluence, follow `references/confluence-publish.md`
 after the file is written — the file stays the record, the page is a copy. In short: every
 postmortem of a project goes under the parent page recorded in `docs/postmortems/confluence.json`
-(asked once and saved when missing); the page title is `YYYY-MM-DD <H1>` with the filename date; the body is the file's Markdown sent as
+(asked once and saved when missing); the page title is `YYYY-MM-DD HH:MM <H1>` — filename date, then the incident window's start
+in the document's timezone; the body is the file's Markdown sent as
 Markdown, with only the frontmatter, leading comments and H1 removed; the returned page URL goes
 back into the frontmatter as `confluence:` so the next publish updates instead of duplicating.
 Without a connected Confluence tool, write the file, say publishing was not possible, and never

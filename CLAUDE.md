@@ -1494,7 +1494,7 @@ the **same** number:
 | `plugins/<name>/.codex-plugin/plugin.json` | `.version` |
 | `.claude-plugin/marketplace.json` | that plugin's `.plugins[*].version` |
 
-Current: six solo plugins at **1.2.0**, `postmortem` at **1.3.0**, `okf-maintain` at **1.3.1**, `doc-this` at **1.3.0**,
+Current: six solo plugins at **1.2.0**, `postmortem` at **1.3.1**, `okf-maintain` at **1.3.1**, `doc-this` at **1.3.0**,
 `farley-score` at **1.1.0**, `learning-capture` at **1.0.0**, Claude marketplace metadata **7.5.0**.
 
 Note what earned that 1.1.1: adding `evals/` changes nothing an installed plugin executes, so by the
